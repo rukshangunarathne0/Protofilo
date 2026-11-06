@@ -160,8 +160,13 @@ def local_urls(text: str) -> list[str]:
     patterns = [
         r'\b(?:src|href)\s*=\s*"([^"]+)"',
         r"\b(?:src|href)\s*=\s*'([^']+)'",
-        r"url\(\s*['\"]?([^'\")]+)['\"]?\s*\)",
+        r'url\(\s*[\'"]?([^\'")]+)[\'"]?\s*\)',
         r'\bcontent\s*=\s*"(https?://[^"]+)"',  # og:image etc.
+        # JS/JSX object style: src:"images/x.jpg" or href:'images/x.jpg'
+        r'\b(?:src|href)\s*:\s*"([^"]+)"',
+        r"\b(?:src|href)\s*:\s*'([^']+)'",
+        # setAttribute("src", "images/x.jpg")
+        r'setAttribute\(\s*["\'](?:src|href)["\']\s*,\s*["\']([^"\']+)["\']',
     ]
     for pat in patterns:
         for m in re.finditer(pat, text, re.I):
@@ -171,6 +176,9 @@ def local_urls(text: str) -> list[str]:
 
 def is_local(url: str) -> bool:
     if not url or url.startswith(SKIP_PREFIX) or url.startswith("//"):
+        return False
+    # JS string-concatenation fragments: "'+r+'", "'+Be(t)+'", "${...}"
+    if "'+" in url or '+ "' in url or "${" in url or "`" in url:
         return False
     parts = urllib.parse.urlsplit(url)
     if parts.scheme in ("http", "https"):
@@ -235,6 +243,12 @@ def main() -> int:
             text = make_relative(text)
             pathlib.Path("index.html").write_text(text, encoding="utf-8")
             log(f"saved index.html ({len(text)} bytes)")
+            # Drop leftover debug artifacts from earlier failed runs.
+            for stale in ("debug-wrapper.html", "debug-wrapper-embed.html"):
+                p = pathlib.Path(stale)
+                if p.exists():
+                    p.unlink()
+                    log(f"removed {stale}")
             exit_code = 0
     except Exception:  # noqa: BLE001
         log("UNCAUGHT EXCEPTION:\n" + traceback.format_exc())
