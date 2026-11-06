@@ -8,10 +8,12 @@ iframe url: 'https://01a1ab49-9a25-770e-8a54-37c3d4e40218.arena.site/?embed=true
   GET https://01a1ab49-9a25-770e-8a54-37c3d4e40218.arena.site/index.html -> 200 435759 bytes
 page fetched directly from https://01a1ab49-9a25-770e-8a54-37c3d4e40218.arena.site/index.html
 warning: could not fetch https://01a1ab49-9a25-770e-8a54-37c3d4e40218.arena.site/%23n: HTTP Error 404: Not Found
-  GET https://01a1ab49-9a25-770e-8a54-37c3d4e40218.arena.site/images/portrait.jpg -> 200 223828 bytes
-saved images/portrait.jpg (223828 bytes)
-  GET https://01a1ab49-9a25-770e-8a54-37c3d4e40218.arena.site/images/contact-laptop.jpg -> 200 222948 bytes
-saved images/contact-laptop.jpg (222948 bytes)
+  GET https://01a1ab49-9a25-770e-8a54-37c3d4e40218.arena.site/images/project-vlink.jpg -> 200 220276 bytes
+saved images/project-vlink.jpg (220276 bytes)
+  GET https://01a1ab49-9a25-770e-8a54-37c3d4e40218.arena.site/images/project-lyric.jpg -> 200 235993 bytes
+saved images/project-lyric.jpg (235993 bytes)
+  GET https://01a1ab49-9a25-770e-8a54-37c3d4e40218.arena.site/images/project-winzor.jpg -> 200 228805 bytes
+saved images/project-winzor.jpg (228805 bytes)
 saved index.html (435701 bytes)
 removed debug-wrapper.html
 removed debug-wrapper-embed.html
