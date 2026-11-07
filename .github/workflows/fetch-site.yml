@@ -3,7 +3,7 @@ name: Fetch site source
 on:
   push:
     branches:
-      - arena/ec7ae4be-protofilo
+      - main
   workflow_dispatch:
 
 permissions:
