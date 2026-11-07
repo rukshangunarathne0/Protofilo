@@ -163,9 +163,9 @@ def local_urls(text: str) -> list[str]:
         r'url\(\s*[\'"]?([^\'")]+)[\'"]?\s*\)',
         r'\bcontent\s*=\s*"(https?://[^"]+)"',  # og:image etc.
         # JS/JSX object style: src:"images/x.jpg" or href:'images/x.jpg'
-        # (also image:/poster:/thumbnail: keys used by project cards)
-        r'\b(?:src|href|image|poster|thumbnail)\s*:\s*"([^"]+)"',
-        r"\b(?:src|href|image|poster|thumbnail)\s*:\s*'([^']+)'",
+        # (also image:/poster:/thumbnail:/img: keys used by project cards)
+        r'\b(?:src|href|image|poster|thumbnail|img)\s*:\s*"([^"]+)"',
+        r"\b(?:src|href|image|poster|thumbnail|img)\s*:\s*'([^']+)'",
         # setAttribute("src", "images/x.jpg")
         r'setAttribute\(\s*["\'](?:src|href)["\']\s*,\s*["\']([^"\']+)["\']',
     ]
