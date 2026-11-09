@@ -1,48 +1,29 @@
-# Happy Time Connect
+# Protofilo
 
-Source mirror of the **Happy Time Connect** company messaging and collaboration app for T.K Food Products Distribution Limited.
+Portfolio site for **Tharindu Rukshan** — Web Developer, Digital Marketer & AI Content Creator.
 
-- Live deployment: <https://happy-time-connect.vercel.app/>
-- Public source: <https://github.com/perves90-crypto/Happy-Time-Connect>
+Source of the live preview:
+<https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/>
 
-## Included
+## Structure
 
-- Phone-number sign-up and persistent Supabase sessions
-- Personal and group messaging UI with realtime message subscriptions
-- Secret-code protected private-chat interface
-- Browser-local storage with Capacitor Android storage support
-- Audio and video call signaling UI
-- Theme, language, profile, QR-code, and account settings screens
-- Supabase schema, migrations, RPC functions, and call-push function source
-- Capacitor configuration and an Android APK build workflow
+- `index.html` — the single-page site (HTML/CSS/JS)
+- `images/` — portrait, project and contact imagery
+- `scripts/fetch_site.py` — re-downloads the site from the Arena preview
+- `.github/workflows/fetch-site.yml` — GitHub Action that runs the fetcher
 
-The UI is mobile-first and includes Bengali/English labels. The frontend is built with React and Vite.
+## Re-fetching the site
 
-## Development
+Push a commit whose message contains the marker `[fetch-site]` (or run the
+**Fetch site source** workflow manually from the Actions tab). The workflow
+downloads `index.html` plus every local asset it references and commits the
+result.
 
-```bash
-npm install
-npm run dev
-npm run build
-```
+## Local preview
 
-To connect a different Supabase project, copy `.env.example` to `.env.local` and replace the placeholder publishable key before starting Vite:
+Open `index.html` directly in a browser, or serve the folder:
 
 ```bash
-cp .env.example .env.local
+python3 -m http.server 8000
 ```
 
-The SQL files in `supabase/` must be applied to the matching Supabase project before authentication, conversations, realtime messages, or call signaling can work end to end. The push-call function also requires its server-side Supabase and Firebase secrets; never put those secrets in the frontend environment.
-
-## Deployment
-
-Vercel can deploy this repository using the standard Vite settings:
-
-- Build command: `npm run build`
-- Output directory: `dist`
-
-Cloudflare Pages/Workers configuration is also included in `wrangler.jsonc`. The Android workflow builds a debug APK from the same web bundle when run from GitHub Actions.
-
-## Cost and service limits
-
-The project is designed around free/open-source tiers. SMS delivery, cloud storage capacity, and 100-person real-time audio/video calling depend on provider limits and cannot be promised as unlimited or always free. No paid service should be enabled without the owner's approval.

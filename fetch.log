@@ -1,0 +1,24 @@
+SITE=https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site
+  GET https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/ -> 200 15098 bytes
+wrapper fetched via direct (15098 bytes)
+iframe url: 'https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/?embed=true'
+  GET https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/?embed=true -> 200 15098 bytes
+  https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/?embed=true is the wrapper, trying next
+  allorigins failed for https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/?embed=true: HTTP Error 522: <none>
+  GET https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/index.html -> 200 1346671 bytes
+page fetched directly from https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/index.html
+warning: could not fetch https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/t: HTTP Error 404: Not Found
+warning: could not fetch https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/s: HTTP Error 404: Not Found
+warning: could not fetch https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/e: HTTP Error 404: Not Found
+warning: could not fetch https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/e,t: HTTP Error 404: Not Found
+warning: could not fetch https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/m: HTTP Error 404: Not Found
+warning: could not fetch https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/%23n: HTTP Error 404: Not Found
+  GET https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/images/p-vlink.jpg -> 200 232430 bytes
+saved images/p-vlink.jpg (232430 bytes)
+  GET https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/images/p-lyric.jpg -> 200 281079 bytes
+saved images/p-lyric.jpg (281079 bytes)
+  GET https://01a1b4d5-616a-74f7-80ba-d5059fdbea4f.arena.site/images/p-winzor.jpg -> 200 218323 bytes
+saved images/p-winzor.jpg (218323 bytes)
+saved index.html (1346566 bytes)
+removed debug-wrapper.html
+removed debug-wrapper-embed.html
