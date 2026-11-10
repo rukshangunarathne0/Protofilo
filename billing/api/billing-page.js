@@ -18,10 +18,12 @@ const HTML = `<!doctype html>
 export default function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
-    res.status(405).send("Method not allowed.");
+    res.statusCode = 405;
+    res.end("Method not allowed.");
     return;
   }
   res.setHeader("Cache-Control", "no-store, max-age=0");
   res.setHeader("Content-Type", "text/html; charset=utf-8");
-  res.status(200).send(HTML);
+  res.statusCode = 200;
+  res.end(HTML);
 }
