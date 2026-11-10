@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="Happy Time Connect — the wholesale operations app for Happy Time (Pvt) Ltd, Colombo."
+    />
+    <meta name="theme-color" content="#0b0b0c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Happy Time" />
+    <meta name="format-detection" content="telephone=no" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="/logo-180.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="/logo-180.png"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://unbhwpcpprornqvvlfxo.supabase.co" crossorigin />
+    <link rel="dns-prefetch" href="https://unbhwpcpprornqvvlfxo.supabase.co" />
+    <!-- Fonts load without blocking first paint; the swap fallback renders instantly. -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+    <title>Happy Time Connect — Wholesale App</title>
+    <style>
+      /* Instant first paint — shown before React mounts, removed once it does. */
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: #0b0b0c;
+        color: #f4f0e7;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        transition: opacity .38s ease;
+      }
+      #boot.boot-out { opacity: 0; pointer-events: none; }
+      #boot .ring {
+        width: 46px; height: 46px;
+        border-radius: 50%;
+        border: 1.5px solid rgba(244,240,231,.22);
+        border-top-color: #c9a227;
+        animation: boot-spin 1.05s linear infinite;
+      }
+      #boot .name {
+        font-size: 12px;
+        letter-spacing: .42em;
+        text-transform: uppercase;
+        color: rgba(244,240,231,.72);
+      }
+      #boot .line {
+        width: 132px; height: 1px;
+        background: rgba(244,240,231,.14);
+        overflow: hidden;
+      }
+      #boot .line span {
+        display: block; height: 100%; width: 40%;
+        background: #c9a227;
+        animation: boot-sweep 1.25s ease-in-out infinite;
+      }
+      @keyframes boot-spin { to { transform: rotate(360deg); } }
+      @keyframes boot-sweep {
+        0% { transform: translateX(-110%); }
+        100% { transform: translateX(360%); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot .ring, #boot .line span { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="boot" aria-hidden="true">
+      <div class="ring"></div>
+      <div class="name">Happy Time</div>
+      <div class="line"><span></span></div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
