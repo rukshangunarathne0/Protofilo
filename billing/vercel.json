@@ -1,6 +1,14 @@
 {
+  "headers": [
+    {
+      "source": "/assets/billing-shell.js",
+      "headers": [
+        { "key": "Content-Type", "value": "text/html; charset=utf-8" }
+      ]
+    }
+  ],
   "rewrites": [
-    { "source": "/", "destination": "/assets/billing-shell.html" },
-    { "source": "/index.html", "destination": "/assets/billing-shell.html" }
+    { "source": "/", "destination": "/assets/billing-shell.js" },
+    { "source": "/index.html", "destination": "/assets/billing-shell.js" }
   ]
 }

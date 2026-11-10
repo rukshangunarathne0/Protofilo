@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#10100f" />
     <meta name="description" content="R.S.D. private billing workspace." />
-    <link rel="icon" type="image/png" href="/assets/rsd-favicon.png" />
     <link rel="stylesheet" href="/assets/index.css" />
     <title>R.S.D. Billing Workspace</title>
   </head>
