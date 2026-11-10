@@ -35,7 +35,6 @@ export default defineConfig({
             return "supabase";
           }
           if (id.includes("tailwind-merge") || id.includes("clsx")) return "ui-utils";
-          if (id.includes("jspdf") || id.includes("@babel/runtime") || id.includes("/fflate/") || id.includes("/fast-png/")) return "pdf";
           return "vendor";
         },
       },
