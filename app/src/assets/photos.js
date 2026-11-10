@@ -16,6 +16,7 @@ import photo9 from "./photo-9.webp";
 
 export const brandLogoUrl = "/rsd-logo.png";
 export const brandBannerUrl = "/rsd-banner.png";
+export const watchHeroUrl = "/rsd-watch-hero.png";
 
 export const assetPhoto1 = photo1;
 export const assetPhoto2 = photo2;

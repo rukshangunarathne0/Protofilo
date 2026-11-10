@@ -14,7 +14,7 @@ import {
 import { supabase } from "./lib/supabase.js";
 import {
   brandLogoUrl,
-  brandBannerUrl,
+  watchHeroUrl,
   assetPhoto1,
   assetPhoto2,
   assetPhoto3,
@@ -30,6 +30,17 @@ import { detectProductColumns } from "./lib/schema.js";
 import { ACCEPT_ATTRIBUTE, checkPhotoFile, formatBytes, optimisePhoto, publishProductPhoto } from "./lib/photos.js";
 
 const cn = (...inputs) => twMerge(clsx(inputs));
+
+const ADMIN_EMAIL = "admin@rsd.com";
+const ADMIN_USER = {
+  email: ADMIN_EMAIL,
+  name: "R.S.D. Administrator",
+  role: "admin",
+  initials: "RS"
+};
+const RSD_WHATSAPP_NUMBER = "0711368623";
+const RSD_WHATSAPP_URL = "https://wa.me/94711368623";
+const rsdWhatsAppLink = (productName = "") => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hello R.S.D., I would like to enquire about ${productName || "your timepieces"}.`)}`;
 
 // Warm the image cache the moment a finger/mouse goes down on a product, so the
 // photo is already decoded by the time the detail sheet slides in.
@@ -326,149 +337,7 @@ function MetricBar({
 const Tr = "4 Oct – 2 Nov",
   m5 = "Sunday, 2 November",
   Dn = (a, n) => `2025-${String(n + 1).padStart(2, "0")}-${String(a).padStart(2, "0")}`,
-  no = [{
-    id: "WC-1009",
-    dealer: "Sakura Timepieces",
-    city: "Colombo 03",
-    date: Dn(31, 9),
-    amount: 330083,
-    units: 32,
-    status: "Packing",
-    channel: "Wholesale",
-    lines: [{
-      sku: "HT-W-214",
-      name: "Meridian Automatic 40mm",
-      qty: 18,
-      price: 12450
-    }, {
-      sku: "HT-W-118",
-      name: "Aurelia Slim Quartz",
-      qty: 14,
-      price: 4190
-    }]
-  }, {
-    id: "WC-1008",
-    dealer: "Nuwara Eliya Clock House",
-    city: "Nuwara Eliya",
-    date: Dn(25, 9),
-    amount: 39636,
-    units: 8,
-    status: "Completed",
-    channel: "Wholesale",
-    lines: [{
-      sku: "HT-C-042",
-      name: "Regulator Wall Clock 30cm",
-      qty: 5,
-      price: 5212
-    }, {
-      sku: "HT-C-017",
-      name: "Pendulum Table Clock",
-      qty: 3,
-      price: 4520
-    }]
-  }, {
-    id: "WC-1007",
-    dealer: "Galle Fort Jewellers",
-    city: "Galle",
-    date: Dn(23, 9),
-    amount: 130995,
-    units: 12,
-    status: "Completed",
-    channel: "Wholesale",
-    lines: [{
-      sku: "HT-W-330",
-      name: "Diver Chronograph 42mm",
-      qty: 7,
-      price: 15985
-    }, {
-      sku: "HT-W-118",
-      name: "Aurelia Slim Quartz",
-      qty: 5,
-      price: 4190
-    }]
-  }, {
-    id: "WC-1006",
-    dealer: "Kandy Watch Gallery",
-    city: "Kandy",
-    date: Dn(22, 9),
-    amount: 138754,
-    units: 9,
-    status: "Ready",
-    channel: "Pre-order",
-    lines: [{
-      sku: "HT-W-512",
-      name: "Skeleton Tourbillon — Dealer Ed.",
-      qty: 2,
-      price: 69377
-    }]
-  }, {
-    id: "WC-1005",
-    dealer: "Colombo Merchants Ltd",
-    city: "Colombo 02",
-    date: Dn(21, 9),
-    amount: 1319670,
-    units: 27,
-    status: "Completed",
-    channel: "Wholesale",
-    lines: [{
-      sku: "HT-W-214",
-      name: "Meridian Automatic 40mm",
-      qty: 22,
-      price: 12450
-    }, {
-      sku: "HT-W-512",
-      name: "Skeleton Tourbillon — Dealer Ed.",
-      qty: 15,
-      price: 69377
-    }]
-  }, {
-    id: "WC-1004",
-    dealer: "Negombo Trading Co.",
-    city: "Negombo",
-    date: Dn(18, 9),
-    amount: 62400,
-    units: 6,
-    status: "Completed",
-    channel: "Counter",
-    lines: [{
-      sku: "HT-W-118",
-      name: "Aurelia Slim Quartz",
-      qty: 6,
-      price: 4190
-    }]
-  }, {
-    id: "WC-1003",
-    dealer: "Matara Time Centre",
-    city: "Matara",
-    date: Dn(12, 9),
-    amount: 51500,
-    units: 5,
-    status: "Completed",
-    channel: "Wholesale",
-    lines: [{
-      sku: "HT-W-214",
-      name: "Meridian Automatic 40mm",
-      qty: 5,
-      price: 12450
-    }]
-  }, {
-    id: "WC-1002",
-    dealer: "Kandy Watch Gallery",
-    city: "Kandy",
-    date: Dn(9, 9),
-    amount: 36e3,
-    units: 7,
-    status: "Completed",
-    channel: "Wholesale",
-    lines: [{
-      sku: "HT-C-042",
-      name: "Regulator Wall Clock 30cm",
-      qty: 7,
-      price: 5143
-    }]
-  }];
-no.reduce((a, n) => a + n.amount, 0);
-no.reduce((a, n) => a + n.units, 0);
+  no = [];
 (() => {
   const a = [],
     n = new Date(Date.UTC(2025, 9, 4));
@@ -489,31 +358,7 @@ no.reduce((a, n) => a + n.units, 0);
     o >= 0 && o < a.length && (a[o].value += c.amount);
   }), a;
 })();
-const Wr = [{
-    id: "PO-0412",
-    dealer: "Kandy Watch Gallery",
-    item: "Skeleton Tourbillon — Dealer Ed.",
-    units: 12,
-    expected: "18 Nov",
-    status: "Awaiting supplier",
-    progress: .2
-  }, {
-    id: "PO-0409",
-    dealer: "Colombo Merchants Ltd",
-    item: "Meridian Automatic 40mm",
-    units: 9,
-    expected: "11 Nov",
-    status: "In transit",
-    progress: .72
-  }, {
-    id: "PO-0404",
-    dealer: "Sakura Timepieces",
-    item: "Aurelia Slim Quartz",
-    units: 6,
-    expected: "07 Nov",
-    status: "Confirmed",
-    progress: 1
-  }],
+const Wr = [],
   hA = [{
     sku: "HT-W-214",
     name: "Meridian Automatic 40mm",
@@ -570,124 +415,9 @@ const Wr = [{
     trend: [1, 3, 2, 4, 3, 2, 4]
   }];
 hA.filter(a => a.stock <= 4);
-const x5 = [{
-    name: "Colombo Merchants Ltd",
-    city: "Colombo 02",
-    orders: 1,
-    revenue: 1319670,
-    since: "2019",
-    status: "Active",
-    terms: "Net 30"
-  }, {
-    name: "Sakura Timepieces",
-    city: "Colombo 03",
-    orders: 1,
-    revenue: 330083,
-    since: "2021",
-    status: "Active",
-    terms: "Net 14"
-  }, {
-    name: "Kandy Watch Gallery",
-    city: "Kandy",
-    orders: 2,
-    revenue: 174754,
-    since: "2020",
-    status: "Active",
-    terms: "Net 30"
-  }, {
-    name: "Galle Fort Jewellers",
-    city: "Galle",
-    orders: 1,
-    revenue: 130995,
-    since: "2022",
-    status: "Active",
-    terms: "Net 14"
-  }, {
-    name: "Negombo Trading Co.",
-    city: "Negombo",
-    orders: 1,
-    revenue: 62400,
-    since: "2023",
-    status: "Active",
-    terms: "Prepaid"
-  }, {
-    name: "Matara Time Centre",
-    city: "Matara",
-    orders: 1,
-    revenue: 51500,
-    since: "2018",
-    status: "On hold",
-    terms: "Net 14"
-  }, {
-    name: "Kurunegala Hourglass",
-    city: "Kurunegala",
-    orders: 0,
-    revenue: 0,
-    since: "2025",
-    status: "Pending approval",
-    terms: "—"
-  }],
-  M0 = [{
-    kind: "Order",
-    text: "Sakura Timepieces placed WC-1009",
-    meta: "Wholesale · Colombo 03 · 2 days ago",
-    amount: 330083
-  }, {
-    kind: "Order",
-    text: "Nuwara Eliya Clock House placed WC-1008",
-    meta: "Wholesale · Nuwara Eliya · 8 days ago",
-    amount: 39636
-  }, {
-    kind: "Order",
-    text: "Galle Fort Jewellers placed WC-1007",
-    meta: "Wholesale · Galle · 10 days ago",
-    amount: 130995
-  }, {
-    kind: "Comment",
-    text: "Colombo Merchants Ltd left 5-star feedback",
-    meta: "Review · Colombo 02 · 11 days ago",
-    amount: 0
-  }, {
-    kind: "Order",
-    text: "Kandy Watch Gallery placed WC-1006",
-    meta: "Pre-order · Kandy · 11 days ago",
-    amount: 138754
-  }, {
-    kind: "Order",
-    text: "Colombo Merchants Ltd placed WC-1005",
-    meta: "Wholesale · Colombo 02 · 12 days ago",
-    amount: 1319670
-  }, {
-    kind: "Dealer",
-    text: "Kurunegala Hourglass applied to trade",
-    meta: "Awaiting approval · 14 days ago",
-    amount: 0
-  }],
-  os = [{
-    author: "Colombo Merchants Ltd",
-    role: "Dealer · Colombo 02",
-    rating: 5,
-    time: "11 days ago",
-    body: "The Meridian Automatics landed early and every unit passed inspection. Sell-through in the first week was 62% — we will double the next order."
-  }, {
-    author: "Galle Fort Jewellers",
-    role: "Dealer · Galle",
-    rating: 4,
-    time: "13 days ago",
-    body: "Diver Chronograph is our best counter piece this season. Would like a strap colour option in deep brown before the December push."
-  }, {
-    author: "Nuwara Eliya Clock House",
-    role: "Dealer · Nuwara Eliya",
-    rating: 5,
-    time: "18 days ago",
-    body: "Packing was meticulous — not one glass scratched on the way up the hill. The regulator clocks are exactly as photographed."
-  }, {
-    author: "Kandy Watch Gallery",
-    role: "Dealer · Kandy",
-    rating: 3,
-    time: "21 days ago",
-    body: "Pre-order lead time on the tourbillon slipped twice. Communication was good, but we need firmer supplier dates for the festive window."
-  }],
+const x5 = [],
+  M0 = [],
+  os = [],
   Al = [{
     tone: "Stock",
     title: "5 products low on stock",
@@ -705,159 +435,64 @@ const x5 = [{
     action: "Open approvals"
   }],
   bt = a => a.toLocaleString("en-US"),
-  j5 = a => a >= 1e6 ? `${(a / 1e6).toFixed(a % 1e6 === 0 ? 0 : 1)}M` : a >= 1e3 ? `${Math.round(a / 1e3)}K` : String(a),
-  Z0 = {
-    "admin@gmail.com": {
-      password: "admin123",
-      user: {
-        email: "admin@gmail.com",
-        name: "Admin",
-        role: "admin",
-        initials: "AD"
-      }
-    },
-    "test@gmail.com": {
-      password: "test123",
-      user: {
-        email: "test@gmail.com",
-        name: "Sakura Timepieces",
-        role: "dealer",
-        initials: "ST",
-        dealer: "Sakura Timepieces",
-        city: "Colombo 03"
-      }
-    }
-  },
-  us = "ht-session",
-  X0 = React.createContext({
-    user: null,
-    login: async () => null,
-    logout: () => {}
-  }),
+  j5 = a => a >= 1e6 ? `${(a / 1e6).toFixed(a % 1e6 === 0 ? 0 : 1)}M` : a >= 1e3 ? `${Math.round(a / 1e3)}K` : String(a);
+const X0 = React.createContext({
+  user: null,
+  authReady: true,
+  login: async () => "Administrator sign-in is unavailable.",
+  logout: () => {}
+}),
   Vl = () => React.useContext(X0);
-function b5() {
-  try {
-    const a = localStorage.getItem(us) ?? sessionStorage.getItem(us);
-    if (!a) return null;
-    const parsed = JSON.parse(a);
-    if (parsed?.user && parsed.user.email) return parsed.user;
-    const n = parsed?.email;
-    return Z0[n]?.user ?? null;
-  } catch {
-    return null;
-  }
-}
 function AuthProvider({
   children: a
 }) {
-  const [n, i] = React.useState(() => typeof window > "u" ? null : b5()),
-    persistUser = React.useCallback((userObj, remember) => {
-      try {
-        localStorage.removeItem(us);
-        sessionStorage.removeItem(us);
-        (remember ? localStorage : sessionStorage).setItem(
-          us,
-          JSON.stringify({ email: userObj.email, user: userObj })
-        );
-      } catch {}
-      i(userObj);
-    }, []),
-    c = React.useCallback(async (A, p, m) => {
-      const email = A.trim().toLowerCase();
-      // 1. Built-in quick demo accounts (1-click Dealer view & Admin view)
-      const demo = Z0[email];
-      if (demo) {
-        if (demo.password !== p) return "Incorrect password. Please try again.";
-        persistUser(demo.user, m);
-        return null;
-      }
-
-      // 2. Check live Supabase ht_dealers table for approved dealer email
-      try {
-        const { data: dealerRow } = await supabase
-          .from("ht_dealers")
-          .select("*")
-          .ilike("email", email)
-          .maybeSingle();
-
-        if (dealerRow) {
-          if (dealerRow.status === "Pending approval") {
-            return "Your dealer application is still pending approval.";
-          }
-          if (dealerRow.status === "On hold") {
-            return "This dealer account is currently on hold. Please contact R.S.D.";
-          }
-          // Try Supabase Auth first if they have an auth account, or allow trade demo password
-          if (p !== "dealer123" && p !== "test123") {
-            const { error: authErr } = await supabase.auth.signInWithPassword({
-              email,
-              password: p,
-            });
-            if (authErr) return "Incorrect password. Please try again.";
-          }
-          const initials = dealerRow.name
-            .split(" ")
-            .slice(0, 2)
-            .map(w => w[0] || "")
-            .join("")
-            .toUpperCase() || "DL";
-          const dealerUser = {
-            email: dealerRow.email || email,
-            name: dealerRow.name,
-            role: "dealer",
-            initials,
-            dealer: dealerRow.name,
-            city: dealerRow.city || "Colombo",
-          };
-          persistUser(dealerUser, m);
-          return null;
-        }
-
-        // 3. Fallback to real Supabase Auth (e.g. staff/dealer users in auth.users)
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email,
-          password: p,
-        });
-        if (!authError && authData?.user) {
-          const { data: prof } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", authData.user.id)
-            .maybeSingle();
-          const isAdmin = prof?.role === "staff" || email === "admin@gmail.com";
-          const displayName = prof?.username || authData.user.email?.split("@")[0] || "Dealer";
-          const initials = displayName.slice(0, 2).toUpperCase();
-          const mappedUser = isAdmin
-            ? { email, name: displayName, role: "admin", initials: "AD" }
-            : {
-                email,
-                name: displayName,
-                role: "dealer",
-                initials,
-                dealer: displayName,
-                city: prof?.address || "Colombo",
-              };
-          persistUser(mappedUser, m);
-          return null;
-        }
-      } catch {}
-
-      return "No account found for that email.";
-    }, [persistUser]),
-    o = React.useCallback(async () => {
-      try {
-        localStorage.removeItem(us);
-        sessionStorage.removeItem(us);
-        await supabase.auth.signOut();
-      } catch {}
-      i(null);
-      window.scrollTo({ top: 0 });
-    }, []);
-  return <X0.Provider value={{
-    user: n,
-    login: c,
-    logout: o
-  }}>{a}</X0.Provider>;
+  const adminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  const [user, setUser] = React.useState(null);
+  const [authReady, setAuthReady] = React.useState(!adminRoute);
+  const login = React.useCallback(async (emailValue, password) => {
+    const email = emailValue.trim().toLowerCase();
+    if (email !== ADMIN_EMAIL) return "Administrator access is restricted.";
+    try {
+      const response = await fetch("/api/admin-login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.ok) return result.error || "Invalid administrator credentials.";
+      setUser(ADMIN_USER);
+      return null;
+    } catch {
+      return "Administrator sign-in is temporarily unavailable.";
+    }
+  }, []);
+  const logout = React.useCallback(async () => {
+    try {
+      await fetch("/api/admin-logout", { method: "POST", credentials: "include" });
+    } catch {}
+    setUser(null);
+    window.scrollTo({ top: 0 });
+  }, []);
+  React.useEffect(() => {
+    if (!adminRoute) {
+      setAuthReady(true);
+      return undefined;
+    }
+    let cancelled = false;
+    setAuthReady(false);
+    fetch("/api/admin-session", { credentials: "include" })
+      .then(response => response.ok ? response.json() : null)
+      .then(result => {
+        if (!cancelled && result?.authenticated) setUser(ADMIN_USER);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setAuthReady(true);
+      });
+    return () => { cancelled = true; };
+  }, [adminRoute]);
+  return <X0.Provider value={{ user, authReady, login, logout }}>{a}</X0.Provider>;
 }
 const fp = "ht-store-v3",
   kh = ["Submitted", "Confirmed", "Packing", "Ready", "Completed"],
@@ -1081,8 +716,11 @@ function qe() {
 function StoreProvider({
   children: a
 }) {
+  const { user: currentUser, authReady } = Vl();
+  const adminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   const [n, i] = React.useReducer(f5, void 0, () => {
-      const initial = typeof window > "u" ? Dr() : q5();
+      const base = Dr();
+      const initial = typeof window === "undefined" ? base : { ...base, orders: [], dealers: [], preorders: [], reviews: [] };
       registerProductPhotos(initial.products);
       return initial;
     }),
@@ -1092,6 +730,41 @@ function StoreProvider({
   A.current = n;
 
   const fetchFromSupabase = React.useCallback(async () => {
+    if (!adminRoute) {
+      try {
+        const { data, error } = await supabase.from("ht_products").select("*").order("sort_order", { ascending: true }).order("sku", { ascending: true });
+        if (error) {
+          setSyncStatus("offline");
+          return;
+        }
+        const nextProducts = (data || []).map(r => ({
+          sku: r.sku,
+          name: r.name,
+          category: r.category,
+          price: Number(r.price) || 0,
+          stock: Number(r.stock) || 0,
+          reserved: Number(r.reserved) || 0,
+          image: r.image || "images/product-wrist.jpg",
+          brand: r.brand ?? undefined,
+          description: r.description ?? undefined,
+          retailPrice: r.retail_price == null ? undefined : Number(r.retail_price),
+          trend: Array.isArray(r.trend) ? r.trend.map(Number) : [0, 0, 0, 0, 0, 0, 0],
+        }));
+        registerProductPhotos(nextProducts);
+        if (nextProducts.length) i({ type: "replace", state: { products: nextProducts } });
+        setSyncStatus("live");
+      } catch {
+        setSyncStatus("offline");
+      } finally {
+        o(true);
+      }
+      return;
+    }
+    if (!authReady || currentUser?.role !== "admin") {
+      setSyncStatus(authReady ? "offline" : "connecting");
+      o(authReady);
+      return;
+    }
     try {
       const [prodRes, dealRes, ordRes, preRes, fbRes] = await Promise.all([
         supabase.from("ht_products").select("*").order("sort_order", { ascending: true }).order("sku", { ascending: true }),
@@ -1190,9 +863,6 @@ function StoreProvider({
           reviews: nextReviews,
         };
         i({ type: "replace", state: nextState });
-        try {
-          localStorage.setItem(fp, JSON.stringify(nextState));
-        } catch {}
       }
       setSyncStatus("live");
     } catch {
@@ -1200,7 +870,7 @@ function StoreProvider({
     } finally {
       o(!0);
     }
-  }, []);
+  }, [adminRoute, authReady, currentUser?.role]);
 
   // Coalesce realtime echoes into one refresh. Without this, one stock change
   // fires several full 5-table refetches in a burst, which is what made taps
@@ -1214,42 +884,24 @@ function StoreProvider({
   }, [fetchFromSupabase]);
 
   React.useEffect(() => {
+    if (adminRoute && (!authReady || currentUser?.role !== "admin")) return undefined;
     fetchFromSupabase();
-    const channel = supabase
-      .channel("ht-connect-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "ht_products" }, scheduleSync)
-      .on("postgres_changes", { event: "*", schema: "public", table: "ht_dealers" }, scheduleSync)
-      .on("postgres_changes", { event: "*", schema: "public", table: "ht_orders" }, scheduleSync)
-      .on("postgres_changes", { event: "*", schema: "public", table: "ht_preorders" }, scheduleSync)
-      .on("postgres_changes", { event: "*", schema: "public", table: "feedback" }, scheduleSync)
-      .subscribe();
-
+    let channel = supabase
+      .channel(adminRoute ? "rsd-admin-realtime" : "rsd-public-products")
+      .on("postgres_changes", { event: "*", schema: "public", table: "ht_products" }, scheduleSync);
+    if (adminRoute) {
+      channel = channel
+        .on("postgres_changes", { event: "*", schema: "public", table: "ht_dealers" }, scheduleSync)
+        .on("postgres_changes", { event: "*", schema: "public", table: "ht_orders" }, scheduleSync)
+        .on("postgres_changes", { event: "*", schema: "public", table: "ht_preorders" }, scheduleSync)
+        .on("postgres_changes", { event: "*", schema: "public", table: "feedback" }, scheduleSync);
+    }
+    channel.subscribe();
     return () => {
       window.clearTimeout(syncTimer.current);
       supabase.removeChannel(channel);
     };
-  }, [fetchFromSupabase, scheduleSync]);
-
-  React.useEffect(() => {
-    if (!c) return;
-    // Persist off the critical path: taps must not wait for a full store
-    // serialisation. Coalesced to the next idle slot / 400ms, whichever first.
-    let cancelled = !1;
-    const write = () => {
-      if (cancelled) return;
-      try {
-        localStorage.setItem(fp, JSON.stringify(n));
-      } catch {}
-    };
-    const idle = typeof window.requestIdleCallback === "function"
-      ? window.requestIdleCallback(write, { timeout: 400 })
-      : window.setTimeout(write, 400);
-    return () => {
-      cancelled = !0;
-      typeof window.cancelIdleCallback === "function" && window.cancelIdleCallback(idle);
-      window.clearTimeout(idle);
-    };
-  }, [n, c]);
+  }, [adminRoute, authReady, currentUser?.role, fetchFromSupabase, scheduleSync]);
 
   const p = React.useMemo(() => ({
     ...n,
@@ -1630,7 +1282,7 @@ const V5 = assetPhoto1,
     productWrist: $0,
     productWall: Np,
     productTable: Sp,
-    collection: brandBannerUrl
+    collection: watchHeroUrl
   };
 function Lr(a, n) {
   const uploaded = productPhoto(a);
@@ -2483,7 +2135,7 @@ function MobileMore({
           Xr("rsd-orders.csv", [["Order", "Dealer", "City", "Date", "Units", "Status", "Amount LKR"], ...m.map(N => [N.id, N.dealer, N.city, N.date, N.units, N.status, N.amount])]), o("Full ledger exported", "download");
         }} className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-raised"><span className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-line bg-raised text-ink-2"><Icon name="download" className="h-4 w-4" /></span><span className="flex-1 text-[13.5px] text-ink">Export ledger</span><span className="legend text-ink-3">CSV</span></button><div className="flex items-center justify-between border-t border-line-soft px-4 py-3.5"><span className="text-[13.5px] text-ink">Period revenue</span><span className="tnum text-[12px] text-gold">{"LKR "}{bt(m.filter(N => N.status !== "Submitted").reduce((N, k) => N + k.amount, 0))}</span></div><div className="flex items-center justify-between border-t border-line-soft px-4 py-3.5"><span className="text-[13.5px] text-ink">Open pre-orders</span><span className="tnum text-[12px] text-ink-2">{Wr.length}{" POs"}</span></div></div></div><div className="mt-6"><MobileSectionHeader title="Supabase cloud ledger" note="Orders and stock sync live across devices" /><button onClick={() => {
         window.confirm("Reset the Supabase cloud ledger to the baseline sample data?") && (p(), o("Cloud ledger reset to baseline sample data"));
-      }} className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-[12px] border border-line text-[12.5px] text-ink-2 active:bg-raised"><Icon name="alert" className="h-4 w-4" />Reset cloud ledger to sample data</button></div><div className="mt-6 overflow-hidden rounded-[16px] border border-gold/25 bg-gold/[0.06] p-4"><div className="flex items-center gap-2.5"><span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-gold/15 text-gold"><Icon name="download" className="h-4 w-4" /></span><LegendText className="text-gold">Install to home screen</LegendText></div><p className="mt-2.5 text-[12px] leading-relaxed text-ink-2">{"In Safari or Chrome, open the share menu and choose "}<span className="text-ink">Add to Home Screen</span>. The console then launches full-screen with this theme and your last screen.</p></div><button onClick={A} className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[12px] border border-alert/35 text-[13px] text-alert active:bg-alert/10"><Icon name="logout" className="h-4 w-4" />Sign out of admin@gmail.com</button><div className="mt-6 pb-2 text-center"><LegendText className="text-ink-3">R.S.D. Premium Watches · v2.4</LegendText><p className="mt-2 text-[10.5px] leading-relaxed text-ink-3">R.S.D. Premium Watches · Colombo 01<br />Ledger reconciled 2 November 2025</p></div></div>;
+      }} className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-[12px] border border-line text-[12.5px] text-ink-2 active:bg-raised"><Icon name="alert" className="h-4 w-4" />Reset cloud ledger to sample data</button></div><div className="mt-6 overflow-hidden rounded-[16px] border border-gold/25 bg-gold/[0.06] p-4"><div className="flex items-center gap-2.5"><span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-gold/15 text-gold"><Icon name="download" className="h-4 w-4" /></span><LegendText className="text-gold">Install to home screen</LegendText></div><p className="mt-2.5 text-[12px] leading-relaxed text-ink-2">{"In Safari or Chrome, open the share menu and choose "}<span className="text-ink">Add to Home Screen</span>. The console then launches full-screen with this theme and your last screen.</p></div><button onClick={A} className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[12px] border border-alert/35 text-[13px] text-alert active:bg-alert/10"><Icon name="logout" className="h-4 w-4" />Sign out of admin@rsd.com</button><div className="mt-6 pb-2 text-center"><LegendText className="text-ink-3">R.S.D. Premium Watches · v2.4</LegendText><p className="mt-2 text-[10.5px] leading-relaxed text-ink-3">R.S.D. Premium Watches · Colombo 01<br />Ledger reconciled 2 November 2025</p></div></div>;
 }
 const X5 = [{
     id: "overview",
@@ -2663,50 +2315,45 @@ function NewOrderSheet({
   }} disabled={f > y.stock} className="legend-lg flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[12px] bg-gold-fill text-on-gold disabled:opacity-50"><Icon name={f > y.stock ? "alert" : "check"} className="h-4 w-4" /><span>{f > y.stock ? "Not enough stock" : `Create order · LKR ${bt(N)}`}</span></button>}><div className="flex flex-col gap-4"><label className="block"><LegendText className="text-ink-3">Dealer</LegendText><select value={m} onChange={k => j(k.target.value)} className="mt-2 h-12 w-full rounded-[12px] border border-line bg-surface px-3 text-[16px] text-ink focus:border-gold/50">{c.filter(k => k.status !== "Pending approval").map(k => <option value={k.name} key={k.name}>{k.name}{" — "}{k.city}</option>)}</select></label><label className="block"><LegendText className="text-ink-3">Product</LegendText><select value={x} onChange={k => h(k.target.value)} className="mt-2 h-12 w-full rounded-[12px] border border-line bg-surface px-3 text-[16px] text-ink focus:border-gold/50">{o.map(k => <option value={k.sku} key={k.sku}>{k.name}{" — "}{k.sku}</option>)}</select></label><div><LegendText className="text-ink-3">Quantity</LegendText><div className="mt-2 flex items-center gap-2"><button onClick={() => q(k => Math.max(1, k - 1))} aria-label="Decrease quantity" className="flex h-12 w-12 items-center justify-center rounded-[12px] border border-line text-[18px] text-ink-2 active:bg-raised">{"−"}</button><input type="number" min={1} value={f} onChange={k => q(Math.max(1, Math.min(999, Number(k.target.value) || 1)))} aria-label="Quantity" className="tnum h-12 w-full rounded-[12px] border border-line bg-surface px-3 text-center text-[16px] text-ink focus:border-gold/50" /><button onClick={() => q(k => Math.min(999, k + 1))} aria-label="Increase quantity" className="flex h-12 w-12 items-center justify-center rounded-[12px] border border-line text-[18px] text-ink-2 active:bg-raised">+</button></div></div><div className="flex flex-col gap-3 rounded-[13px] border border-line bg-surface p-4"><div className="flex items-center justify-between gap-3"><span className="legend text-ink-3">Unit price</span><span className="tnum text-[12px] text-ink">{"LKR "}{bt(y.price)}</span></div><div className="flex items-center justify-between gap-3 border-b border-line-soft pb-3"><span className="legend text-ink-3">Stock available</span><span className={cn("tnum text-[12px]", y.stock <= 4 ? "text-alert" : "text-ok")}>{y.stock}{" units"}</span></div><div className="flex items-center justify-between gap-3"><span className="legend text-ink-2">Order total</span><span className="font-display tnum text-[18px] font-semibold text-gold">{"LKR "}{bt(N)}</span></div></div><p className="text-[11px] leading-relaxed text-ink-3">Drafts are not reserved against stock until confirmed by the warehouse. You can add more lines after creation.</p></div></SheetDialog>;
 }
 function LoginScreen() {
-  const {
-      login: a
-    } = Vl(),
-    n = useReducedMotion(),
-    [i, c] = React.useState(""),
-    [o, A] = React.useState(""),
-    [p, m] = React.useState(!1),
-    [j, x] = React.useState(!0),
-    [h, f] = React.useState(!1),
-    [q, y] = React.useState(""),
-    [showVisitorContact, setShowVisitorContact] = React.useState(!1),
-    toast = In(),
-    N = async (O = i, R = o) => {
-      if (!O.trim() || !R) {
-        y("Please enter your email and password.");
-        return;
-      }
-      f(!0), y("");
-      const J = await a(O, R, j);
-      f(!1), J && y(J);
-    },
-    k = O => {
-      O.preventDefault(), N();
-    };
-  return <main className="login-page"><div className="login-image"><img src={brandBannerUrl} alt="R.S.D. Premium Watches — Modern Timepieces" loading="eager" decoding="async" /><div /></div><motion.div className="login-content" initial={n ? !1 : {
-      opacity: 0,
-      y: 14
-    }} animate={{
-      opacity: 1,
-      y: 0
-    }} transition={{
-      duration: .5
-    }}><div className="login-brand"><BrandClockLogo size={38} /><span>R.S.D.<small>MODERN TIMEPIECES</small></span></div><div className="login-body"><span className="login-eyebrow">WELCOME TO R.S.D.</span><h1>Good to see<br /><em>you again.</em></h1><p className="login-description">Sign in to discover your collection and manage your orders.</p><form onSubmit={k} className="login-form"><label htmlFor="login-email">Email address</label><div className="login-input"><Icon name="account" /><input id="login-email" type="email" autoComplete="username" inputMode="email" autoCapitalize="none" value={i} onChange={O => {
-              c(O.target.value), y("");
-            }} placeholder="you@company.com" /></div><label htmlFor="login-password">Password</label><div className="login-input"><Icon name="lock" /><input id="login-password" type={p ? "text" : "password"} autoComplete="current-password" value={o} onChange={O => {
-              A(O.target.value), y("");
-            }} placeholder="Enter your password" /><button type="button" onClick={() => m(O => !O)} aria-label={p ? "Hide password" : "Show password"}><Icon name={p ? "eyeOff" : "eye"} /></button></div>{q && <p className="login-error" role="alert">{q}</p>}<label className="login-remember"><input type="checkbox" checked={j} onChange={O => x(O.target.checked)} />{" Keep me signed in on this device"}</label><button className="login-submit" type="submit" disabled={h}>{h ? "Signing in..." : <>{"Sign in "}<Icon name="arrow" /></>}</button></form><div className="login-demo"><span>QUICK DEMO SIGN-IN</span><div><button disabled={h} onClick={() => {
-              N("test@gmail.com", "test123");
-            }}><Icon name="products" /><span><strong>Dealer view</strong><small>Shop and orders</small></span><Icon name="chevron" /></button><button disabled={h} onClick={() => {
-              N("admin@gmail.com", "admin123");
-            }}><Icon name="analytics" /><span><strong>Admin view</strong><small>Wholesale console</small></span><Icon name="chevron" /></button><button type="button" onClick={() => setShowVisitorContact(!0)}><Icon name="phone" /><span><strong>Contact us &amp; feedback</strong><small>077 352 8760 · Call, WhatsApp or send feedback</small></span><Icon name="chevron" /></button></div></div><p className="login-footnote">Connected to Supabase · Orders, stock and dealer accounts sync live across devices.</p></div></motion.div><StoreDialog open={showVisitorContact} onClose={() => setShowVisitorContact(!1)} title="Contact us" eyebrow="R.S.D. PREMIUM WATCHES"><DealerContactView isDealer={!1} roleLabel="Visitor" onToast={msg => {
-        toast(msg, "check");
-      }} /></StoreDialog></main>;
+  const { login, user } = Vl();
+  const reducedMotion = useReducedMotion();
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  React.useEffect(() => {
+    if (user?.role === "admin") window.location.replace("/admin");
+  }, [user]);
+
+  const submit = async event => {
+    event.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !password) {
+      setError("Enter your administrator email and password.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    const result = await login(cleanEmail, password, false);
+    setBusy(false);
+    if (result) setError(result);
+  };
+
+  return <main className="login-page admin-login-page">
+    <div className="login-image"><img src={watchHeroUrl} alt="A premium mechanical wristwatch on dark stone" loading="eager" decoding="async" /><div /></div>
+    <motion.div className="login-content" initial={reducedMotion ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .5 }}>
+      <a className="login-back-link" href="/">← Back to public catalogue</a>
+      <div className="login-brand"><BrandClockLogo size={38} /><span>R.S.D.<small>PREMIUM WATCHES</small></span></div>
+      <div className="login-body"><span className="login-eyebrow">PRIVATE ADMINISTRATION</span><h1>Welcome to the<br /><em>R.S.D. console.</em></h1><p className="login-description">This secure area is reserved for the R.S.D. administrator. The public catalogue never requires an account.</p>
+        <form onSubmit={submit} className="login-form" noValidate><label htmlFor="login-email">Administrator email</label><div className="login-input"><Icon name="account" /><input id="login-email" type="email" autoComplete="username" inputMode="email" autoCapitalize="none" value={email} onChange={event => { setEmail(event.target.value); setError(""); }} placeholder={ADMIN_EMAIL} required /></div><label htmlFor="login-password">Password</label><div className="login-input"><Icon name="lock" /><input id="login-password" type={showPassword ? "text" : "password"} autoComplete="current-password" value={password} onChange={event => { setPassword(event.target.value); setError(""); }} placeholder="Enter your password" required /><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? "Hide password" : "Show password"}><Icon name={showPassword ? "eyeOff" : "eye"} /></button></div>{error && <p className="login-error" role="alert">{error}</p>}<button className="login-submit" type="submit" disabled={busy}>{busy ? "Verifying…" : <>Sign in securely <Icon name="arrow" /></>}</button></form>
+        <p className="login-footnote"><Icon name="shield" /> Protected session · HttpOnly cookie · R.S.D. administrator only</p>
+      </div>
+    </motion.div>
+  </main>;
 }
+
 const Xd = [{
     id: "explore",
     label: "Explore",
@@ -2873,9 +2520,9 @@ function StoreEmptyState({
 }) {
   return <div className="store-empty"><span><Icon name={a} /></span><h3>{n}</h3><p>{i}</p>{c && <button className="store-primary" onClick={o}>{c}</button>}</div>;
 }
-const HT_CONTACT_PHONE = "0773528760";
-const HT_CONTACT_PHONE_DISPLAY = "077 352 8760";
-const HT_WHATSAPP_URL = "https://wa.me/94773528760";
+const HT_CONTACT_PHONE = RSD_WHATSAPP_NUMBER;
+const HT_CONTACT_PHONE_DISPLAY = RSD_WHATSAPP_NUMBER;
+const HT_WHATSAPP_URL = RSD_WHATSAPP_URL;
 function DealerContactView({
   defaultName: a = "",
   defaultContact: n = "",
@@ -2926,184 +2573,93 @@ function DealerContactView({
 
   return <div className="ht-contact-wrap"><h1 className="ht-contact-title">Contact us</h1><div className="ht-contact-card ht-contact-hero"><div className="ht-contact-eyebrow">Call or WhatsApp</div><a className="ht-contact-phone" href={`tel:${HT_CONTACT_PHONE}`}>{HT_CONTACT_PHONE_DISPLAY}</a><div className="ht-contact-actions"><a className="ht-btn-gold" href={`tel:${HT_CONTACT_PHONE}`}><Icon name="phone" /><span>Call</span></a><a className="ht-btn-ghost" href={HT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /><span>WhatsApp</span></a></div></div><form className="ht-contact-card" onSubmit={handleSubmit}><strong className="ht-fb-heading">Send us feedback</strong><span className="ht-fb-sub">Tell us what you think. Your comments go straight to our team.</span><div className="ht-fb-field"><label>How would you rate us?</label><div className="ht-fb-stars" role="radiogroup" aria-label="How would you rate us?">{[1, 2, 3, 4, 5].map(star => <button type="button" key={star} className={rating >= star ? "on" : ""} onClick={() => setRating(rating === star ? 0 : star)} aria-label={`${star} star${star > 1 ? "s" : ""}`} aria-pressed={rating >= star}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z" /></svg></button>)}</div></div><div className="ht-fb-field"><label htmlFor="ht-contact-name">Your name</label><input id="ht-contact-name" value={name} onChange={ev => setName(ev.target.value)} autoComplete="name" maxLength={80} placeholder="Your name or store" /></div><div className="ht-fb-field"><label htmlFor="ht-contact-email">Email or phone (optional)</label><input id="ht-contact-email" value={contact} onChange={ev => setContact(ev.target.value)} autoComplete="email" maxLength={120} placeholder="you@company.com or 077 123 4567" /></div><div className="ht-fb-field"><label htmlFor="ht-contact-comment">Your comment</label><textarea id="ht-contact-comment" value={comment} onChange={ev => setComment(ev.target.value)} maxLength={2000} placeholder="Write your comment here…" /></div><button type="submit" disabled={sending} className="ht-btn-gold ht-fb-submit">{sending ? "Sending…" : "Send feedback"}</button></form></div>;
 }
-function DealerStorefront({
+function PublicCatalog({
   theme: a,
   setTheme: n
 }) {
-  const {
-      user: i,
-      logout: c
-    } = Vl(),
-    {
-      orders: o,
-      products: A,
-      placeOrder: p,
-      ready: isReady
-    } = qe(),
-    m = useReducedMotion(),
-    j = i?.dealer ?? "Sakura Timepieces",
-    x = `ht-cart-${i?.email ?? "dealer"}`,
-    h = `ht-saved-${i?.email ?? "dealer"}`,
-    [f, q] = React.useState("explore"),
-    [y, N] = React.useState(!1),
-    [k, O] = React.useState(null),
-    [R, J] = React.useState(1),
-    [v, C] = React.useState(null),
-    [tt, st] = React.useState(null),
-    [g, D] = React.useState(""),
-    [E, at] = React.useState("All"),
-    [qt, xt] = React.useState("featured"),
-    [Rt, St] = React.useState("Delivery"),
-    [$, U] = React.useState(""),
-    [K, z] = React.useState(() => tH(x)),
-    [nt, it] = React.useState(() => {
-      const Z = kp(h, []);
-      return Array.isArray(Z) ? Z.filter(ht => typeof ht == "string") : [];
-    }),
-    [V, Q] = React.useState(""),
-    w = React.useRef(null),
-    M = React.useRef(void 0);
-  React.useEffect(() => {
-    try {
-      localStorage.setItem(x, JSON.stringify(K));
-    } catch {}
-  }, [K, x]), React.useEffect(() => {
-    try {
-      localStorage.setItem(h, JSON.stringify(nt));
-    } catch {}
-  }, [nt, h]), React.useEffect(() => () => window.clearTimeout(M.current), []);
-  const lt = Z => {
-      Q(Z), window.clearTimeout(M.current), M.current = window.setTimeout(() => Q(""), 2400);
-    },
-    et = Z => {
-      q(Z), N(!1), window.scrollTo({
-        top: 0,
-        behavior: "auto"
-      });
-    },
-    rt = (Z = "All") => {
-      at(Z), D(""), et("shop");
-    },
-    Et = () => {
-      rt(), window.setTimeout(() => w.current?.focus(), 180);
-    },
-    Nt = A.find(Z => Z.sku === k) ?? null,
-    zt = o.find(Z => Z.id === v && Z.dealer === j) ?? null,
-    Xt = React.useMemo(() => Object.entries(K).flatMap(([Z, ht]) => {
-      const Gt = A.find(ee => ee.sku === Z);
-      return Gt && Number.isFinite(ht) && ht > 0 ? [{
-        product: Gt,
-        quantity: ht
-      }] : [];
-    }), [K, A]),
-    Tt = Xt.reduce((Z, ht) => Z + ht.quantity, 0),
-    Ke = Xt.reduce((Z, ht) => Z + ht.quantity * ht.product.price, 0),
-    Ve = React.useMemo(() => o.filter(Z => Z.dealer === j).sort((Z, ht) => ht.date.localeCompare(Z.date) || ht.id.localeCompare(Z.id)), [o, j]),
-    da = React.useMemo(() => {
-      const Z = g.trim().toLowerCase(),
-        ht = A.filter(Gt => (E === "All" || (E === "Saved" ? nt.includes(Gt.sku) : Gt.category === E)) && (!Z || `${Gt.name} ${Gt.sku} ${Gt.category}`.toLowerCase().includes(Z)));
-      return qt === "low" ? [...ht].sort((Gt, ee) => Gt.price - ee.price) : qt === "high" ? [...ht].sort((Gt, ee) => ee.price - Gt.price) : qt === "stock" ? [...ht].sort((Gt, ee) => ee.stock - Gt.stock) : ht;
-    }, [A, g, E, nt, qt]),
-    za = (Z, ht) => z(Gt => {
-      const ee = {
-        ...Gt
-      };
-      return ht <= 0 ? delete ee[Z] : ee[Z] = Math.min(99, ht), ee;
-    }),
-    Qn = (Z, ht = 1) => {
-      z(Gt => ({
-        ...Gt,
-        [Z.sku]: Math.min(99, (Gt[Z.sku] ?? 0) + ht)
-      })), O(null), lt(`${Z.name} added to your cart`);
-    },
-    Ie = Z => it(ht => ht.includes(Z) ? ht.filter(Gt => Gt !== Z) : [...ht, Z]),
-    ya = Z => {
-      J(1), O(Z.sku);
-    },
-    sn = Z => {
-      z(ht => {
-        const Gt = {
-          ...ht
-        };
-        return Z.lines.forEach(ee => {
-          A.some(Cr => Cr.sku === ee.sku) && (Gt[ee.sku] = Math.min(99, (Gt[ee.sku] ?? 0) + ee.qty));
-        }), Gt;
-      }), C(null), et("cart"), lt(`Items from ${Z.id} added to your cart`);
-    },
-    wn = () => {
-      if (!Xt.length) return;
-      const Z = F0(o),
-        ht = {
-          id: Z,
-          dealer: j,
-          city: i?.city ?? "Colombo",
-          date: new Date().toISOString().slice(0, 10),
-          amount: Ke,
-          units: Tt,
-          status: "Submitted",
-          channel: Xt.some(({
-            product: Gt,
-            quantity: ee
-          }) => ee > Gt.stock) ? "Pre-order" : "Wholesale",
-          delivery: Rt,
-          reference: $.trim() || void 0,
-          lines: Xt.map(({
-            product: Gt,
-            quantity: ee
-          }) => ({
-            sku: Gt.sku,
-            name: Gt.name,
-            qty: ee,
-            price: Gt.price
-          }))
-        };
-      p(ht), z({}), U(""), st(Z);
-    },
-    ln = Z => <StoreProductTile product={Z} saved={nt.includes(Z.sku)} onSave={() => Ie(Z.sku)} onOpen={() => ya(Z)} onAdd={() => Qn(Z)} key={Z.sku} />;
-  return <div className="store-app"><header className="store-header"><div className="store-header-inner"><button className="store-icon-button store-mobile-menu" aria-label="Open menu" onClick={() => N(!0)}><Icon name="menu" /></button><StoreBrandButton onClick={() => et("explore")} /><nav className="store-desktop-nav" aria-label="Main navigation">{Xd.filter(Z => Z.id !== "cart").map(Z => <button className={f === Z.id ? "active" : ""} onClick={() => et(Z.id)} key={Z.id}>{Z.label}</button>)}<button className={f === "contact" ? "active" : ""} onClick={() => et("contact")}>Contact</button></nav><div className="store-header-actions"><button className="store-icon-button" aria-label="Search products" onClick={Et}><Icon name="search" /></button><button className={cn("store-icon-button store-phone", f === "contact" && "is-active")} aria-label="Contact us" title="Contact us & feedback" onClick={() => et("contact")}><Icon name="phone" /></button><button className="store-icon-button store-cart-button" aria-label={`Cart, ${Tt} items`} onClick={() => et("cart")}><Icon name="cart" />{Tt > 0 && <span>{Tt}</span>}</button></div></div></header><main className="store-main"><AnimatePresence mode="wait" initial={!1}><motion.div initial={m ? !1 : {
-          opacity: 0,
-          y: 8
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} exit={m ? void 0 : {
-          opacity: 0,
-          y: -5
-        }} transition={{
-          duration: .2
-        }} key={f}>{f === "explore" && <><div className="store-width store-page-title"><div><span className="store-eyebrow">WELCOME TO R.S.D.</span><h1>Explore</h1></div><span className="store-title-note">Thoughtfully chosen timepieces</span></div><section className="store-hero" aria-label="R.S.D. collection"><img src={Ta.collection} alt="R.S.D. Premium Watches — Modern Timepieces campaign" loading="lazy" decoding="async" /><div className="store-hero-shade" /><div className="store-width store-hero-content"><span className="store-hero-kicker">R.S.D. PREMIUM WATCHES</span><h2>Time, beautifully<br /><em>considered.</em></h2><p>Discover timepieces made for every moment.</p><button className="store-primary" onClick={() => rt()}>{"Explore the collection "}<Icon name="arrow" /></button></div></section><div className="store-width"><section className="store-section categories-section"><StoreSectionHeading title="Shop by category" /><div className="category-grid">{Rh.map(Z => <button onClick={() => rt(Z.value)} key={Z.value}><span><Icon name={Z.icon} /></span><strong>{Z.label}</strong><small>{A.filter(ht => ht.category === Z.value).length}{" products"}</small><Icon name="chevron" className="category-arrow" /></button>)}</div></section><section className="store-section"><StoreSectionHeading eyebrow="A CLOSER LOOK" title="New arrivals" onSeeAll={() => rt()} /><div className="product-rail">{A.slice(0, 5).map(ln)}</div></section><section className="store-section featured-section"><StoreSectionHeading eyebrow="CURATED FOR YOU" title="Featured timepieces" onSeeAll={() => rt()} /><div className="product-grid">{A.map(ln)}</div></section><div className="store-contact-line"><span>Need a hand with your order or want to leave feedback?</span><button type="button" className="store-text-link" onClick={() => et("contact")}>{"Contact us & feedback "}<Icon name="arrow" /></button></div></div></>}{f === "shop" && <div className="store-width store-inner-page"><div className="store-page-heading"><div><span className="store-eyebrow">THE R.S.D. COLLECTION</span><h1>Shop</h1><p>Find the perfect pieces for your customers.</p></div><span>{da.length}{" "}{da.length === 1 ? "product" : "products"}</span></div><div className="shop-controls"><div className="store-search"><Icon name="search" /><input ref={w} value={g} onChange={Z => D(Z.target.value)} aria-label="Search watches and clocks" placeholder="Search watches, clocks, or SKU" />{g && <button onClick={() => D("")} aria-label="Clear search"><Icon name="close" /></button>}</div><label className="store-sort"><span>Sort by</span><select value={qt} onChange={Z => xt(Z.target.value)} aria-label="Sort products"><option value="featured">Featured</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option><option value="stock">Most in stock</option></select></label></div><div className="shop-filters" aria-label="Product categories">{[{
-                label: "All",
-                value: "All"
-              }, ...Rh, {
-                label: "Saved",
-                value: "Saved"
-              }].map(Z => <button onClick={() => at(Z.value)} aria-pressed={E === Z.value} className={E === Z.value ? "active" : ""} key={Z.value}>{Z.label}{Z.value === "Saved" && nt.length > 0 ? ` (${nt.length})` : ""}</button>)}</div>{da.length ? <div className="product-grid shop-grid">{da.map(ln)}</div> : <StoreEmptyState icon="search" title="No products found" text="Try another search or browse the full collection." action="Clear filters" onAction={() => {
-              D(""), at("All"), xt("featured");
-            }} />}</div>}{f === "cart" && <div className="store-width store-inner-page"><div className="store-page-heading"><div><span className="store-eyebrow">YOUR SELECTION</span><h1>Shopping cart</h1><p>{Tt}{" "}{Tt === 1 ? "item" : "items"}{" in your order"}</p></div><button className="store-text-link" onClick={() => rt()}>{"Continue shopping "}<Icon name="arrow" /></button></div>{Xt.length ? <div className="cart-layout"><div className="cart-list">{Xt.map(({
-                  product: Z,
-                  quantity: ht
-                }) => <article className="cart-line" key={Z.sku}><button onClick={() => ya(Z)} className="cart-image"><img src={Lr(Z.sku, Z.category)} alt={Z.name} loading="lazy" decoding="async" /></button><div className="cart-line-detail"><span className="product-category">{Z.sku}</span><button onClick={() => ya(Z)} className="cart-name">{Z.name}</button><small>{ht > Z.stock ? "Includes pre-order items" : "Available to order"}</small><button className="store-remove" onClick={() => za(Z.sku, 0)}>Remove</button></div><div className="cart-line-price"><strong>{en(Z.price * ht)}</strong><QuantityStepper value={ht} onChange={Gt => za(Z.sku, Gt)} label={Z.name} /></div></article>)}</div><aside className="cart-summary"><h2>Order summary</h2><div><span>Subtotal</span><strong>{en(Ke)}</strong></div><div><span>Items</span><strong>{Tt}</strong></div><label htmlFor="delivery">Fulfilment</label><select id="delivery" value={Rt} onChange={Z => St(Z.target.value)}><option value="Delivery">Delivery</option><option value="Collection">Collection</option></select><label htmlFor="reference">{"Order reference "}<small>(optional)</small></label><input id="reference" value={$} onChange={Z => U(Z.target.value)} placeholder="Your reference" maxLength={80} />{Xt.some(({
-                  product: Z,
-                  quantity: ht
-                }) => ht > Z.stock) && <p className="cart-preorder-note">Some items exceed current stock. Your order will be submitted as a pre-order request.</p>}<div className="cart-total"><span>Total</span><strong>{en(Ke)}</strong></div><button className="store-primary store-full-button" onClick={wn}>{"Submit order "}<Icon name="arrow" /></button><p className="cart-disclaimer">Your order will be reviewed by the R.S.D. team. Delivery details are confirmed separately.</p></aside></div> : <StoreEmptyState icon="cart" title="Your cart is empty" text="Find something worth making time for in our collection." action="Explore the shop" onAction={() => rt()} />}</div>}{f === "orders" && <DealerOrdersView orders={Ve} onOpen={Z => C(Z.id)} onShop={() => rt()} loading={!isReady} />}{f === "account" && <div className="store-width store-inner-page account-page"><div className="store-page-heading"><div><span className="store-eyebrow">YOUR R.S.D. ACCOUNT</span><h1>Account</h1><p>Your details and preferences in one place.</p></div></div><div className="account-layout"><section className="account-panel"><div className="account-profile"><span className="account-avatar">{i?.initials ?? "ST"}</span><div><h2>{j}</h2><p>{i?.email}</p><small>{i?.city ?? "Colombo"}{" · Dealer account"}</small></div></div><div className="account-row"><span>Orders</span><strong>{Ve.length}</strong></div><div className="account-row"><span>Saved pieces</span><strong>{nt.length}</strong></div><button className="account-row account-action" onClick={() => {
-                  at("Saved"), et("shop");
-                }}><span>View saved products</span><Icon name="chevron" /></button><button className="account-row account-action" onClick={() => et("orders")}><span>View my orders</span><Icon name="chevron" /></button></section><section className="account-panel"><h2>Preferences</h2><div className="account-row"><span>Appearance</span><div className="theme-options"><button onClick={() => n("dark")} aria-pressed={a === "dark"} className={a === "dark" ? "selected" : ""}>Black</button><button onClick={() => n("light")} aria-pressed={a === "light"} className={a === "light" ? "selected" : ""}>White</button></div></div><button className="account-row account-action" onClick={() => et("contact")}><span>Contact us &amp; feedback</span><Icon name="chevron" /></button><button className="account-row account-action account-signout" onClick={c}><span>Sign out</span><Icon name="logout" /></button><p className="account-demo-note">Connected to R.S.D. Cloud · Orders sync live with the Colombo wholesale console.</p></section></div></div>}{f === "contact" && <DealerContactView defaultName={j} defaultContact={i?.email ?? ""} isDealer={!0} roleLabel={`Dealer · ${i?.city ?? "Colombo"}`} onToast={lt} />}</motion.div></AnimatePresence></main><footer className="store-footer"><div className="store-width"><span>R.S.D. PREMIUM WATCHES</span><p>Thoughtful timepieces for every moment.</p><small>Wholesale collection · Colombo, Sri Lanka</small></div></footer><nav className="store-bottom-nav" aria-label="Mobile navigation">{Xd.map(Z => <button onClick={() => et(Z.id)} className={f === Z.id ? "active" : ""} aria-label={Z.label} aria-current={f === Z.id ? "page" : void 0} key={Z.id}><span><Icon name={Z.icon} />{Z.id === "cart" && Tt > 0 && <i>{Tt}</i>}</span><small>{Z.label}</small></button>)}</nav><StoreDialog open={y} onClose={() => N(!1)} title="Menu" eyebrow="R.S.D. PREMIUM WATCHES"><div className="store-menu-list">{Xd.map(Z => <button onClick={() => et(Z.id)} key={Z.id}><Icon name={Z.icon} /><span>{Z.label}</span><Icon name="chevron" /></button>)}<button onClick={() => et("contact")}><Icon name="phone" /><span>Contact us</span><Icon name="chevron" /></button></div><div className="store-menu-theme"><span>Appearance</span><div className="theme-options"><button onClick={() => n("dark")} className={a === "dark" ? "selected" : ""}>Black</button><button onClick={() => n("light")} className={a === "light" ? "selected" : ""}>White</button></div></div></StoreDialog><StoreDialog open={!!Nt} onClose={() => O(null)} title={Nt?.name ?? "Product"} eyebrow={Nt?.sku}>{Nt && <div className="product-dialog-layout"><img className="product-dialog-image" src={Lr(Nt.sku, Nt.category)} alt={Nt.name} loading="eager" fetchPriority="high" decoding="async" /><div className="product-dialog-details"><span className="product-category">{Nt.brand ? `${Nt.brand} · ${Nt.category}` : Nt.category}</span><div className="product-dialog-price">{en(Nt.price)}</div><p>Wholesale price</p><span className={`detail-stock ${Nt.stock === 0 ? "out" : ""}`}>{Nt.stock === 0 ? "Available for pre-order" : `${Nt.stock} units in stock`}</span><p className="product-dialog-description">{Nt.description || "A thoughtful addition to your collection. Select a quantity below to add it to your order."}</p>{R > Nt.stock && <p className="cart-preorder-note">This quantity exceeds available stock and will be requested as a pre-order.</p>}<div className="product-dialog-actions"><QuantityStepper value={R} onChange={J} label={Nt.name} /><button className="store-primary" onClick={() => Qn(Nt, R)}>{R > Nt.stock ? "Add pre-order" : "Add to cart"}{" "}<Icon name="cart" /></button></div></div></div>}</StoreDialog><StoreDialog open={!!zt} onClose={() => C(null)} title={zt?.id ?? "Order details"} eyebrow="ORDER DETAILS">{zt && <div className="order-dialog"><div className="order-dialog-meta"><span>{"Placed "}{rf(zt.date)}</span><strong className={`order-status status-${zt.status.toLowerCase()}`}>{zt.status}</strong></div><p className="order-status-copy">{$5[zt.status]}</p><OrderStatusSteps status={zt.status} />{zt.delivery && <p className="order-status-copy">{"Fulfilment: "}{zt.delivery}{zt.reference ? ` · Reference: ${zt.reference}` : ""}</p>}<h3>Items in this order</h3>{zt.lines.map(Z => <div className="order-dialog-line" key={Z.sku}><span>{Z.name}<small>{Z.qty}{" × "}{en(Z.price)}</small></span><strong>{en(Z.qty * Z.price)}</strong></div>)}<div className="order-dialog-total"><span>Order total</span><strong>{en(zt.amount)}</strong></div><button className="store-primary store-full-button" onClick={() => sn(zt)}>{"Order these again "}<Icon name="cart" /></button></div>}</StoreDialog><StoreDialog open={!!tt} onClose={() => {
-      st(null), et("orders");
-    }} title="Your order is in" eyebrow="THANK YOU"><div className="order-success"><span className="order-success-mark"><svg viewBox="0 0 52 52" aria-hidden="true"><circle className="mark-ring" cx="26" cy="26" r="24" /><path className="mark-tick" d="M14.5 27.2 22.4 34.6 37.6 18.6" /></svg></span><h3>{"Order "}{tt}{" submitted"}</h3><p>Your order is now in your order history. It will show as submitted until the admin confirms it.</p><button className="store-primary store-full-button" onClick={() => {
-          st(null), et("orders");
-        }}>{"View my orders "}<Icon name="arrow" /></button><button className="store-secondary store-full-button" onClick={() => {
-          st(null), rt();
-        }}>Continue shopping</button></div></StoreDialog><AnimatePresence>{V && <motion.div className="store-toast" role="status" initial={{
-        opacity: 0,
-        y: 10
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} exit={{
-        opacity: 0,
-        y: 8
-      }}><Icon name="check" />{V}</motion.div>}</AnimatePresence></div>;
+  const { products: productRows = [], ready } = qe();
+  const reducedMotion = useReducedMotion();
+  const [query, setQuery] = React.useState("");
+  const [category, setCategory] = React.useState("All");
+  const collectionRef = React.useRef(null);
+  const products = productRows.length ? productRows : hA;
+  const categories = React.useMemo(() => ["All", ...Array.from(new Set(products.map(product => product.category).filter(Boolean)))], [products]);
+  const filteredProducts = React.useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return products.filter(product => {
+      const matchesCategory = category === "All" || product.category === category;
+      const matchesTerm = !term || `${product.name} ${product.sku} ${product.category} ${product.brand || ""}`.toLowerCase().includes(term);
+      return matchesCategory && matchesTerm;
+    });
+  }, [products, query, category]);
+  const scrollToCollection = () => collectionRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+  const categoryLabel = value => value === "Wrist Watches" ? "Watches" : value === "Wall Watches" ? "Wall clocks" : value === "Table Watches" ? "Table clocks" : value;
+  const displayPrice = product => Number(product.retailPrice) > 0 ? product.retailPrice : product.price;
+
+  return <div className="public-site store-app">
+    <header className="store-header public-header">
+      <div className="store-header-inner public-header-inner">
+        <a className="public-brand" href="#top" aria-label="R.S.D. Premium Watches home">
+          <span className="store-brand-mark"><BrandClockLogo size={36} /></span>
+          <span className="store-brand-name">R.S.D.<small>PREMIUM WATCHES</small></span>
+        </a>
+        <nav className="public-nav" aria-label="Public navigation">
+          <a className="active" href="#collection">Collection</a>
+          <a href="#about">About R.S.D.</a>
+          <a href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        </nav>
+        <div className="public-header-actions">
+          <button type="button" className="store-icon-button public-theme-button" onClick={() => n(a === "dark" ? "light" : "dark")} aria-label={`Use ${a === "dark" ? "light" : "dark"} theme`}><Icon name={a === "dark" ? "sun" : "moon"} /></button>
+          <a className="public-whatsapp-head" href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /><span>WhatsApp</span></a>
+        </div>
+      </div>
+    </header>
+
+    <main id="top">
+      <section className="public-hero" aria-label="R.S.D. Premium Watches">
+        <img src="/rsd-watch-hero.png" alt="A premium R.S.D. mechanical wristwatch on dark stone" loading="eager" fetchPriority="high" decoding="async" />
+        <div className="public-hero-shade" />
+        <div className="public-hero-content">
+          <span className="store-hero-kicker">R.S.D. PREMIUM WATCHES · EST. 1994</span>
+          <h1>Time, beautifully<br /><em>considered.</em></h1>
+          <p>A considered collection of watches and clocks for the moments that matter.</p>
+          <div className="public-hero-actions">
+            <button type="button" className="store-primary" onClick={scrollToCollection}>View the collection <Icon name="arrow" /></button>
+            <a className="public-hero-link" href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /> Enquire on WhatsApp</a>
+          </div>
+        </div>
+      </section>
+
+      <section className="public-intro" id="about">
+        <div><span className="store-eyebrow">THE R.S.D. EDIT</span><h2>Objects with a sense of time.</h2></div>
+        <p>Explore our current catalogue, then speak with the R.S.D. team directly on WhatsApp for availability, recommendations and orders.</p>
+      </section>
+
+      <section className="public-collection" id="collection" ref={collectionRef}>
+        <div className="public-section-heading"><div><span className="store-eyebrow">THE COLLECTION</span><h2>Find your timepiece</h2></div><span className="public-count">{filteredProducts.length} {filteredProducts.length === 1 ? "piece" : "pieces"}</span></div>
+        <div className="public-controls">
+          <div className="public-search"><Icon name="search" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search the collection" aria-label="Search the collection" />{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search"><Icon name="close" /></button>}</div>
+          <div className="public-filters" aria-label="Filter by category">{categories.map(value => <button type="button" key={value} onClick={() => setCategory(value)} aria-pressed={category === value} className={category === value ? "active" : ""}>{categoryLabel(value)}</button>)}</div>
+        </div>
+        {!ready && <div className="public-loading-note" role="status"><span className="public-loading-dot" />Refreshing the collection…</div>}
+        {filteredProducts.length ? <div className="public-product-grid">{filteredProducts.map((product, index) => {
+          const price = displayPrice(product);
+          return <motion.article className="public-product-card" key={product.sku} initial={reducedMotion ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "0px 0px -35px" }} transition={{ duration: .35, delay: Math.min(index * .035, .2) }}>
+            <div className="public-product-image"><img src={Lr(product.sku, product.category)} alt={product.name} loading="lazy" decoding="async" /><span>{product.stock > 0 ? "Available to enquire" : "Enquire for availability"}</span></div>
+            <div className="public-product-info"><span className="product-category">{categoryLabel(product.category)}</span><h3>{product.name}</h3>{product.brand && <p className="public-product-brand">{product.brand}</p>}<div className="public-product-bottom"><div><strong>{en(price)}</strong><small>Catalog price</small></div><a className="public-enquire" href={rsdWhatsAppLink(product.name)} target="_blank" rel="noopener noreferrer" aria-label={`Enquire about ${product.name} on WhatsApp`}><Icon name="comments" /><span>Enquire</span></a></div></div>
+          </motion.article>;
+        })}</div> : <div className="public-empty"><Icon name="search" /><h3>No pieces found</h3><p>Try another search or browse the full collection.</p><button type="button" onClick={() => { setQuery(""); setCategory("All"); }}>Clear filters</button></div>}
+      </section>
+
+      <section className="public-order-panel">
+        <div><span className="store-eyebrow">READY WHEN YOU ARE</span><h2>Order by conversation.</h2><p>R.S.D. orders are handled personally through WhatsApp Business. Tell us what caught your eye and our team will take it from there.</p></div>
+        <a className="store-primary" href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /> WhatsApp Business · 0711368623</a>
+      </section>
+    </main>
+    <footer className="public-footer"><div><span className="public-footer-brand">R.S.D. Premium Watches</span><span>Modern timepieces · Colombo, Sri Lanka</span></div><div><span>Orders via WhatsApp Business</span><a href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">0711368623</a></div></footer>
+  </div>;
 }
+
 function DealerOrdersView({
   orders: a,
   onOpen: n,
@@ -3654,22 +3210,12 @@ function AdminAccountView() {
       user: currentUser,
       logout: n
     } = Vl(),
-    [i, c] = React.useState(() => {
-      const h = {
-        name: "Admin",
-        role: "Administrator",
-        email: "admin@gmail.com",
-        phone: "+94 11 244 8890",
-        warehouse: "Colombo 10 — Main"
-      };
-      try {
-        return {
-          ...h,
-          ...JSON.parse(localStorage.getItem("ht-admin-profile") ?? "{}")
-        };
-      } catch {
-        return h;
-      }
+    [i, c] = React.useState({
+      name: "Admin",
+      role: "Administrator",
+      email: ADMIN_EMAIL,
+      phone: "+94 11 244 8890",
+      warehouse: "Colombo 10 — Main"
     }),
     [o, A] = React.useState(i),
     [p, m] = React.useState(!1),
@@ -3684,14 +3230,14 @@ function AdminAccountView() {
     supabase
       .from("ht_admin_profile")
       .select("*")
-      .eq("email", "admin@gmail.com")
+      .eq("email", "admin@rsd.com")
       .maybeSingle()
       .then(({ data }) => {
         if (!active || !data) return;
         const loaded = {
           name: data.name || "Admin",
           role: data.role || "Administrator",
-          email: data.email || "admin@gmail.com",
+          email: data.email || "admin@rsd.com",
           phone: data.phone || "+94 11 244 8890",
           warehouse: data.warehouse || "Colombo 10 — Main",
         };
@@ -3709,9 +3255,8 @@ function AdminAccountView() {
   return <div><PageHeader eyebrow="System" title="My Account" sub="Manage administrator profile, cloud database sync, and console preferences." /><div className="grid gap-8 lg:grid-cols-[1.3fr_1fr]"><FadeIn><PanelCard title="Profile" sub="Details shown on invoices and dealer correspondence"><form className="flex flex-col gap-5" onSubmit={async h => {
             h.preventDefault(), c(o);
             try {
-              localStorage.setItem("ht-admin-profile", JSON.stringify(o));
               await supabase.from("ht_admin_profile").upsert({
-                email: "admin@gmail.com",
+                email: "admin@rsd.com",
                 name: o.name,
                 role: o.role,
                 phone: o.phone,
@@ -3743,50 +3288,55 @@ function AdminAccountView() {
               digest: h
             })} label="Weekly digest" note="Monday morning summary of revenue and pipeline." /></PanelCard></FadeIn><FadeIn delay={.14}><PanelCard title="Supabase cloud ledger" sub="Dealer portal and admin console share live cloud data"><p className="text-[13px] leading-relaxed text-ink-2">Orders, inventory, and dealer approvals are stored in Supabase Postgres with live Realtime sync across devices. Resetting restores the baseline sample ledger.</p><SecondaryBtn className="mt-5 w-full justify-center" onClick={() => {
               window.confirm("Reset the Supabase cloud ledger back to the baseline sample data?") && a();
-            }}><Icon name="alert" className="h-[14px] w-[14px]" />Reset cloud ledger to sample data</SecondaryBtn></PanelCard></FadeIn><FadeIn delay={.18}><PanelCard title="Session" sub="Security and database connection"><div className="flex flex-col gap-4">{[["Account", currentUser?.email || "admin@gmail.com"], ["Database", syncStatus === "live" ? "Supabase Postgres · Live" : syncStatus === "connecting" ? "Connecting to Supabase…" : "Offline cache"], ["Sign-in mode", "Quick Demo + Cloud Sync"]].map(([h, f]) => <div className="flex items-baseline justify-between gap-4 border-b border-line-soft pb-3 last:border-0" key={h}><span className="legend text-ink-3">{h}</span><span className="text-[12.5px] text-ink">{f}</span></div>)}</div><SecondaryBtn className="mt-6 w-full justify-center" onClick={n}>Sign out</SecondaryBtn></PanelCard></FadeIn></div></div></div>;
+            }}><Icon name="alert" className="h-[14px] w-[14px]" />Reset cloud ledger to sample data</SecondaryBtn></PanelCard></FadeIn><FadeIn delay={.18}><PanelCard title="Session" sub="Security and database connection"><div className="flex flex-col gap-4">{[["Account", currentUser?.email || "admin@rsd.com"], ["Database", syncStatus === "live" ? "Supabase Postgres · Live" : syncStatus === "connecting" ? "Connecting to Supabase…" : "Offline cache"], ["Sign-in mode", "Server session + Supabase sync"]].map(([h, f]) => <div className="flex items-baseline justify-between gap-4 border-b border-line-soft pb-3 last:border-0" key={h}><span className="legend text-ink-3">{h}</span><span className="text-[12.5px] text-ink">{f}</span></div>)}</div><SecondaryBtn className="mt-6 w-full justify-center" onClick={n}>Sign out</SecondaryBtn></PanelCard></FadeIn></div></div></div>;
 }
 function RsdPremiumWatchesApp() {
   return <AuthProvider><StoreProvider><ToastProvider><AppRouterShell /></ToastProvider></StoreProvider></AuthProvider>;
 }
+function AdminLoadingScreen() {
+  return <main className="admin-loading-screen"><BrandClockLogo size={52} /><span className="store-eyebrow">R.S.D. PRIVATE ADMINISTRATION</span><p>Verifying your secure session…</p></main>;
+}
+function AdminRedirect() {
+  React.useEffect(() => {
+    window.location.replace("/admin");
+  }, []);
+  return <AdminLoadingScreen />;
+}
 function AppRouterShell() {
-  const {
-      user: a
-    } = Vl(),
-    [n, i] = React.useState("overview"),
-    [c, o] = React.useState(() => {
-      try {
-        return localStorage.getItem("ht-theme") || "dark";
-      } catch {
-        return "dark";
-      }
-    }),
-    A = D5(),
-    p = useReducedMotion();
-  return React.useEffect(() => {
+  const { user: a, authReady } = Vl();
+  const adminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  const adminLoginRoute = typeof window !== "undefined" && /^\/admin\/login\/?$/.test(window.location.pathname);
+  const [n, i] = React.useState("overview");
+  const [c, o] = React.useState(() => {
     try {
-      localStorage.setItem("ht-theme", c);
+      return localStorage.getItem("rsd-theme") || "dark";
+    } catch {
+      return "dark";
+    }
+  });
+  const A = D5();
+  const p = useReducedMotion();
+  React.useEffect(() => {
+    try {
+      localStorage.setItem("rsd-theme", c);
     } catch {}
-  }, [c]), React.useEffect(() => {
-    a || i("overview");
-  }, [a]), React.useEffect(() => {
-    document.documentElement.classList.toggle("light", c === "light"), document.documentElement.style.colorScheme = c, document.querySelector('meta[name="theme-color"]')?.setAttribute("content", c === "light" ? "#f6f2e9" : "#0d0d0c");
-  }, [c]), React.useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: p ? "auto" : "smooth"
-    });
-  }, [n, p]), a ? a.role === "dealer" ? <DealerStorefront theme={c} setTheme={o} /> : A ? <div className="min-h-screen overflow-x-hidden bg-surface text-ink"><aside className="fixed top-0 bottom-0 left-0 z-40 hidden w-[268px] border-r border-line lg:block"><DesktopSidebar view={n} onNavigate={i} theme={c} setTheme={o} /></aside><div className="flex min-w-0 flex-col lg:pl-[268px]"><DesktopHeader view={n} onNavigate={i} theme={c} setTheme={o} menuOpen={!1} setMenuOpen={() => {}} /><main className="flex-1 px-5 py-8 sm:px-8 sm:py-10 lg:px-10"><AnimatePresence mode="wait"><motion.div initial={p ? !1 : {
-            opacity: 0,
-            y: 16
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} exit={p ? void 0 : {
-            opacity: 0,
-            y: -10
-          }} transition={{
-            duration: .36,
-            ease: Ft
-          }} key={n}>{n === "overview" && <AdminOverviewView onNavigate={i} />}{n === "orders" && <AdminOrdersView />}{n === "preorders" && <AdminPreordersView />}{n === "products" && <AdminProductsView onNavigate={i} />}{n === "new-product" && <AdminAddProductView onNavigate={i} />}{n === "dealers" && <AdminDealersView />}{n === "analytics" && <AdminAnalyticsView />}{n === "comments" && <AdminCommentsView />}{(n === "account" || n === "more") && <AdminAccountView />}</motion.div></AnimatePresence></main><footer className="border-t border-line px-5 py-7 sm:px-8 lg:px-10"><div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3"><p className="legend text-ink-3">R.S.D. Premium Watches · 24 Sir Baron Jayatilaka Mawatha, Colombo 01 · Wholesale since 1994</p><p className="legend text-ink-3">R.S.D. console v2.4 · Ledger reconciled 2 Nov</p></div></footer></div></div> : <MobileShellRoot view={n} onNavigate={i} theme={c} setTheme={o} /> : <LoginScreen />;
+  }, [c]);
+  React.useEffect(() => {
+    if (!a) i("overview");
+  }, [a]);
+  React.useEffect(() => {
+    document.documentElement.classList.toggle("light", c === "light");
+    document.documentElement.style.colorScheme = c;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", c === "light" ? "#f6f2e9" : "#0d0d0c");
+  }, [c]);
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: p ? "auto" : "smooth" });
+  }, [n, p]);
+
+  if (!adminRoute) return <PublicCatalog theme={c} setTheme={o} />;
+  if (!authReady) return <AdminLoadingScreen />;
+  if (!a) return <LoginScreen />;
+  if (adminLoginRoute) return <AdminRedirect />;
+  return A ? <div className="min-h-screen overflow-x-hidden bg-surface text-ink"><aside className="fixed top-0 bottom-0 left-0 z-40 hidden w-[268px] border-r border-line lg:block"><DesktopSidebar view={n} onNavigate={i} theme={c} setTheme={o} /></aside><div className="flex min-w-0 flex-col lg:pl-[268px]"><DesktopHeader view={n} onNavigate={i} theme={c} setTheme={o} menuOpen={!1} setMenuOpen={() => {}} /><main className="flex-1 px-5 py-8 sm:px-8 sm:py-10 lg:px-10"><AnimatePresence mode="wait"><motion.div initial={p ? !1 : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={p ? void 0 : { opacity: 0, y: -10 }} transition={{ duration: .36, ease: Ft }} key={n}>{n === "overview" && <AdminOverviewView onNavigate={i} />}{n === "orders" && <AdminOrdersView />}{n === "preorders" && <AdminPreordersView />}{n === "products" && <AdminProductsView onNavigate={i} />}{n === "new-product" && <AdminAddProductView onNavigate={i} />}{n === "dealers" && <AdminDealersView />}{n === "analytics" && <AdminAnalyticsView />}{n === "comments" && <AdminCommentsView />}{(n === "account" || n === "more") && <AdminAccountView />}</motion.div></AnimatePresence></main><footer className="border-t border-line px-5 py-7 sm:px-8 lg:px-10"><div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3"><p className="legend text-ink-3">R.S.D. Premium Watches · Private administrator console</p><p className="legend text-ink-3">Live Supabase ledger · Secure session</p></div></footer></div></div> : <MobileShellRoot view={n} onNavigate={i} theme={c} setTheme={o} />;
 }
 export default RsdPremiumWatchesApp;

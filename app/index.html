@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
-      content="R.S.D. Premium Watches — the wholesale operations app for R.S.D. Premium Watches, Colombo."
+      content="R.S.D. Premium Watches — explore the collection and order directly through WhatsApp Business."
     />
     <meta name="theme-color" content="#0d0d0c" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -44,7 +44,7 @@
         rel="stylesheet"
       />
     </noscript>
-    <title>R.S.D. Premium Watches — Wholesale App</title>
+    <title>R.S.D. Premium Watches — Modern Timepieces</title>
     <style>
       /* Instant first paint — shown before React mounts, removed once it does. */
       #boot {
@@ -58,11 +58,28 @@
         gap: 18px;
         background: #0d0d0c;
         color: #f4f0e7;
+        overflow: hidden;
         font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
         transition: opacity .38s ease;
       }
       #boot.boot-out { opacity: 0; pointer-events: none; }
-      #boot .ring {
+      #boot .watch-art {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        opacity: .34;
+        filter: saturate(.7) contrast(1.08);
+      }
+      #boot:after {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 28% 52%, rgba(10,10,9,.25), rgba(10,10,9,.82) 72%), linear-gradient(90deg, rgba(10,10,9,.78), rgba(10,10,9,.3));
+        content: "";
+      }
+      #boot .ring { position: relative; z-index: 1;
         width: 46px; height: 46px;
         border-radius: 50%;
         border: 1.5px solid rgba(244,240,231,.22);
@@ -70,12 +87,16 @@
         animation: boot-spin 1.05s linear infinite;
       }
       #boot .name {
+        position: relative;
+        z-index: 1;
         font-size: 12px;
         letter-spacing: .42em;
         text-transform: uppercase;
         color: rgba(244,240,231,.72);
       }
       #boot .line {
+        position: relative;
+        z-index: 1;
         width: 132px; height: 1px;
         background: rgba(244,240,231,.14);
         overflow: hidden;
@@ -97,6 +118,7 @@
   </head>
   <body>
     <div id="boot" aria-hidden="true">
+      <img class="watch-art" src="/rsd-watch-hero.png" alt="" />
       <div class="ring"></div>
       <div class="name">R.S.D.</div>
       <div class="line"><span></span></div>
