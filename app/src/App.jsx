@@ -2325,38 +2325,140 @@ function getPublicVisitorId() {
   }
 }
 
+function publicProductHref(product) {
+  return `/shop/${encodeURIComponent(product.sku || product.name)}`;
+}
+function publicDefaultColour(product, colours) {
+  const preferred = product.featuredColor || product.featuredColour || product.defaultColor || product.defaultColour;
+  return preferred && colours.includes(preferred) ? preferred : (colours[0] || "Not selected");
+}
+function publicColourValue(colour) {
+  const value = String(colour || "").toLowerCase();
+  if (/black|onyx|ebony/.test(value)) return "#171615";
+  if (/white|ivory|cream/.test(value)) return "#f1eee7";
+  if (/gold|champagne|yellow/.test(value)) return "#c9a44e";
+  if (/rose|copper|pink/.test(value)) return "#b97868";
+  if (/blue|navy|azure/.test(value)) return "#315a86";
+  if (/green|olive|emerald/.test(value)) return "#4c6856";
+  if (/brown|walnut|leather|bronze/.test(value)) return "#704c35";
+  if (/red|burgundy|ruby/.test(value)) return "#8b3d3b";
+  if (/silver|steel|grey|gray|chrome/.test(value)) return "#c3c5c3";
+  return "#9e968b";
+}
+function publicColourFilter(colour) {
+  const value = String(colour || "").toLowerCase();
+  if (/black|onyx|ebony/.test(value)) return "brightness(.68) contrast(1.12) saturate(.78)";
+  if (/white|ivory|cream|silver|steel|grey|gray|chrome/.test(value)) return "grayscale(.16) brightness(1.08) contrast(1.04)";
+  if (/gold|champagne|yellow/.test(value)) return "sepia(.52) saturate(1.25) hue-rotate(345deg)";
+  if (/rose|copper|pink/.test(value)) return "sepia(.3) saturate(1.28) hue-rotate(320deg)";
+  if (/blue|navy|azure/.test(value)) return "sepia(.16) saturate(1.46) hue-rotate(158deg)";
+  if (/green|olive|emerald/.test(value)) return "sepia(.22) saturate(1.18) hue-rotate(55deg)";
+  if (/brown|walnut|leather|bronze/.test(value)) return "sepia(.45) saturate(1.18) hue-rotate(335deg)";
+  if (/red|burgundy|ruby/.test(value)) return "sepia(.22) saturate(1.38) hue-rotate(300deg)";
+  return undefined;
+}
+function getPublicColourImage(product, colour, index, fallback) {
+  const sources = product.colorImages || product.colourImages || product.imagesByColor || product.imagesByColour;
+  if (Array.isArray(sources)) {
+    const source = sources[index] || sources[0];
+    if (typeof source === "string" && source.trim()) return { src: source.trim(), variant: true };
+  } else if (sources && typeof sources === "object") {
+    const requested = String(colour || "").trim().toLowerCase();
+    const key = Object.keys(sources).find(option => option.trim().toLowerCase() === requested);
+    const entry = key ? sources[key] : undefined;
+    const source = Array.isArray(entry) ? entry[index] || entry[0] : entry;
+    if (typeof source === "string" && source.trim()) return { src: source.trim(), variant: true };
+  }
+  if (Array.isArray(product.images) && product.images.length > 1) {
+    const source = product.images[index] || product.images[0];
+    if (typeof source === "string" && source.trim()) return { src: source.trim(), variant: true };
+  }
+  return { src: fallback, variant: false };
+}
+
 function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compact: o = false }) {
   const price = Number(a.price) || 0;
   const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
   const availability = a.availability || "Available to order";
   const colours = Array.isArray(a.colors) && a.colors.length ? a.colors : ["Not selected"];
-  const [colour, setColour] = React.useState(colours[0]);
-  React.useEffect(() => setColour(colours[0]), [a.sku, colours.join(",")]);
+  const defaultColour = publicDefaultColour(a, colours);
+  const defaultColourIndex = Math.max(0, colours.indexOf(defaultColour));
+  const image = getPublicColourImage(a, defaultColour, defaultColourIndex, Lr(a.sku, a.category));
   return <motion.article className={cn("public-product-card", o && "public-product-card-compact")} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "0px 0px -35px" }} transition={{ duration: .35 }}>
     <div className="public-product-image">
-      <img src={Lr(a.sku, a.category)} alt={a.name} loading="lazy" decoding="async" />
+      <a className="public-product-image-link" href={publicProductHref(a)} aria-label={`View details for ${a.name}`}>
+        <img src={image.src} alt={`${a.name} in ${defaultColour}`} loading="lazy" decoding="async" style={image.variant ? undefined : { filter: publicColourFilter(defaultColour) }} />
+      </a>
       <button type="button" className={cn("public-favorite", n && "is-saved")} onClick={() => i(a)} aria-label={`${n ? "Remove" : "Add"} ${a.name} ${n ? "from" : "to"} favourites`} aria-pressed={n}><HeartIcon selected={n} /></button>
       <span>{availability}</span>
     </div>
     <div className="public-product-info">
       <span className="product-category">{productType}</span>
-      <h3>{a.name}</h3>
+      <h3><a className="public-product-title-link" href={publicProductHref(a)}>{a.name}</a></h3>
       {a.description && <p className="public-product-description">{a.description}</p>}
-      {colours.length > 1 && <label className="public-colour-picker"><span>Colour</span><select value={colour} onChange={event => setColour(event.target.value)} aria-label={`Choose a colour for ${a.name}`}>{colours.map(option => <option key={option}>{option}</option>)}</select></label>}
       <div className="public-product-bottom">
-        <div><strong>{en(price)}</strong><small>Customer price · Free delivery</small></div>
-        <a className="public-order" href={rsdWhatsAppLink(a.name, price, colour)} target="_blank" rel="noopener noreferrer" onClick={() => c(a, colour)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
+        <div><strong>{en(price)}</strong><small className="public-delivery-badge">Free delivery</small></div>
+        <a className="public-order" href={rsdWhatsAppLink(a.name, price, defaultColour)} target="_blank" rel="noopener noreferrer" onClick={() => c(a, defaultColour)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
       </div>
     </div>
   </motion.article>;
 }
+
+function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
+  const price = Number(a.price) || 0;
+  const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
+  const availability = a.availability || "Available to order";
+  const colours = Array.isArray(a.colors) && a.colors.length ? a.colors : ["Not selected"];
+  const [colour, setColour] = React.useState(() => publicDefaultColour(a, colours));
+  React.useEffect(() => setColour(publicDefaultColour(a, colours)), [a.sku, colours.join(",")]);
+  const colourIndex = Math.max(0, colours.indexOf(colour));
+  const image = getPublicColourImage(a, colour, colourIndex, Lr(a.sku, a.category));
+  const details = [["Type", productType], ["For", a.gender || "Unisex"], ["Availability", availability], ["SKU", a.sku]].filter(([, value]) => value);
+  return <section className="public-product-detail">
+    <a className="public-detail-back" href="/shop"><Icon name="chevron" className="rotate-180" /> Back to shop</a>
+    <div className="public-detail-layout">
+      <div className="public-detail-visual">
+        <div className="public-detail-image-frame">
+          <img className="public-detail-image" src={image.src} alt={`${a.name} in ${colour}`} decoding="async" style={image.variant ? undefined : { filter: publicColourFilter(colour) }} />
+          <button type="button" className={cn("public-detail-favorite", n && "is-saved")} onClick={() => i(a)} aria-label={`${n ? "Remove" : "Add"} ${a.name} ${n ? "from" : "to"} favourites`} aria-pressed={n}><HeartIcon selected={n} /></button>
+          <span className="public-detail-availability">{availability}</span>
+        </div>
+        <p className="public-detail-image-note">Image shown in {colour}</p>
+      </div>
+      <div className="public-detail-info">
+        <span className="store-eyebrow">R.S.D. TIMEPIECE</span>
+        <div className="public-detail-heading-row"><h1>{a.name}</h1><span className="public-detail-code">{a.sku}</span></div>
+        <p className="public-detail-type">{productType}{a.gender ? ` · ${a.gender}` : ""}</p>
+        {a.description && <p className="public-detail-description">{a.description}</p>}
+        <div className="public-detail-price-row"><strong>{en(price)}</strong><span className="public-delivery-badge">Free delivery</span></div>
+        <div className="public-detail-colours">
+          <div className="public-detail-colours-heading"><span>Available colours</span><strong>{colour}</strong></div>
+          <div className="public-colour-options" role="list" aria-label={`Available colours for ${a.name}`}>
+            {colours.map((option, index) => <button type="button" className={cn("public-colour-option", colour === option && "active")} onClick={() => setColour(option)} aria-label={`Show ${a.name} in ${option}`} aria-pressed={colour === option} key={option}><span className="public-colour-swatch" style={{ background: publicColourValue(option) }} /><span>{option}</span>{colour === option && <Icon name="check" />}</button>)}
+          </div>
+        </div>
+        <dl className="public-detail-facts">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+        <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price, colour)} target="_blank" rel="noopener noreferrer" onClick={() => c(a, colour)}><Icon name="comments" /> Order on WhatsApp <span>· {colour}</span></a>
+        <p className="public-detail-order-note">Tell us the colour you prefer and our team will confirm the order personally.</p>
+      </div>
+    </div>
+  </section>;
+}
+
 
 function PublicCatalog({
   theme: a,
   setTheme: n
 }) {
   const { products: productRows = [], ready } = qe();
-  const shopRoute = typeof window !== "undefined" && window.location.pathname === "/shop";
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "/";
+  const detailMatch = pathname.match(/^\/shop\/([^/]+)\/?$/);
+  let detailKey = null;
+  if (detailMatch) {
+    try { detailKey = decodeURIComponent(detailMatch[1]); } catch { detailKey = detailMatch[1]; }
+  }
+  const detailRoute = detailKey !== null;
+  const shopRoute = /^\/shop\/?$/.test(pathname) || detailRoute;
   const [query, setQuery] = React.useState("");
   const [collectionMode, setCollectionMode] = React.useState("best");
   const [showCollection, setShowCollection] = React.useState(shopRoute);
@@ -2372,18 +2474,71 @@ function PublicCatalog({
   const visitorId = React.useMemo(() => getPublicVisitorId(), []);
   const products = React.useMemo(() => {
     const source = productRows.length ? productRows : hA.map(({ stock, reserved, ...product }) => product);
-    return source.map(product => {
-    const publicDetails = publicProductByName.get(product.name) || {};
-    return {
-      ...product,
-      price: Number(product.price) || publicPriceByName.get(product.name) || 0,
-      description: product.description || publicDetails.description || "",
-      colors: Array.isArray(product.colors) && product.colors.length ? product.colors : (publicDetails.colors || []),
-      gender: product.gender || "Unisex",
-      productType: product.productType || (product.category === "Wall Watches" ? "Wall clocks" : product.category === "Table Watches" ? "Table clocks" : "Watches"),
-      isNew: product.isNew ?? false,
-      availability: product.availability || publicDetails.availability || "Available to order",
-    };
+    return source.map((product, index) => {
+      const baseline = hA.find(item => item.sku === product.sku || item.name === product.name) || {};
+      const publicDetails = publicProductByName.get(product.name) || {};
+      const publicBaseline = {
+        sku: baseline.sku,
+        name: baseline.name,
+        category: baseline.category,
+        image: baseline.image,
+        brand: baseline.brand,
+        description: baseline.description,
+        colors: baseline.colors,
+        gender: baseline.gender,
+        productType: baseline.productType,
+        isNew: baseline.isNew,
+        availability: baseline.availability,
+        trend: baseline.trend,
+        images: baseline.images,
+        colorImages: baseline.colorImages,
+        featuredColor: baseline.featuredColor,
+        featuredColour: baseline.featuredColour,
+        defaultColor: baseline.defaultColor,
+        defaultColour: baseline.defaultColour,
+      };
+      const safeProduct = {
+        sku: product.sku,
+        name: product.name,
+        category: product.category,
+        image: product.image,
+        brand: product.brand,
+        description: product.description,
+        colors: product.colors,
+        gender: product.gender,
+        productType: product.productType,
+        isNew: product.isNew,
+        availability: product.availability,
+        trend: product.trend,
+        images: product.images,
+        colorImages: product.colorImages || product.colourImages || product.imagesByColor || product.imagesByColour,
+        featuredColor: product.featuredColor,
+        featuredColour: product.featuredColour,
+        defaultColor: product.defaultColor,
+        defaultColour: product.defaultColour,
+      };
+      const colours = Array.isArray(safeProduct.colors) && safeProduct.colors.length ? safeProduct.colors : (publicDetails.colors || []);
+      return {
+        ...publicBaseline,
+        ...safeProduct,
+        sku: safeProduct.sku || publicBaseline.sku || `RSD-${String(index + 1).padStart(3, "0")}`,
+        name: safeProduct.name || publicBaseline.name || `R.S.D. Timepiece ${index + 1}`,
+        category: safeProduct.category || publicBaseline.category || "Wrist Watches",
+        price: Number(product.price) || publicPriceByName.get(product.name) || 0,
+        description: safeProduct.description || publicDetails.description || publicBaseline.description || "",
+        colors: colours,
+        images: Array.isArray(safeProduct.images) && safeProduct.images.length ? safeProduct.images : (publicDetails.images || publicBaseline.images || []),
+        colorImages: safeProduct.colorImages || publicDetails.colorImages || publicDetails.colourImages || publicBaseline.colorImages || {},
+        featuredColor: safeProduct.featuredColor || publicBaseline.featuredColor,
+        featuredColour: safeProduct.featuredColour || publicBaseline.featuredColour,
+        defaultColor: safeProduct.defaultColor || publicBaseline.defaultColor,
+        defaultColour: safeProduct.defaultColour || publicBaseline.defaultColour,
+        gender: safeProduct.gender || publicBaseline.gender || "Unisex",
+        productType: safeProduct.productType || publicBaseline.productType || (safeProduct.category === "Wall Watches" ? "Wall clocks" : safeProduct.category === "Table Watches" ? "Table clocks" : "Watches"),
+        isNew: safeProduct.isNew ?? publicBaseline.isNew ?? false,
+        availability: safeProduct.availability || publicDetails.availability || publicBaseline.availability || "Available to order",
+        trend: Array.isArray(safeProduct.trend) ? safeProduct.trend : (publicBaseline.trend || []),
+      };
     });
   }, [productRows]);
   const salesScore = product => Array.isArray(product.trend) ? product.trend.reduce((sum, value) => sum + Number(value || 0), 0) : 0;
@@ -2418,6 +2573,11 @@ function PublicCatalog({
     if (collectionMode === "price-high") result.sort((left, right) => right.price - left.price);
     return result;
   }, [products, query, collectionMode]);
+  const detailProduct = React.useMemo(() => {
+    if (!detailKey) return null;
+    const key = String(detailKey).trim().toLowerCase();
+    return products.find(product => String(product.sku || "").toLowerCase() === key || String(product.name || "").trim().toLowerCase() === key) || null;
+  }, [products, detailKey]);
   const openCollection = () => {
     if (shopRoute) return;
     window.location.assign("/shop");
@@ -2466,7 +2626,10 @@ function PublicCatalog({
       </div>
     </header>
 
-    <main id={showCollection ? "shop" : "top"}>
+    <main id={detailRoute ? "product-detail" : showCollection ? "shop" : "top"}>
+      {detailRoute ? (
+        detailProduct ? <PublicProductDetail product={detailProduct} saved={favoriteSkus.has(detailProduct.sku)} onSave={toggleFavorite} onOrder={recordOrder} /> : <section className="public-product-detail public-detail-missing"><span className="store-eyebrow">R.S.D. SHOP</span><h1>Timepiece not found</h1><p>That watch is no longer listed in the collection.</p><a className="store-primary" href="/shop">Back to shop <Icon name="arrow" /></a></section>
+      ) : <>
       {!showCollection && <>
         <section className="public-hero" aria-label="R.S.D. Premium Watches">
           <img src="/rsd-watch-hero.png" alt="A premium R.S.D. mechanical wristwatch on dark stone" loading="eager" fetchPriority="high" decoding="async" />
@@ -2484,7 +2647,7 @@ function PublicCatalog({
 
         <section className="public-intro" id="about">
           <div><span className="store-eyebrow">THE R.S.D. EDIT</span><h2>Objects with a sense of time.</h2></div>
-          <p>Choose a best seller or a new arrival, then place your order in simple language through WhatsApp. Every listed customer price includes free delivery.</p>
+          <p>Choose a best seller or a new arrival, then place your order in simple language through WhatsApp. Every listed price includes free delivery.</p>
         </section>
 
         <section className="public-curated-section">
@@ -2516,6 +2679,7 @@ function PublicCatalog({
         {!ready && <div className="public-loading-note" role="status"><span className="public-loading-dot" />Refreshing the collection…</div>}
         {filteredProducts.length ? renderCards(filteredProducts) : <div className="public-empty"><Icon name="search" /><h3>No pieces found</h3><p>Try another search or choose a different filter.</p><button type="button" onClick={() => { setQuery(""); setCollectionMode("best"); }}>Clear filters</button></div>}
       </section>}
+      </>}
     </main>
     <footer className="public-footer"><div><span className="public-footer-brand">R.S.D. Premium Watches</span><span>Modern timepieces · Colombo, Sri Lanka</span></div><div><span>Orders via WhatsApp Business</span><a href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">0711368623</a></div></footer>
   </div>;
