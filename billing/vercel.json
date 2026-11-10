@@ -1,6 +1,6 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/assets/billing-shell.html" },
-    { "source": "/index.html", "destination": "/assets/billing-shell.html" }
+  "redirects": [
+    { "source": "/", "destination": "/assets/billing-shell.html", "permanent": false },
+    { "source": "/index.html", "destination": "/assets/billing-shell.html", "permanent": false }
   ]
 }
