@@ -19,6 +19,9 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
+        entryFileNames: "assets/app.js",
+        chunkFileNames: "assets/[name].js",
+        assetFileNames: "assets/[name][extname]",
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
           if (id.includes("jspdf") || id.includes("@babel/runtime") || id.includes("/fflate/") || id.includes("/fast-png/")) return "pdf";
