@@ -6,7 +6,23 @@ function requestBody(req) {
   return JSON.stringify(req.body);
 }
 
+function requestIsSameOrigin(req) {
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  try {
+    const originUrl = new URL(origin);
+    const host = String(req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
+    return host && originUrl.host === host;
+  } catch {
+    return false;
+  }
+}
+
 export async function forwardJson(req, res, path, method = req.method) {
+  if (!requestIsSameOrigin(req)) {
+    res.status(403).json({ error: "Request rejected." });
+    return;
+  }
   const headers = {};
   const cookie = req.headers.cookie;
   if (cookie) headers.cookie = cookie;

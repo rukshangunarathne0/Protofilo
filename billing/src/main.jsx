@@ -184,7 +184,6 @@ function Workspace({ onSignOut }) {
       customerPhone: order.customer_phone || order.customerPhone || order.phone || "",
       deliveryAddress: order.delivery_address || order.deliveryAddress || order.address || "",
       date: order.date || previous.date,
-      deliveryPlace: order.city || "",
       deliveryLabel: order.delivery || "FREE",
       paymentReference: order.reference || "",
       paymentStatus: order.status === "Completed" ? "PAID" : previous.paymentStatus,
