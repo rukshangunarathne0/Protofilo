@@ -1,10 +1,9 @@
-// Local, Vite-fingerprinted artwork.
+// Local, Vite-fingerprinted product artwork.
 //
-// These were previously fetched from Supabase Storage (Singapore) at full
-// resolution: 1.47 MB for nine photos plus a 63 kB logo, on a cold mobile visit.
-// They are now 960 px WebP (23 % of the original weight) and are served from the
-// same origin as the app, so they come off the Vercel edge with immutable
-// hashed filenames and no extra DNS/TLS handshake.
+// Product photos are served from the same origin as the app, so they come off
+// the Vercel edge with immutable hashed filenames and no extra DNS/TLS handshake.
+// R.S.D. brand artwork lives in public/ so the logo and campaign banner can be
+// referenced directly by the document shell and the authenticated experiences.
 import photo1 from "./photo-1.webp";
 import photo2 from "./photo-2.webp";
 import photo3 from "./photo-3.webp";
