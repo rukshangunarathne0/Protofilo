@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/api/billing-page" },
-    { "source": "/index.html", "destination": "/api/billing-page" }
+    { "source": "/", "destination": "/assets/billing-shell.html" },
+    { "source": "/index.html", "destination": "/assets/billing-shell.html" }
   ]
 }
