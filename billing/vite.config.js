@@ -22,11 +22,12 @@ export default defineConfig({
         entryFileNames: "assets/app.js",
         chunkFileNames: "assets/[name].js",
         assetFileNames: "assets/[name][extname]",
+        // Keep third-party code in one chunk. Splitting React, jsPDF, and their
+        // shared dependencies into separate manual chunks creates a circular
+        // ESM graph (pdf -> vendor -> react -> vendor) that fails before the
+        // billing UI can mount in a browser.
         manualChunks(id) {
-          if (!id.includes("node_modules")) return;
-          if (id.includes("jspdf") || id.includes("@babel/runtime") || id.includes("/fflate/") || id.includes("/fast-png/")) return "pdf";
-          if (id.includes("react-dom") || id.includes("/react/")) return "react";
-          return "vendor";
+          if (id.includes("node_modules")) return "vendor";
         },
       },
     },
