@@ -28,6 +28,7 @@ import {
 import { productImageSrc, productImageSrcSet, productPhoto, registerProductPhotos, isUsablePhoto } from "./assets/products.js";
 import publicPriceData from "./data/products.json";
 import { ACCEPT_ATTRIBUTE, checkPhotoFile, formatBytes, optimisePhoto, publishProductPhoto } from "./lib/photos.js";
+import { calculateBillTotals, downloadBillPdf, formatBillDate } from "./lib/bills.js";
 
 const cn = (...inputs) => twMerge(clsx(inputs));
 
@@ -175,6 +176,7 @@ const Sh = {
   check: <path d="m4 12.5 5 5L20 6.5" />,
   chevron: <path d="m9 5 7 7-7 7" />,
   download: <><path d="M12 3v12M7 11l5 5 5-5M4 20h16" /></>,
+  receipt: <><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" /><path d="M9 8h6M9 12h6M9 16h3" /></>,
   star: <path d="m12 3 2.7 5.7 6.3.9-4.6 4.4 1.1 6.2-5.5-3-5.5 3 1.1-6.2L3 9.6l6.3-.9z" />,
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
@@ -839,9 +841,14 @@ function StoreProvider({
         channel: r.channel,
         delivery: r.delivery || undefined,
         reference: r.reference || undefined,
+        customerName: r.customer_name || r.customerName || r.customer_name_text || undefined,
+        customerPhone: r.customer_phone || r.customerPhone || r.phone || undefined,
+        deliveryAddress: r.delivery_address || r.deliveryAddress || r.address || undefined,
         lines: Array.isArray(r.lines) ? r.lines.map(ln => ({
           sku: ln.sku,
           name: ln.name,
+          colour: ln.colour || ln.color || ln.colour_name || undefined,
+          color: ln.color || ln.colour || undefined,
           qty: Number(ln.qty) || 0,
           price: Number(ln.price) || 0,
           reservedQty: ln.reservedQty != null ? Number(ln.reservedQty) : undefined,
@@ -1047,6 +1054,10 @@ const F0 = a => `WC-${a.reduce((i, c) => {
       label: "Orders",
       icon: "orders",
       badge: "8"
+    }, {
+      id: "bills",
+      label: "Bills / Receipt",
+      icon: "receipt"
     }]
   }, {
     group: "Catalogue",
@@ -1083,6 +1094,7 @@ const F0 = a => `WC-${a.reduce((i, c) => {
   Md = {
     overview: "Overview",
     orders: "Orders",
+    bills: "Bills / Receipt",
     products: "Products",
     "new-product": "Add product",
     dealers: "Dealers",
@@ -1841,7 +1853,7 @@ const gh = {
   },
   qc = ["All", "Submitted", "Confirmed", "Packing", "Ready", "Completed"],
   L5 = ["All", "Wrist Watches", "Wall Watches", "Table Watches", "Others"];
-function MobileOrders() {
+function MobileOrders({ onNavigate }) {
   const a = In(),
     {
       orders: n,
@@ -1883,8 +1895,9 @@ function MobileOrders() {
           p(""), j("All");
         }
       }} /></div>}<p className="mt-6 pb-2 text-center text-[10.5px] text-ink-3">Tap an order for details · swipe left to mark it complete.</p><SheetDialog open={!!x} onClose={() => h(null)} eyebrow={x ? `${x.id} · ${x.channel}` : ""} title={x?.dealer ?? ""} footer={x && <div className="flex gap-2"><button onClick={() => {
-        Xr(`${x.id}.csv`, [["SKU", "Product", "Qty", "Unit price", "Line total"], ...x.lines.map(N => [N.sku, N.name, N.qty, N.price, N.qty * N.price])]), a("Invoice downloaded", "download");
-      }} className="flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-[11px] border border-line text-ink"><Icon name="download" className="h-4 w-4" /><span className="legend">Invoice</span></button><button onClick={() => y(x)} disabled={q === "Completed"} className={cn("flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-[11px] bg-gold-fill text-on-gold", q === "Completed" && "opacity-45")}><Icon name="check" className="h-4 w-4" /><span className="legend">{q === "Completed" ? "Completed" : "Mark complete"}</span></button></div>}>{x && <div><div className="flex items-start justify-between gap-4"><div><LegendText className="text-ink-3">Order value</LegendText><div className="font-display tnum mt-2 text-[30px] leading-none font-semibold tracking-[-0.02em] text-ink">{"LKR "}{bt(x.amount)}</div><div className="legend mt-2.5 text-gold">{x.units}{" units"}</div></div><StatusBadge tone={gh[q ?? x.status]}>{q ?? x.status}</StatusBadge></div><label className="mt-5 block"><LegendText className="text-ink-3">Update order status</LegendText><select aria-label={`Update status for ${x.id}`} value={q ?? x.status} onChange={N => {
+        try { window.sessionStorage.setItem("rsd-bill-source-order", x.id); } catch {}
+        h(null), onNavigate?.("bills");
+      }} className="flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-[11px] border border-line text-ink"><Icon name="receipt" className="h-4 w-4" /><span className="legend">Bill / receipt</span></button><button onClick={() => y(x)} disabled={q === "Completed"} className={cn("flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-[11px] bg-gold-fill text-on-gold", q === "Completed" && "opacity-45")}><Icon name="check" className="h-4 w-4" /><span className="legend">{q === "Completed" ? "Completed" : "Mark complete"}</span></button></div>}>{x && <div><div className="flex items-start justify-between gap-4"><div><LegendText className="text-ink-3">Order value</LegendText><div className="font-display tnum mt-2 text-[30px] leading-none font-semibold tracking-[-0.02em] text-ink">{"LKR "}{bt(x.amount)}</div><div className="legend mt-2.5 text-gold">{x.units}{" units"}</div></div><StatusBadge tone={gh[q ?? x.status]}>{q ?? x.status}</StatusBadge></div><label className="mt-5 block"><LegendText className="text-ink-3">Update order status</LegendText><select aria-label={`Update status for ${x.id}`} value={q ?? x.status} onChange={N => {
             c(x.id, N.target.value), a(`${x.id} updated to ${N.target.value}`);
           }} className="mt-2 h-12 w-full rounded-[10px] border border-line bg-surface px-3 text-[16px] text-ink">{qc.filter(N => N !== "All").map(N => <option value={N} disabled={qc.indexOf(N) < qc.indexOf(q ?? x.status)} key={N}>{N}</option>)}</select></label><dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 rounded-[12px] border border-line bg-surface p-4">{[["City", x.city], ["Channel", x.channel], ["Fulfilment", x.delivery ?? "Not specified"], ["Reference", x.reference ?? "-"], ["Placed", new Date(x.date + "T00:00:00").toLocaleDateString("en-GB", {
             day: "2-digit",
@@ -2062,6 +2075,11 @@ function MobileMore({
           icon: "orders",
           run: () => i("orders")
         }, {
+          label: "Bills / Receipt",
+          value: "Create PDF documents",
+          icon: "receipt",
+          run: () => i("bills")
+        }, {
           label: "Analytics",
           value: "30 days",
           icon: "analytics",
@@ -2116,6 +2134,7 @@ const X5 = [{
   C5 = {
     overview: "R.S.D.",
     orders: "Orders",
+    bills: "Bills",
     products: "Catalogue",
     analytics: "Reports",
     more: "More"
@@ -2173,7 +2192,7 @@ function MobileShell({
       };
     }, [O, A, p, m]),
     C = v.orders.length + v.products.length + v.dealers.length > 0,
-    tt = !["overview", "orders", "products", "analytics"].includes(a),
+    tt = !["overview", "orders", "bills", "products", "analytics"].includes(a),
     st = tt ? "More" : C5[a] ?? "R.S.D.";
   return <div className="min-h-screen bg-surface"><header className="safe-top sticky top-0 z-40 border-b border-line bg-surface/92 backdrop-blur-xl"><div className="mx-auto flex h-[58px] w-full max-w-[560px] items-center gap-3 px-4"><button onClick={() => J("overview")} className="flex items-center gap-2.5" aria-label="R.S.D. Premium Watches home"><span className="text-gold"><BrandClockLogo size={27} /></span><span className="text-left"><span className="font-display block text-[15px] leading-none font-semibold tracking-[0.005em] text-ink">{st}</span><span className="legend mt-[5px] block text-gold/80">{a === "overview" ? "Modern Timepieces" : "Wholesale console"}</span></span></button><div className="ml-auto flex items-center gap-2"><RoundIconBtn icon="search" label="Search" onClick={() => f("search")} className="h-9 w-9 rounded-full" /><RoundIconBtn icon="bell" label="Notifications" dot={!q} onClick={() => {
             f("notifications"), y(!0);
@@ -2189,7 +2208,7 @@ function MobileShell({
         }} transition={{
           duration: .24,
           ease: Ft
-        }} key={a}>{a === "orders" ? <MobileOrders /> : a === "products" ? <MobileProducts onNavigate={n} /> : a === "new-product" ? <AdminAddProductView onNavigate={n} /> : a === "analytics" ? <MobileReports /> : tt ? <MobileMore theme={i} setTheme={c} onNavigate={n} onOpenSheet={g => f(g)} /> : <MobileOverview onNavigate={n} onNewOrder={() => f("newOrder")} onOpenSheet={g => f(g)} />}</motion.div></AnimatePresence></main>{(a === "overview" || a === "orders") && <motion.button initial={{
+        }} key={a}>{a === "orders" ? <MobileOrders onNavigate={n} /> : a === "bills" ? <AdminBillsView /> : a === "products" ? <MobileProducts onNavigate={n} /> : a === "new-product" ? <AdminAddProductView onNavigate={n} /> : a === "analytics" ? <MobileReports /> : tt ? <MobileMore theme={i} setTheme={c} onNavigate={n} onOpenSheet={g => f(g)} /> : <MobileOverview onNavigate={n} onNewOrder={() => f("newOrder")} onOpenSheet={g => f(g)} />}</motion.div></AnimatePresence></main>{(a === "overview" || a === "orders") && <motion.button initial={{
       scale: .6,
       opacity: 0
     }} animate={{
@@ -2198,7 +2217,7 @@ function MobileShell({
     }} onClick={() => {
       Bn(10), f("newOrder");
     }} aria-label="Create new order" className="fixed right-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-40 flex h-[54px] w-[54px] items-center justify-center rounded-full border border-gold-soft/40 bg-gold-fill text-on-gold shadow-[0_12px_34px_rgba(228,180,41,0.38)] active:scale-95"><Icon name="plus" className="h-6 w-6" strokeWidth={2} /></motion.button>}<nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 pb-[max(env(safe-area-inset-bottom),6px)] backdrop-blur-xl"><div className="mx-auto flex w-full max-w-[560px] items-stretch px-1.5 pt-1.5">{X5.map(g => {
-          const D = a === g.id || g.id === "more" && !["overview", "orders", "products", "analytics"].includes(a);
+          const D = a === g.id || g.id === "more" && !["overview", "orders", "bills", "products", "analytics"].includes(a);
           return <button onClick={() => J(g.id)} aria-current={D ? "page" : void 0} className="relative flex min-h-[54px] flex-1 flex-col items-center justify-center gap-1 py-1" key={g.id}><span className={cn("relative flex h-8 w-[46px] items-center justify-center rounded-full transition-colors duration-200", D ? "bg-gold/14" : "")}><Icon name={g.icon} className={cn("h-[19px] w-[19px]", D ? "text-gold" : "text-ink-3")} />{g.badge && <span className="tnum absolute -top-0.5 -right-0.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full border-2 border-surface bg-gold px-1 text-[8px] font-semibold text-on-gold">{g.id === "orders" ? A.length : g.badge}</span>}</span><span className={cn("text-[9.5px] leading-none tracking-[0.02em]", D ? "font-semibold text-gold" : "text-ink-3")}>{g.label}</span></button>;
         })}</div></nav><AnimatePresence>{h === "search" && <motion.div initial={{
         opacity: 0,
@@ -2792,7 +2811,8 @@ function uf(a) {
 function OrdersDesktopTable({
   rows: a,
   open: n,
-  setOpen: i
+  setOpen: i,
+  onBill: billAction
 }) {
   const {
     setOrderStatus: c
@@ -2817,10 +2837,10 @@ function OrdersDesktopTable({
                   }} className="overflow-hidden bg-raised"><div className="grid gap-6 border-b border-line px-6 py-6 md:grid-cols-[1.5fr_1fr]"><div><LegendText className="text-ink-3">Order lines</LegendText><ul className="mt-4 flex flex-col gap-3">{o.lines.map(p => <li className="flex items-baseline justify-between gap-5 border-b border-line-soft pb-3 last:border-0" key={p.sku}><div className="min-w-0"><div className="truncate text-[13px] text-ink">{p.name}</div><div className="legend mt-[6px] text-ink-3">{p.sku}{" · "}{p.qty}{" × LKR "}{bt(p.price)}</div></div><div className="tnum shrink-0 text-[12.5px] text-ink">{"LKR "}{bt(p.qty * p.price)}</div></li>)}</ul></div><div className="flex flex-col justify-between gap-6"><div><LegendText className="text-ink-3">Summary</LegendText><dl className="mt-4 flex flex-col gap-3">{[["Channel", o.channel], ["Fulfilment", o.delivery ?? "Not specified"], ["Reference", o.reference ?? "—"], ["Units", String(o.units)], ["Placed", new Date(o.date + "T00:00:00").toLocaleDateString("en-GB", {
                               day: "2-digit",
                               month: "long"
-                            })], ["Status", o.status]].map(([p, m]) => <div className="flex items-baseline justify-between gap-4 border-b border-line-soft pb-2 last:border-0" key={p}><span className="legend text-ink-3">{p}</span><span className="text-[12.5px] text-ink">{m}</span></div>)}</dl></div><label className="block"><LegendText className="text-ink-3">Update status</LegendText><select aria-label={`Update status for ${o.id}`} value={o.status} onChange={p => c(o.id, p.target.value)} className="mt-2 w-full rounded-[2px] border border-line bg-surface px-3 py-2.5 text-[13px] text-ink">{xs.filter(p => p !== "All").map(p => <option value={p} disabled={xs.indexOf(p) < xs.indexOf(o.status)} key={p}>{p}</option>)}</select></label><div className="flex flex-wrap gap-2"><SecondaryBtn onClick={() => uf([o])}><Icon name="download" className="h-[14px] w-[14px]" />Export order CSV</SecondaryBtn></div></div></div></motion.div></td></tr>}</AnimatePresence></React.Fragment>;
+                            })], ["Status", o.status]].map(([p, m]) => <div className="flex items-baseline justify-between gap-4 border-b border-line-soft pb-2 last:border-0" key={p}><span className="legend text-ink-3">{p}</span><span className="text-[12.5px] text-ink">{m}</span></div>)}</dl></div><label className="block"><LegendText className="text-ink-3">Update status</LegendText><select aria-label={`Update status for ${o.id}`} value={o.status} onChange={p => c(o.id, p.target.value)} className="mt-2 w-full rounded-[2px] border border-line bg-surface px-3 py-2.5 text-[13px] text-ink">{xs.filter(p => p !== "All").map(p => <option value={p} disabled={xs.indexOf(p) < xs.indexOf(o.status)} key={p}>{p}</option>)}</select></label><div className="flex flex-wrap gap-2"><SecondaryBtn onClick={() => uf([o])}><Icon name="download" className="h-[14px] w-[14px]" />Export order CSV</SecondaryBtn><SecondaryBtn onClick={() => billAction?.(o.id)}><Icon name="receipt" className="h-[14px] w-[14px]" />Bill / receipt</SecondaryBtn></div></div></div></motion.div></td></tr>}</AnimatePresence></React.Fragment>;
         })}</tbody></table></div>;
 }
-function AdminOrdersView() {
+function AdminOrdersView({ onNavigate }) {
   const {
       orders: a,
       ready: adReady
@@ -2834,9 +2854,13 @@ function AdminOrdersView() {
       const q = o.trim().toLowerCase();
       return a.filter(y => (i === "All" || y.status === i) && (!q || `${y.id} ${y.dealer} ${y.city} ${y.lines.map(N => N.name).join(" ")}`.toLowerCase().includes(q)));
     }, [i, o, a]),
-    f = h.reduce((q, y) => q + y.amount, 0);
+    f = h.reduce((q, y) => q + y.amount, 0),
+    openBill = id => {
+      try { window.sessionStorage.setItem("rsd-bill-source-order", id); } catch {}
+      onNavigate?.("bills");
+    };
   if (!adReady && !a.length) return <div className="mx-auto w-full max-w-[560px] px-4 pt-5"><ShimmerBlock className="h-3 w-[84px]" /><ShimmerBlock className="mt-3 h-7 w-[140px]" /><div className="mt-6"><OrdersSkeleton rows={5} /></div></div>;
-  return <div><PageHeader eyebrow="Workspace" title="Orders" sub={`Review orders and update their status. Confirmed revenue is LKR ${bt(n.revenue)}. Open a row to inspect its lines.`} action={<div className="flex flex-wrap items-center gap-3"><SecondaryBtn onClick={() => uf(h)}><Icon name="download" className="h-[14px] w-[14px]" />Export CSV</SecondaryBtn><PrimaryBtn onClick={() => x(!0)}>New order<Icon name="arrow" className="h-[15px] w-[15px]" /></PrimaryBtn></div>} /><div className="grid grid-cols-2 overflow-hidden rounded-[3px] border-t border-l border-line bg-panel md:grid-cols-4">{[["Orders", String(h.length), `of ${a.length} in period`], ["Value", `LKR ${bt(f)}`, "Filtered total"], ["Units", String(h.reduce((q, y) => q + y.units, 0)), `${n.units} units in period`], ["Avg. order", `LKR ${bt(h.length ? Math.round(f / h.length) : 0)}`, `LKR ${bt(n.avg)} in period`]].map(([q, y, N], k) => <div className="border-r border-b border-line px-4 py-4 sm:px-6 sm:py-5" key={q}><LegendText className="text-ink-3">{q}</LegendText><div className="font-display tnum mt-3 text-[clamp(1.15rem,4.4vw,1.375rem)] leading-none font-semibold text-ink">{y}</div><div className="mt-2.5 text-[11px] text-ink-3">{N}</div>{k === 0 && <div className="mt-3 h-[2px] w-8 bg-gold" />}</div>)}</div><FadeIn delay={.06} className="mt-8"><PanelCard title="Order ledger" sub="Tap any row to expand order lines" action={<div className="flex flex-wrap items-center gap-2"><div className="relative"><Icon name="search" className="pointer-events-none absolute top-1/2 left-2.5 h-[14px] w-[14px] -translate-y-1/2 text-ink-3" /><input value={o} onChange={q => A(q.target.value)} placeholder="Filter\u2026" aria-label="Filter orders" className="w-[150px] rounded-[2px] border border-line bg-surface py-[8px] pr-2 pl-8 text-[12px] text-ink placeholder:text-ink-3/80 focus:border-gold/50" /></div></div>} bodyClass="px-5 py-5 sm:px-6"><FilterRow className="mb-5 sm:mb-6">{xs.map(q => <SecondaryBtn active={i === q} onClick={() => c(q)} key={q}>{q}<span className="tnum text-[10px] opacity-70">{q === "All" ? a.length : a.filter(y => y.status === q).length}</span></SecondaryBtn>)}</FilterRow>{h.length === 0 ? <EmptyNotice title="No orders match this filter" body={`Nothing in the ledger for “${o || i}”. Clear the filter or search an order code such as WC-1009.`} icon="search" /> : <><div className="hidden lg:block"><OrdersDesktopTable rows={h} open={p} setOpen={m} /></div><ul className="flex flex-col gap-3 lg:hidden">{h.map(q => {
+  return <div><PageHeader eyebrow="Workspace" title="Orders" sub={`Review orders and update their status. Confirmed revenue is LKR ${bt(n.revenue)}. Open a row to inspect its lines.`} action={<div className="flex flex-wrap items-center gap-3"><SecondaryBtn onClick={() => uf(h)}><Icon name="download" className="h-[14px] w-[14px]" />Export CSV</SecondaryBtn><PrimaryBtn onClick={() => x(!0)}>New order<Icon name="arrow" className="h-[15px] w-[15px]" /></PrimaryBtn></div>} /><div className="grid grid-cols-2 overflow-hidden rounded-[3px] border-t border-l border-line bg-panel md:grid-cols-4">{[["Orders", String(h.length), `of ${a.length} in period`], ["Value", `LKR ${bt(f)}`, "Filtered total"], ["Units", String(h.reduce((q, y) => q + y.units, 0)), `${n.units} units in period`], ["Avg. order", `LKR ${bt(h.length ? Math.round(f / h.length) : 0)}`, `LKR ${bt(n.avg)} in period`]].map(([q, y, N], k) => <div className="border-r border-b border-line px-4 py-4 sm:px-6 sm:py-5" key={q}><LegendText className="text-ink-3">{q}</LegendText><div className="font-display tnum mt-3 text-[clamp(1.15rem,4.4vw,1.375rem)] leading-none font-semibold text-ink">{y}</div><div className="mt-2.5 text-[11px] text-ink-3">{N}</div>{k === 0 && <div className="mt-3 h-[2px] w-8 bg-gold" />}</div>)}</div><FadeIn delay={.06} className="mt-8"><PanelCard title="Order ledger" sub="Tap any row to expand order lines" action={<div className="flex flex-wrap items-center gap-2"><div className="relative"><Icon name="search" className="pointer-events-none absolute top-1/2 left-2.5 h-[14px] w-[14px] -translate-y-1/2 text-ink-3" /><input value={o} onChange={q => A(q.target.value)} placeholder="Filter\u2026" aria-label="Filter orders" className="w-[150px] rounded-[2px] border border-line bg-surface py-[8px] pr-2 pl-8 text-[12px] text-ink placeholder:text-ink-3/80 focus:border-gold/50" /></div></div>} bodyClass="px-5 py-5 sm:px-6"><FilterRow className="mb-5 sm:mb-6">{xs.map(q => <SecondaryBtn active={i === q} onClick={() => c(q)} key={q}>{q}<span className="tnum text-[10px] opacity-70">{q === "All" ? a.length : a.filter(y => y.status === q).length}</span></SecondaryBtn>)}</FilterRow>{h.length === 0 ? <EmptyNotice title="No orders match this filter" body={`Nothing in the ledger for “${o || i}”. Clear the filter or search an order code such as WC-1009.`} icon="search" /> : <><div className="hidden lg:block"><OrdersDesktopTable rows={h} open={p} setOpen={m} onBill={openBill} /></div><ul className="flex flex-col gap-3 lg:hidden">{h.map(q => {
               const y = p === q.id;
               return <li className="overflow-hidden rounded-[2px] border border-line bg-surface" key={q.id}><button onClick={() => m(y ? null : q.id)} aria-expanded={y} className="w-full px-4 pt-4 pb-3.5 text-left active:bg-raised/60"><div className="flex items-center justify-between gap-3"><span className="tnum text-[12px] text-gold">{q.id}</span><StatusBadge tone={of[q.status]}>{q.status}</StatusBadge></div><div className="mt-3 text-[15px] leading-snug text-ink">{q.dealer}</div><div className="legend mt-2 text-ink-3">{q.city}{" · "}{new Date(q.date + "T00:00:00").toLocaleDateString("en-GB", {
                       day: "2-digit",
@@ -2853,9 +2877,171 @@ function AdminOrdersView() {
                   }} transition={{
                     duration: .28,
                     ease: Ft
-                  }} className="overflow-hidden border-t border-line bg-raised"><div className="px-4 py-4"><LegendText className="text-ink-3">Order lines</LegendText><ul className="mt-3 flex flex-col">{q.lines.map(N => <li className="flex items-baseline justify-between gap-4 border-b border-line-soft py-3 last:border-0" key={N.sku}><div className="min-w-0"><div className="text-[12.5px] leading-snug text-ink">{N.name}</div><div className="legend mt-1.5 text-ink-3">{N.sku}{" · "}{N.qty}{" × "}{bt(N.price)}</div></div><div className="tnum shrink-0 text-[12px] text-ink">{"LKR "}{bt(N.qty * N.price)}</div></li>)}</ul><div className="mt-4 flex flex-wrap gap-2"><SecondaryBtn className="flex-1"><Icon name="download" className="h-[14px] w-[14px]" />Invoice</SecondaryBtn><SecondaryBtn className="flex-1"><Icon name="comments" className="h-[14px] w-[14px]" />Message</SecondaryBtn></div></div></motion.div>}</AnimatePresence></li>;
+                  }} className="overflow-hidden border-t border-line bg-raised"><div className="px-4 py-4"><LegendText className="text-ink-3">Order lines</LegendText><ul className="mt-3 flex flex-col">{q.lines.map(N => <li className="flex items-baseline justify-between gap-4 border-b border-line-soft py-3 last:border-0" key={N.sku}><div className="min-w-0"><div className="text-[12.5px] leading-snug text-ink">{N.name}</div><div className="legend mt-1.5 text-ink-3">{N.sku}{" · "}{N.qty}{" × "}{bt(N.price)}</div></div><div className="tnum shrink-0 text-[12px] text-ink">{"LKR "}{bt(N.qty * N.price)}</div></li>)}</ul><div className="mt-4 flex flex-wrap gap-2"><SecondaryBtn className="flex-1" onClick={() => openBill(q.id)}><Icon name="receipt" className="h-[14px] w-[14px]" />Bill / receipt</SecondaryBtn><SecondaryBtn className="flex-1"><Icon name="comments" className="h-[14px] w-[14px]" />Message</SecondaryBtn></div></div></motion.div>}</AnimatePresence></li>;
             })}</ul></>}</PanelCard></FadeIn><NewOrderSheet open={j} onClose={() => x(!1)} /></div>;
 }
+const BILL_DEFAULT_WARRANTY = "1-year colour warranty, starting from the delivery date.";
+const BILL_DEFAULT_EXCLUSIONS = "Damage, water, misuse, and normal wear.";
+const BILL_CLAIM_PHONE = RSD_WHATSAPP_NUMBER;
+
+function blankBill(billNo = "RSD-0001") {
+  return {
+    billNo,
+    date: "",
+    customerName: "",
+    customerPhone: "",
+    deliveryAddress: "",
+    items: [{ sku: "", name: "", colour: "", qty: 1, price: "" }],
+    deliveryLabel: "FREE",
+    deliveryCharge: "",
+    deliverySaving: "",
+    paymentMethod: "Bank transfer",
+    paymentStatus: "PAID",
+    paymentDate: "",
+    paymentReference: "",
+    courier: "",
+    tracking: "",
+    expectedDate: "",
+    pickupPlace: "",
+    deliveryPlace: "",
+    courierAmount: "",
+    courierNotes: "",
+    warrantyTerm: BILL_DEFAULT_WARRANTY,
+    warrantyCovers: "",
+    warrantyExclusions: BILL_DEFAULT_EXCLUSIONS,
+    warrantyClaim: `To claim, message ${BILL_CLAIM_PHONE} with this bill and photos.`,
+    returnsPolicy: "",
+  };
+}
+
+function nextBillNumber() {
+  try {
+    const current = Number.parseInt(window.localStorage.getItem("rsd-next-bill-number") || "1", 10);
+    const next = Number.isFinite(current) && current > 0 ? current : 1;
+    window.localStorage.setItem("rsd-next-bill-number", String(next + 1));
+    return `RSD-${String(next).padStart(4, "0")}`;
+  } catch {
+    return `RSD-${String(Date.now()).slice(-4)}`;
+  }
+}
+
+function rememberBillNumber(value) {
+  const match = String(value || "").match(/^RSD-(\d+)$/i);
+  if (!match) return;
+  try {
+    const used = Number.parseInt(match[1], 10);
+    const current = Number.parseInt(window.localStorage.getItem("rsd-next-bill-number") || "1", 10);
+    if (Number.isFinite(used) && used >= current) window.localStorage.setItem("rsd-next-bill-number", String(used + 1));
+  } catch {}
+}
+
+const billInputClass = "mt-2 w-full rounded-[2px] border border-line bg-surface px-3 py-[10px] text-[13px] text-ink placeholder:text-ink-3/70 focus:border-gold/50";
+const billTextareaClass = `${billInputClass} min-h-[76px] resize-y leading-relaxed`;
+
+function BillField({ label, value, onChange, type = "text", placeholder = "", className = "", min, step }) {
+  return <label className={cn("block", className)}><LegendText className="text-ink-3">{label}</LegendText><input type={type} value={value ?? ""} onChange={event => onChange(event.target.value)} placeholder={placeholder} min={min} step={step} className={billInputClass} /></label>;
+}
+
+function BillTextArea({ label, value, onChange, placeholder = "", className = "" }) {
+  return <label className={cn("block", className)}><LegendText className="text-ink-3">{label}</LegendText><textarea value={value ?? ""} onChange={event => onChange(event.target.value)} placeholder={placeholder} className={billTextareaClass} /></label>;
+}
+
+function BillValue({ value, className = "" }) {
+  const text = value === 0 ? "0" : value;
+  return <span className={cn(!text && "text-ink-3/70", className)}>{text || "Blank"}</span>;
+}
+
+function billUiMoney(value, blank = false) {
+  return blank && !Number(value) ? "—" : `LKR ${bt(Number(value) || 0)}`;
+}
+
+function BillPreview({ bill, mode }) {
+  const totals = calculateBillTotals(bill);
+  const isCourier = mode === "courier";
+  return <article className="bill-preview rounded-[3px] border border-line bg-[#fbfaf6] p-5 text-[#242320] shadow-[0_18px_45px_rgba(0,0,0,.16)] sm:p-7" aria-label={isCourier ? "Courier bill preview" : "Customer bill preview"}>
+    <div className="flex items-start justify-between gap-5 border-b border-[#d9d4c8] pb-5"><div><div className="font-display text-[23px] font-semibold tracking-[-.02em]">R.S.D.</div><div className="mt-1 text-[9px] tracking-[.2em] text-[#8a8377]">PREMIUM WATCHES</div></div><div className="text-right"><div className="font-display text-[17px] font-semibold">{isCourier ? "COURIER COPY" : "BILL / RECEIPT"}</div><div className="mt-2 text-[10px] text-[#777168]">Bill No: <BillValue value={bill.billNo} /></div><div className="mt-1 text-[10px] text-[#777168]">Date: <BillValue value={formatBillDate(bill.date)} /></div></div></div>
+    <div className="mt-6 grid gap-4 sm:grid-cols-2"><div><div className="bill-preview-label">{isCourier ? "Receiver" : "Customer"}</div><div className="bill-preview-value"><BillValue value={bill.customerName} /></div></div><div><div className="bill-preview-label">Phone</div><div className="bill-preview-value"><BillValue value={bill.customerPhone} /></div></div><div className="sm:col-span-2"><div className="bill-preview-label">Delivery address</div><div className="bill-preview-value"><BillValue value={bill.deliveryAddress} /></div></div></div>
+    <div className="mt-7"><div className="bill-preview-label">Items</div><div className="mt-2 overflow-hidden border-y border-[#d9d4c8]"><div className="grid grid-cols-[minmax(0,1.6fr)_minmax(60px,.8fr)_34px_auto] gap-2 bg-[#f0ede5] px-3 py-2 text-[9px] font-semibold uppercase tracking-[.08em] text-[#777168]"><span>Item</span><span>Colour</span><span>Qty</span>{!isCourier && <span className="text-right">Amount</span>}</div>{(bill.items || []).map((item, index) => <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(60px,.8fr)_34px_auto] gap-2 border-t border-[#e7e2d8] px-3 py-3 text-[11px]" key={`${item.sku || item.name || "item"}-${index}`}><span className="min-w-0 break-words">{index + 1}. <BillValue value={item.name} /></span><span className="break-words"><BillValue value={item.colour} /></span><span>{item.qty || 1}</span>{!isCourier && <span className="text-right">{totals.hasPrice ? billUiMoney(Number(item.price) * (Number(item.qty) || 1)) : "—"}</span>}</div>)}</div></div>
+    {!isCourier && <><div className="mt-5 ml-auto max-w-[250px] space-y-2 text-[11px]"><div className="flex justify-between gap-4"><span className="text-[#777168]">Subtotal</span><span>{totals.hasPrice ? billUiMoney(totals.subtotal) : "—"}</span></div><div className="flex justify-between gap-4"><span className="text-[#777168]">Delivery</span><span>{bill.deliveryLabel || (totals.deliveryCharge ? billUiMoney(totals.deliveryCharge) : "FREE")}</span></div>{totals.deliverySaving > 0 && <div className="flex justify-between gap-4"><span className="text-[#777168]">Buy 2+ delivery saving</span><span>- {billUiMoney(totals.deliverySaving)}</span></div>}<div className="flex justify-between gap-4 border-t border-[#242320] pt-3 text-[14px] font-semibold"><span>TOTAL</span><span>{totals.hasPrice ? billUiMoney(totals.total) : "—"}</span></div></div><div className="mt-7 grid gap-4 sm:grid-cols-3"><div><div className="bill-preview-label">Payment method</div><div className="bill-preview-value"><BillValue value={bill.paymentMethod} /></div></div><div><div className="bill-preview-label">Status</div><div className="bill-preview-value"><BillValue value={bill.paymentStatus} /></div></div><div><div className="bill-preview-label">Paid on</div><div className="bill-preview-value"><BillValue value={formatBillDate(bill.paymentDate)} /></div></div><div className="sm:col-span-3"><div className="bill-preview-label">Reference</div><div className="bill-preview-value"><BillValue value={bill.paymentReference} /></div></div></div></>}
+    <div className="mt-7"><div className="bill-preview-label">Delivery</div><div className="mt-2 grid gap-4 sm:grid-cols-3"><div><div className="bill-preview-mini-label">Courier</div><div className="bill-preview-value"><BillValue value={bill.courier} /></div></div><div><div className="bill-preview-mini-label">Tracking</div><div className="bill-preview-value"><BillValue value={bill.tracking} /></div></div><div><div className="bill-preview-mini-label">Expected</div><div className="bill-preview-value"><BillValue value={formatBillDate(bill.expectedDate)} /></div></div><div><div className="bill-preview-mini-label">Pickup place</div><div className="bill-preview-value"><BillValue value={bill.pickupPlace} /></div></div><div><div className="bill-preview-mini-label">Delivery place</div><div className="bill-preview-value"><BillValue value={bill.deliveryPlace} /></div></div></div></div>
+    {isCourier ? <div className="mt-7 grid gap-4 sm:grid-cols-2"><div><div className="bill-preview-label">Amount / COD</div><div className="bill-preview-value"><BillValue value={bill.courierAmount} /></div></div><div><div className="bill-preview-label">Parcel notes</div><div className="bill-preview-value"><BillValue value={bill.courierNotes} /></div></div></div> : <><div className="mt-7"><div className="bill-preview-label">Warranty</div><div className="mt-2 space-y-2 text-[11px] leading-relaxed"><div><strong>Term:</strong> <BillValue value={bill.warrantyTerm} /></div><div><strong>Covers:</strong> <BillValue value={bill.warrantyCovers} /></div><div><strong>Does not cover:</strong> <BillValue value={bill.warrantyExclusions} /></div><div><strong>To claim:</strong> <BillValue value={bill.warrantyClaim} /></div></div></div><div className="mt-7"><div className="bill-preview-label">Returns</div><p className="mt-2 whitespace-pre-wrap text-[11px] leading-relaxed"><BillValue value={bill.returnsPolicy} /></p></div></>}
+    <div className="mt-8 border-t border-[#d9d4c8] pt-4 text-[11px] font-semibold text-[#9d771c]">Thank you for ordering from R.S.D.!</div><div className="mt-1 text-[9px] text-[#777168]">WhatsApp 0711368623</div>
+  </article>;
+}
+
+function AdminBillsView() {
+  const { orders, products } = qe();
+  const toast = In();
+  const [bill, setBill] = React.useState(() => blankBill());
+  const [sourceOrder, setSourceOrder] = React.useState("");
+  const [mode, setMode] = React.useState("receipt");
+  const totals = React.useMemo(() => calculateBillTotals(bill), [bill]);
+  const update = patch => setBill(previous => ({ ...previous, ...patch }));
+  const updateItem = (index, patch) => setBill(previous => ({ ...previous, items: previous.items.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item) }));
+  const resetBill = () => {
+    setBill(blankBill(nextBillNumber()));
+    setSourceOrder("");
+    toast("New blank bill ready", "receipt");
+  };
+  const loadOrder = id => {
+    setSourceOrder(id);
+    const order = orders.find(item => item.id === id);
+    if (!order) {
+      setBill(previous => blankBill(previous.billNo));
+      return;
+    }
+    const lines = (order.lines || []).map(line => {
+      const product = products.find(item => item.sku === line.sku);
+      return {
+        sku: line.sku || "",
+        name: line.name || product?.name || "",
+        colour: line.colour || line.color || product?.colors?.[0] || "",
+        qty: line.qty || 1,
+        price: line.price ?? product?.price ?? "",
+      };
+    });
+    setBill(previous => ({
+      ...previous,
+      customerName: order.customerName || order.customer_name || order.dealer || "",
+      customerPhone: order.customerPhone || order.customer_phone || order.phone || "",
+      deliveryAddress: order.deliveryAddress || order.delivery_address || order.address || "",
+      date: order.date || "",
+      deliveryPlace: order.city || "",
+      deliveryLabel: order.delivery || "FREE",
+      paymentReference: order.reference || "",
+      paymentStatus: order.status === "Completed" ? "PAID" : previous.paymentStatus,
+      items: lines.length ? lines : previous.items,
+    }));
+    toast(`Loaded details from ${order.id}`, "check");
+  };
+  React.useEffect(() => {
+    let pending = "";
+    try {
+      pending = window.sessionStorage.getItem("rsd-bill-source-order") || "";
+      if (pending && orders.some(order => order.id === pending)) window.sessionStorage.removeItem("rsd-bill-source-order");
+    } catch {}
+    if (pending && orders.some(order => order.id === pending)) loadOrder(pending);
+  }, [orders.length]);
+  const chooseProduct = (index, sku) => {
+    const product = products.find(item => item.sku === sku);
+    if (!product) {
+      updateItem(index, { sku: "" });
+      return;
+    }
+    updateItem(index, { sku, name: product.name, price: product.price, colour: product.colors?.[0] || "" });
+  };
+  const makePdf = async pdfMode => {
+    try {
+      rememberBillNumber(bill.billNo);
+      await downloadBillPdf(bill, pdfMode);
+      toast(`${pdfMode === "courier" ? "Courier copy" : "Customer receipt"} PDF downloaded`, "download");
+    } catch {
+      toast("The PDF could not be generated in this browser", "alert");
+    }
+  };
+  return <div><PageHeader eyebrow="Operations" title="Bill / Receipt" sub="Build a customer receipt from an existing order or start blank. Prices, dates, courier details, places, warranty text, and returns policy remain editable before the PDF is generated." action={<div className="flex flex-wrap gap-3"><SecondaryBtn onClick={resetBill}><Icon name="plus" className="h-[14px] w-[14px]" />New bill</SecondaryBtn><PrimaryBtn onClick={() => makePdf(mode)}><Icon name="download" className="h-[14px] w-[14px]" />Download {mode === "courier" ? "courier" : "receipt"} PDF</PrimaryBtn></div>} /><div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(420px,.9fr)]"><FadeIn><PanelCard title="Bill details" sub="Leave any price, date, place, or courier field blank when you need to fill it later"><div className="flex flex-col gap-6"><label className="block"><LegendText className="text-ink-3">Start from an existing web order</LegendText><select value={sourceOrder} onChange={event => loadOrder(event.target.value)} className={billInputClass}><option value="">Blank bill</option>{orders.map(order => <option value={order.id} key={order.id}>{order.id} · {order.dealer} · LKR {bt(order.amount)}</option>)}</select><p className="mt-2 text-[11px] leading-relaxed text-ink-3">Selecting an order copies its customer/dealer name, city, date, items, and calculated customer prices. Phone and address stay blank unless the order already contains them.</p></label><div className="grid gap-4 sm:grid-cols-2"><BillField label="Bill No" value={bill.billNo} onChange={value => update({ billNo: value })} placeholder="RSD-0001" /><BillField label="Date" value={bill.date} onChange={value => update({ date: value })} type="date" /></div><div><div className="mb-3 flex items-center justify-between gap-4"><h3 className="legend-lg text-ink">Customer</h3><StatusBadge tone="muted">Editable</StatusBadge></div><div className="grid gap-4 sm:grid-cols-2"><BillField label="Name" value={bill.customerName} onChange={value => update({ customerName: value })} placeholder="Customer name" /><BillField label="Phone" value={bill.customerPhone} onChange={value => update({ customerPhone: value })} placeholder="07X XXX XXXX" type="tel" /><BillTextArea label="Delivery address" value={bill.deliveryAddress} onChange={value => update({ deliveryAddress: value })} placeholder="Full address" className="sm:col-span-2" /></div></div><div><div className="mb-3 flex items-center justify-between gap-4"><h3 className="legend-lg text-ink">Items</h3><SecondaryBtn onClick={() => update({ items: [...bill.items, { sku: "", name: "", colour: "", qty: 1, price: "" }] })}><Icon name="plus" className="h-[13px] w-[13px]" />Add item</SecondaryBtn></div><div className="flex flex-col gap-3">{bill.items.map((item, index) => <div className="rounded-[2px] border border-line bg-surface p-3" key={`${item.sku || "custom"}-${index}`}><div className="flex items-center justify-between gap-3"><LegendText className="text-gold">Item {index + 1}</LegendText>{bill.items.length > 1 && <button type="button" onClick={() => update({ items: bill.items.filter((_, itemIndex) => itemIndex !== index) })} className="legend text-alert">Remove</button>}</div><select value={item.sku || ""} onChange={event => chooseProduct(index, event.target.value)} className={billInputClass}><option value="">Custom item / choose a product</option>{products.map(product => <option value={product.sku} key={product.sku}>{product.name} · {product.sku} · LKR {bt(product.price)}</option>)}</select><div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1.35fr)_minmax(0,.85fr)_72px_120px]"><BillField label="Watch model" value={item.name} onChange={value => updateItem(index, { name: value })} placeholder="Watch model" /><BillField label="Colour" value={item.colour} onChange={value => updateItem(index, { colour: value })} placeholder="Steel" /><BillField label="Qty" value={item.qty} onChange={value => updateItem(index, { qty: value })} type="number" min="1" step="1" /><BillField label="Price (LKR)" value={item.price} onChange={value => updateItem(index, { price: value })} placeholder="Blank" type="number" min="0" step="50" /></div></div>)}</div></div><div><h3 className="legend-lg mb-3 text-ink">Delivery and total</h3><div className="grid gap-4 sm:grid-cols-2"><BillField label="Delivery label" value={bill.deliveryLabel} onChange={value => update({ deliveryLabel: value })} placeholder="FREE" /><BillField label="Delivery charge (LKR)" value={bill.deliveryCharge} onChange={value => update({ deliveryCharge: value })} placeholder="Blank" type="number" min="0" step="50" /><BillField label="Buy 2+ delivery saving (LKR)" value={bill.deliverySaving} onChange={value => update({ deliverySaving: value })} placeholder="Blank" type="number" min="0" step="50" /><div className="rounded-[2px] border border-gold/30 bg-gold/10 px-3 py-2.5"><LegendText className="text-gold">Calculated total</LegendText><div className="font-display tnum mt-1 text-[18px] font-semibold text-ink">{totals.hasPrice ? `LKR ${bt(totals.total)}` : "Blank until prices are added"}</div></div></div></div><div><h3 className="legend-lg mb-3 text-ink">Payment</h3><div className="grid gap-4 sm:grid-cols-2"><BillField label="Method" value={bill.paymentMethod} onChange={value => update({ paymentMethod: value })} placeholder="Bank transfer" /><label className="block"><LegendText className="text-ink-3">Status</LegendText><select value={bill.paymentStatus} onChange={event => update({ paymentStatus: event.target.value })} className={billInputClass}><option>PAID</option><option>PENDING</option><option>PARTIALLY PAID</option></select></label><BillField label="Paid on" value={bill.paymentDate} onChange={value => update({ paymentDate: value })} type="date" /><BillField label="Reference" value={bill.paymentReference} onChange={value => update({ paymentReference: value })} placeholder="Transfer reference" /></div></div><div><h3 className="legend-lg mb-3 text-ink">Delivery / courier</h3><div className="grid gap-4 sm:grid-cols-2"><BillField label="Courier" value={bill.courier} onChange={value => update({ courier: value })} placeholder="Courier name" /><BillField label="Tracking" value={bill.tracking} onChange={value => update({ tracking: value })} placeholder="Tracking number" /><BillField label="Expected date" value={bill.expectedDate} onChange={value => update({ expectedDate: value })} type="date" /><BillField label="Pickup place" value={bill.pickupPlace} onChange={value => update({ pickupPlace: value })} placeholder="Blank for later" /><BillField label="Delivery place" value={bill.deliveryPlace} onChange={value => update({ deliveryPlace: value })} placeholder="Blank for later" /><BillField label="Courier amount / COD" value={bill.courierAmount} onChange={value => update({ courierAmount: value })} placeholder="Blank for courier" /><BillTextArea label="Courier notes" value={bill.courierNotes} onChange={value => update({ courierNotes: value })} placeholder="Parcel notes" className="sm:col-span-2" /></div></div><div><h3 className="legend-lg mb-3 text-ink">Warranty and returns</h3><div className="grid gap-4"><BillTextArea label="Warranty term" value={bill.warrantyTerm} onChange={value => update({ warrantyTerm: value })} /><BillTextArea label="Warranty covers" value={bill.warrantyCovers} onChange={value => update({ warrantyCovers: value })} placeholder="What is covered" /><BillTextArea label="Does not cover" value={bill.warrantyExclusions} onChange={value => update({ warrantyExclusions: value })} /><BillTextArea label="How to claim" value={bill.warrantyClaim} onChange={value => update({ warrantyClaim: value })} /><BillTextArea label="Returns and refund policy" value={bill.returnsPolicy} onChange={value => update({ returnsPolicy: value })} placeholder="Add your return and refund policy" /></div></div></div></PanelCard></FadeIn><FadeIn delay={.08}><div className="sticky top-[84px] flex flex-col gap-4"><PanelCard title="Live preview" sub="The PDF uses the same information shown here" action={<div className="flex gap-2"><SecondaryBtn active={mode === "receipt"} onClick={() => setMode("receipt")}>Customer receipt</SecondaryBtn><SecondaryBtn active={mode === "courier"} onClick={() => setMode("courier")}>Courier copy</SecondaryBtn></div>} bodyClass="p-3 sm:p-5"><BillPreview bill={bill} mode={mode} /></PanelCard><PanelCard title="Download documents" sub="Create one or both copies after you finish editing"><div className="grid gap-3 sm:grid-cols-2"><PrimaryBtn onClick={() => makePdf("receipt")} className="w-full"><Icon name="download" className="h-[14px] w-[14px]" />Customer receipt PDF</PrimaryBtn><SecondaryBtn onClick={() => makePdf("courier")} className="w-full"><Icon name="download" className="h-[14px] w-[14px]" />Courier copy PDF</SecondaryBtn></div><p className="mt-4 text-[11px] leading-relaxed text-ink-3">The courier copy intentionally omits customer prices and payment details. Leave its amount, tracking, expected date, and places blank when you want to complete them by hand.</p></PanelCard></div></FadeIn></div></div>;
+}
+
 const dH = [{
   name: "Wrist Watches",
   image: Ta.productWrist,
@@ -3143,6 +3329,6 @@ function AppRouterShell() {
   if (!authReady) return <AdminLoadingScreen />;
   if (!a) return <LoginScreen />;
   if (adminLoginRoute) return <AdminRedirect />;
-  return A ? <div className="min-h-screen overflow-x-hidden bg-surface text-ink"><aside className="fixed top-0 bottom-0 left-0 z-40 hidden w-[268px] border-r border-line lg:block"><DesktopSidebar view={n} onNavigate={i} theme={c} setTheme={o} /></aside><div className="flex min-w-0 flex-col lg:pl-[268px]"><DesktopHeader view={n} onNavigate={i} theme={c} setTheme={o} menuOpen={!1} setMenuOpen={() => {}} /><main className="flex-1 px-5 py-8 sm:px-8 sm:py-10 lg:px-10"><AnimatePresence mode="wait"><motion.div initial={p ? !1 : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={p ? void 0 : { opacity: 0, y: -10 }} transition={{ duration: .36, ease: Ft }} key={n}>{n === "overview" && <AdminOverviewView onNavigate={i} />}{n === "orders" && <AdminOrdersView />}{n === "products" && <AdminProductsView onNavigate={i} />}{n === "new-product" && <AdminAddProductView onNavigate={i} />}{n === "dealers" && <AdminDealersView />}{n === "analytics" && <AdminAnalyticsView />}{n === "comments" && <AdminCommentsView />}{(n === "account" || n === "more") && <AdminAccountView />}</motion.div></AnimatePresence></main><footer className="border-t border-line px-5 py-7 sm:px-8 lg:px-10"><div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3"><p className="legend text-ink-3">R.S.D. Premium Watches · Private administrator console</p><p className="legend text-ink-3">Live Supabase ledger · Secure session</p></div></footer></div></div> : <MobileShellRoot view={n} onNavigate={i} theme={c} setTheme={o} />;
+  return A ? <div className="min-h-screen overflow-x-hidden bg-surface text-ink"><aside className="fixed top-0 bottom-0 left-0 z-40 hidden w-[268px] border-r border-line lg:block"><DesktopSidebar view={n} onNavigate={i} theme={c} setTheme={o} /></aside><div className="flex min-w-0 flex-col lg:pl-[268px]"><DesktopHeader view={n} onNavigate={i} theme={c} setTheme={o} menuOpen={!1} setMenuOpen={() => {}} /><main className="flex-1 px-5 py-8 sm:px-8 sm:py-10 lg:px-10"><AnimatePresence mode="wait"><motion.div initial={p ? !1 : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={p ? void 0 : { opacity: 0, y: -10 }} transition={{ duration: .36, ease: Ft }} key={n}>{n === "overview" && <AdminOverviewView onNavigate={i} />}{n === "orders" && <AdminOrdersView onNavigate={i} />}{n === "bills" && <AdminBillsView />}{n === "products" && <AdminProductsView onNavigate={i} />}{n === "new-product" && <AdminAddProductView onNavigate={i} />}{n === "dealers" && <AdminDealersView />}{n === "analytics" && <AdminAnalyticsView />}{n === "comments" && <AdminCommentsView />}{(n === "account" || n === "more") && <AdminAccountView />}</motion.div></AnimatePresence></main><footer className="border-t border-line px-5 py-7 sm:px-8 lg:px-10"><div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3"><p className="legend text-ink-3">R.S.D. Premium Watches · Private administrator console</p><p className="legend text-ink-3">Live Supabase ledger · Secure session</p></div></footer></div></div> : <MobileShellRoot view={n} onNavigate={i} theme={c} setTheme={o} />;
 }
 export default RsdPremiumWatchesApp;
