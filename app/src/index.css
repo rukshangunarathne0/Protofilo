@@ -521,3 +521,8 @@
     height: 29px;
   }
 }
+
+/* The supplied mark is white on transparent; invert it for the light theme. */
+.light .brand-rsd-logo {
+  filter: invert(1) contrast(1.04);
+}
