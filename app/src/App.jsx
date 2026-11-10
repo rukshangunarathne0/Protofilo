@@ -713,6 +713,18 @@ function qe() {
   if (!a) throw new Error("useStore must be used inside <StoreProvider>");
   return a;
 }
+async function requestAdminAction(action, payload = {}) {
+  const response = await fetch("/api/admin-action", {
+    method: "POST",
+    credentials: "include",
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, payload }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.ok) throw new Error(result.error || "Administrator action failed.");
+  return result;
+}
 function StoreProvider({
   children: a
 }) {
@@ -766,20 +778,10 @@ function StoreProvider({
       return;
     }
     try {
-      const [prodRes, dealRes, ordRes, preRes, fbRes] = await Promise.all([
-        supabase.from("ht_products").select("*").order("sort_order", { ascending: true }).order("sku", { ascending: true }),
-        supabase.from("ht_dealers").select("*").order("sort_order", { ascending: true }).order("name", { ascending: true }),
-        supabase.from("ht_orders").select("*").order("date", { ascending: false }).order("id", { ascending: false }),
-        supabase.from("ht_preorders").select("*").order("sort_order", { ascending: true }),
-        supabase.from("feedback").select("*").order("created_at", { ascending: false }).limit(500),
-      ]);
-
-      if (prodRes.error || dealRes.error || ordRes.error) {
-        setSyncStatus("offline");
-        return;
-      }
-
-      const nextProducts = (prodRes.data || []).map(r => ({
+      const response = await fetch("/api/admin-data", { credentials: "include", cache: "no-store" });
+      if (!response.ok) throw new Error("Admin data request failed");
+      const payload = await response.json();
+      const nextProducts = (payload.products || []).map(r => ({
         sku: r.sku,
         name: r.name,
         category: r.category,
@@ -792,10 +794,7 @@ function StoreProvider({
         retailPrice: r.retail_price == null ? undefined : Number(r.retail_price),
         trend: Array.isArray(r.trend) ? r.trend.map(Number) : [0, 0, 0, 0, 0, 0, 0],
       }));
-
-      registerProductPhotos(nextProducts);
-
-      const nextDealers = (dealRes.data || []).map(r => ({
+      const nextDealers = (payload.dealers || []).map(r => ({
         name: r.name,
         email: r.email || undefined,
         city: r.city,
@@ -803,8 +802,7 @@ function StoreProvider({
         status: r.status,
         terms: r.terms,
       }));
-
-      const nextOrders = (ordRes.data || []).map(r => ({
+      const nextOrders = (payload.orders || []).map(r => ({
         id: r.id,
         dealer: r.dealer,
         city: r.city,
@@ -815,18 +813,15 @@ function StoreProvider({
         channel: r.channel,
         delivery: r.delivery || undefined,
         reference: r.reference || undefined,
-        lines: Array.isArray(r.lines)
-          ? r.lines.map(ln => ({
-              sku: ln.sku,
-              name: ln.name,
-              qty: Number(ln.qty) || 0,
-              price: Number(ln.price) || 0,
-              reservedQty: ln.reservedQty != null ? Number(ln.reservedQty) : undefined,
-            }))
-          : [],
+        lines: Array.isArray(r.lines) ? r.lines.map(ln => ({
+          sku: ln.sku,
+          name: ln.name,
+          qty: Number(ln.qty) || 0,
+          price: Number(ln.price) || 0,
+          reservedQty: ln.reservedQty != null ? Number(ln.reservedQty) : undefined,
+        })) : [],
       }));
-
-      const nextPreorders = (preRes.data || []).map(r => ({
+      const nextPreorders = (payload.preorders || []).map(r => ({
         id: r.id,
         dealer: r.dealer,
         item: r.item,
@@ -835,40 +830,34 @@ function StoreProvider({
         status: r.status,
         progress: Number(r.progress) || 0,
       }));
-
-      const nextReviews = !fbRes.error
-        ? (fbRes.data || []).map(r => ({
-            id: r.id,
-            author: r.name,
-            name: r.name,
-            email: r.email || "",
-            phone: r.phone || "",
-            rating: r.rating != null ? Number(r.rating) : 0,
-            body: r.message,
-            status: r.status || "new",
-            resolved: r.status === "read",
-            isDealer: !!r.is_dealer,
-            role: r.role_label || (r.is_dealer ? "Registered dealer" : "Visitor"),
-            time: formatAgoLabel(r.created_at),
-            createdAt: r.created_at,
-          }))
-        : A.current.reviews;
-
-      if (nextProducts.length || nextOrders.length || nextDealers.length) {
-        const nextState = {
-          products: nextProducts.length ? nextProducts : A.current.products,
-          dealers: nextDealers.length ? nextDealers : A.current.dealers,
-          orders: nextOrders.length ? nextOrders : A.current.orders,
-          preorders: nextPreorders.length ? nextPreorders : A.current.preorders,
-          reviews: nextReviews,
-        };
-        i({ type: "replace", state: nextState });
-      }
+      const nextReviews = (payload.feedback || []).map(r => ({
+        id: r.id,
+        author: r.name,
+        name: r.name,
+        email: r.email || "",
+        phone: r.phone || "",
+        rating: r.rating != null ? Number(r.rating) : 0,
+        body: r.message,
+        status: r.status || "new",
+        resolved: r.status === "read",
+        isDealer: !!r.is_dealer,
+        role: r.role_label || (r.is_dealer ? "Registered dealer" : "Visitor"),
+        time: formatAgoLabel(r.created_at),
+        createdAt: r.created_at,
+      }));
+      registerProductPhotos(nextProducts);
+      i({ type: "replace", state: {
+        products: nextProducts,
+        dealers: nextDealers,
+        orders: nextOrders,
+        preorders: nextPreorders,
+        reviews: nextReviews,
+      }});
       setSyncStatus("live");
     } catch {
       setSyncStatus("offline");
     } finally {
-      o(!0);
+      o(true);
     }
   }, [adminRoute, authReady, currentUser?.role]);
 
@@ -886,17 +875,11 @@ function StoreProvider({
   React.useEffect(() => {
     if (adminRoute && (!authReady || currentUser?.role !== "admin")) return undefined;
     fetchFromSupabase();
-    let channel = supabase
-      .channel(adminRoute ? "rsd-admin-realtime" : "rsd-public-products")
-      .on("postgres_changes", { event: "*", schema: "public", table: "ht_products" }, scheduleSync);
-    if (adminRoute) {
-      channel = channel
-        .on("postgres_changes", { event: "*", schema: "public", table: "ht_dealers" }, scheduleSync)
-        .on("postgres_changes", { event: "*", schema: "public", table: "ht_orders" }, scheduleSync)
-        .on("postgres_changes", { event: "*", schema: "public", table: "ht_preorders" }, scheduleSync)
-        .on("postgres_changes", { event: "*", schema: "public", table: "feedback" }, scheduleSync);
-    }
-    channel.subscribe();
+    if (adminRoute) return () => window.clearTimeout(syncTimer.current);
+    const channel = supabase
+      .channel("rsd-public-products")
+      .on("postgres_changes", { event: "*", schema: "public", table: "ht_products" }, scheduleSync)
+      .subscribe();
     return () => {
       window.clearTimeout(syncTimer.current);
       supabase.removeChannel(channel);
@@ -911,59 +894,38 @@ function StoreProvider({
     placeOrder: async m => {
       i({ type: "placeOrder", order: m });
       try {
-        await supabase.rpc("ht_place_order", { p_order: m });
+        await requestAdminAction("placeOrder", { order: m });
         await fetchFromSupabase();
       } catch {}
     },
     setOrderStatus: async (m, j) => {
       i({ type: "setOrderStatus", id: m, status: j });
       try {
-        await supabase.rpc("ht_set_order_status", { p_id: m, p_status: j });
+        await requestAdminAction("setOrderStatus", { id: m, status: j });
         await fetchFromSupabase();
       } catch {}
     },
     setDealer: async (m, j) => {
       i({ type: "setDealer", name: m, patch: j });
       try {
-        await supabase
-          .from("ht_dealers")
-          .update({ ...j, updated_at: new Date().toISOString() })
-          .eq("name", m);
+        await requestAdminAction("setDealer", { name: m, patch: j });
         await fetchFromSupabase();
       } catch {}
     },
     adjustStock: async (m, j) => {
       i({ type: "adjustStock", sku: m, delta: j });
       try {
-        await supabase.rpc("ht_adjust_stock", { p_sku: m, p_delta: j });
+        await requestAdminAction("adjustStock", { sku: m, delta: j });
         await fetchFromSupabase();
       } catch {}
     },
     addProduct: async m => {
       i({ type: "addProduct", product: m });
       registerProductPhotos([m]);
-      const base = {
-        sku: m.sku,
-        name: m.name,
-        category: m.category,
-        price: m.price,
-        stock: m.stock,
-        reserved: m.reserved ?? 0,
-        image: m.image ?? "images/product-wrist.jpg",
-        trend: m.trend ?? [0, 0, 0, 0, 0, 0, 0]
-      };
-      const extras = {};
-      if (m.brand !== undefined) extras.brand = m.brand;
-      if (m.description !== undefined) extras.description = m.description;
-      if (m.retailPrice !== undefined) extras.retail_price = m.retailPrice;
       try {
-        let res = await supabase.from("ht_products").insert({ ...base, ...extras });
-        // A missing optional column must never block the product itself.
-        if (res.error && Object.keys(extras).length) {
-          res = await supabase.from("ht_products").insert(base);
-        }
+        await requestAdminAction("addProduct", { product: m });
         await fetchFromSupabase();
-        return res.error ? { ok: !1, error: res.error.message } : { ok: !0 };
+        return { ok: !0 };
       } catch (err) {
         return { ok: !1, error: err?.message || "Network problem — the product was not saved." };
       }
@@ -971,30 +933,10 @@ function StoreProvider({
     updateProduct: async (m, j) => {
       i({ type: "updateProduct", sku: m, patch: j });
       registerProductPhotos([{ sku: m, image: j.image }]);
-      const patch = { ...j };
-      if ("retailPrice" in patch) {
-        patch.retail_price = patch.retailPrice;
-        delete patch.retailPrice;
-      }
       try {
-        const stamped = () => ({ ...patch, updated_at: new Date().toISOString() });
-        let res = await supabase.from("ht_products").update(stamped()).eq("sku", m);
-        if (res.error) {
-          // Retry without the optional columns so the core edit still lands.
-          const trimmed = { ...patch };
-          let removed = !1;
-          for (const key of ["brand", "description", "retail_price"]) {
-            if (key in trimmed) {
-              delete trimmed[key];
-              removed = !0;
-            }
-          }
-          if (removed) {
-            res = await supabase.from("ht_products").update({ ...trimmed, updated_at: new Date().toISOString() }).eq("sku", m);
-          }
-        }
+        await requestAdminAction("updateProduct", { sku: m, patch: j });
         await fetchFromSupabase();
-        return res.error ? { ok: !1, error: res.error.message } : { ok: !0 };
+        return { ok: !0 };
       } catch (err) {
         return { ok: !1, error: err?.message || "Network problem — the changes were not saved." };
       }
@@ -1024,18 +966,16 @@ function StoreProvider({
       };
       i({ type: "addFeedback", item: optimistic });
       try {
-        const { error } = await supabase.from("feedback").insert({
+        await requestAdminAction("sendFeedback", {
           name: cleanName,
-          email: emailVal,
-          phone: phoneVal,
+          contact: cleanContact,
           rating: ratingVal,
           message: cleanMsg,
-          status: "new",
-          is_dealer: !!m.isDealer,
-          role_label: roleLabel,
+          isDealer: !!m.isDealer,
+          roleLabel,
         });
-        if (!error) await fetchFromSupabase();
-        return !error;
+        await fetchFromSupabase();
+        return true;
       } catch {
         return false;
       }
@@ -1044,21 +984,21 @@ function StoreProvider({
       const nextSt = j === "read" ? "read" : "new";
       i({ type: "setFeedbackStatus", id: m, status: nextSt });
       try {
-        await supabase.from("feedback").update({ status: nextSt }).eq("id", m);
+        await requestAdminAction("setFeedbackStatus", { id: m, status: nextSt });
         await fetchFromSupabase();
       } catch {}
     },
     deleteFeedback: async m => {
       i({ type: "deleteFeedback", id: m });
       try {
-        await supabase.from("feedback").delete().eq("id", m);
+        await requestAdminAction("deleteFeedback", { id: m });
         await fetchFromSupabase();
       } catch {}
     },
     reset: async () => {
       i({ type: "reset" });
       try {
-        await supabase.rpc("ht_reset_ledger");
+        await requestAdminAction("reset");
         await fetchFromSupabase();
       } catch {}
     }
@@ -3227,24 +3167,20 @@ function AdminAccountView() {
     });
   React.useEffect(() => {
     let active = true;
-    supabase
-      .from("ht_admin_profile")
-      .select("*")
-      .eq("email", "admin@rsd.com")
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!active || !data) return;
+    requestAdminAction("getProfile")
+      .then(({ profile }) => {
+        if (!active || !profile) return;
         const loaded = {
-          name: data.name || "Admin",
-          role: data.role || "Administrator",
-          email: data.email || "admin@rsd.com",
-          phone: data.phone || "+94 11 244 8890",
-          warehouse: data.warehouse || "Colombo 10 — Main",
+          name: profile.name || "Admin",
+          role: profile.role || "Administrator",
+          email: profile.email || ADMIN_EMAIL,
+          phone: profile.phone || "+94 11 244 8890",
+          warehouse: profile.warehouse || "Colombo 10 — Main",
         };
         c(loaded);
         A(loaded);
-        if (data.prefs && typeof data.prefs === "object") {
-          x(prev => ({ ...prev, ...data.prefs }));
+        if (profile.prefs && typeof profile.prefs === "object") {
+          x(prev => ({ ...prev, ...profile.prefs }));
         }
       })
       .catch(() => {});
@@ -3255,15 +3191,7 @@ function AdminAccountView() {
   return <div><PageHeader eyebrow="System" title="My Account" sub="Manage administrator profile, cloud database sync, and console preferences." /><div className="grid gap-8 lg:grid-cols-[1.3fr_1fr]"><FadeIn><PanelCard title="Profile" sub="Details shown on invoices and dealer correspondence"><form className="flex flex-col gap-5" onSubmit={async h => {
             h.preventDefault(), c(o);
             try {
-              await supabase.from("ht_admin_profile").upsert({
-                email: "admin@rsd.com",
-                name: o.name,
-                role: o.role,
-                phone: o.phone,
-                warehouse: o.warehouse,
-                prefs: j,
-                updated_at: new Date().toISOString()
-              });
+              await requestAdminAction("saveProfile", { profile: { ...o, prefs: j } });
             } catch {}
             m(!0), setTimeout(() => m(!1), 2600);
           }}><div className="grid gap-5 sm:grid-cols-2">{[["Full name", "name", "text"], ["Role", "role", "text"], ["Email", "email", "email"], ["Phone", "phone", "tel"]].map(([h, f, q]) => <label className="block" key={h}><LegendText className="text-ink-3">{h}</LegendText><input type={q} value={o[f]} onChange={y => A({

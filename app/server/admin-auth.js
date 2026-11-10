@@ -99,7 +99,7 @@ function clearFailures(key) {
   failures.delete(key);
 }
 
-function requestIsSameOrigin(req) {
+export function requestIsSameOrigin(req) {
   const origin = req.headers.origin;
   if (!origin) return true;
   try {
