@@ -1,4 +1,4 @@
--- Happy Time Connect — one-time database additions for the admin product form.
+-- R.S.D. Premium Watches — one-time database additions for the admin product form.
 --
 -- Paste the whole file into Supabase → SQL Editor → New query, then press Run.
 -- It is safe to run twice. Nothing is deleted; only new optional columns and

@@ -14,9 +14,9 @@ import photo6 from "./photo-6.webp";
 import photo7 from "./photo-7.webp";
 import photo8 from "./photo-8.webp";
 import photo9 from "./photo-9.webp";
-import logo from "./logo.webp";
 
-export const brandLogoUrl = logo;
+export const brandLogoUrl = "/rsd-logo.png";
+export const brandBannerUrl = "/rsd-banner.png";
 
 export const assetPhoto1 = photo1;
 export const assetPhoto2 = photo2;

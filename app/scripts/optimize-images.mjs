@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Batch photo optimiser for Happy Time Connect.
+ * Batch photo optimiser for R.S.D. Premium Watches.
  *
  * Drop camera / phone originals (JPG, PNG, HEIC-converted, whatever) into
  *   app/raw-images/
