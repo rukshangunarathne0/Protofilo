@@ -1,13 +1,9 @@
-// Runtime probe for optional product columns.
-//
-// The console can grow fields (brand, description, retail price) without
-// breaking on a database that has not been migrated yet: we ask PostgREST for
-// the columns once per session and show the fields only when they exist.
+// Optional catalogue metadata probe kept for older installations.
+// Customer prices and supplier costs are never read by the public client.
 import { supabase } from "./supabase.js";
 
 let pending = null;
-
-export const OPTIONAL_PRODUCT_COLUMNS = ["brand", "description", "retail_price"];
+export const OPTIONAL_PRODUCT_COLUMNS = ["brand", "description"];
 
 export function detectProductColumns() {
   if (!pending) {
@@ -21,7 +17,6 @@ export function detectProductColumns() {
   return pending;
 }
 
-/** Forget a cached "no" so the fields appear after the SQL has been run. */
 export function resetProductColumnProbe() {
   pending = null;
 }

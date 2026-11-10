@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "images": "node scripts/optimize-images.mjs",
+    "prices": "node scripts/build-prices.js",
     "create-admin-password-hash": "node scripts/create-admin-password-hash.mjs"
   },
   "dependencies": {

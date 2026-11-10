@@ -26,7 +26,7 @@ import {
   assetPhoto9,
 } from "./assets/photos.js";
 import { productImageSrc, productImageSrcSet, productPhoto, registerProductPhotos, isUsablePhoto } from "./assets/products.js";
-import { detectProductColumns } from "./lib/schema.js";
+import publicPriceData from "./data/products.json";
 import { ACCEPT_ATTRIBUTE, checkPhotoFile, formatBytes, optimisePhoto, publishProductPhoto } from "./lib/photos.js";
 
 const cn = (...inputs) => twMerge(clsx(inputs));
@@ -40,7 +40,9 @@ const ADMIN_USER = {
 };
 const RSD_WHATSAPP_NUMBER = "0711368623";
 const RSD_WHATSAPP_URL = "https://wa.me/94711368623";
-const rsdWhatsAppLink = (productName = "") => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hello R.S.D., I would like to enquire about ${productName || "your timepieces"}.`)}`;
+const publicPriceByName = new Map(publicPriceData.map(product => [product.name, Number(product.final_price) || 0]));
+const publicProductByName = new Map(publicPriceData.map(product => [product.name, product]));
+const rsdWhatsAppLink = (productName = "", price = 0, colour = "Not selected") => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, colour: ${colour || "Not selected"}, price: LKR ${bt(Number(price) || 0)}.`)}`;
 
 // Warm the image cache the moment a finger/mouse goes down on a product, so the
 // photo is already decoded by the time the detail sheet slides in.
@@ -156,7 +158,6 @@ function SecondaryBtn({
 const Sh = {
   overview: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
   orders: <><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z" /><path d="M3 7.5 12 12l9-4.5M12 12v9" /></>,
-  preorders: <><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2M9 2h6" /></>,
   products: <><path d="M20.6 13.4 12 22l-9-9V4h9z" /><circle cx="7.5" cy="8.5" r="1.4" /></>,
   dealers: <><circle cx="9" cy="8" r="3.2" /><path d="M2.5 20c.6-3.6 3.3-5.6 6.5-5.6s5.9 2 6.5 5.6" /><path d="M16 5.4A3.2 3.2 0 0 1 16 11M17.5 14.8c2.3.6 3.8 2.5 4.2 5.2" /></>,
   analytics: <><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></>,
@@ -358,59 +359,76 @@ const Tr = "4 Oct – 2 Nov",
     o >= 0 && o < a.length && (a[o].value += c.amount);
   }), a;
 })();
-const Wr = [],
-  hA = [{
+const hA = [{
     sku: "HT-W-214",
     name: "Meridian Automatic 40mm",
     category: "Wrist Watches",
+    gender: "Men",
+    productType: "Watches",
+    isNew: false,
     stock: 4,
     reserved: 22,
-    price: 12450,
+    price: publicPriceByName.get("Meridian Automatic 40mm") || 12450,
     image: "images/product-wrist.jpg",
     trend: [8, 12, 9, 14, 22, 19, 31]
   }, {
     sku: "HT-W-118",
     name: "Aurelia Slim Quartz",
     category: "Wrist Watches",
+    gender: "Women",
+    productType: "Watches",
+    isNew: true,
     stock: 61,
     reserved: 14,
-    price: 4190,
+    price: publicPriceByName.get("Aurelia Slim Quartz") || 4190,
     image: "images/product-wrist.jpg",
     trend: [12, 9, 14, 11, 16, 13, 18]
   }, {
     sku: "HT-W-330",
     name: "Diver Chronograph 42mm",
     category: "Wrist Watches",
+    gender: "Men",
+    productType: "Watches",
+    isNew: false,
     stock: 2,
     reserved: 7,
-    price: 15985,
+    price: publicPriceByName.get("Diver Chronograph 42mm") || 15985,
     image: "images/product-wrist.jpg",
     trend: [3, 5, 4, 7, 6, 9, 7]
   }, {
     sku: "HT-W-512",
     name: "Skeleton Tourbillon — Dealer Ed.",
     category: "Wrist Watches",
+    gender: "Unisex",
+    productType: "Watches",
+    isNew: true,
     stock: 1,
     reserved: 15,
-    price: 69377,
+    price: publicPriceByName.get("Skeleton Tourbillon — Dealer Ed.") || 69377,
     image: "images/product-wrist.jpg",
     trend: [1, 0, 2, 1, 3, 2, 2]
   }, {
     sku: "HT-C-042",
     name: "Regulator Wall Clock 30cm",
     category: "Wall Watches",
+    gender: "Unisex",
+    productType: "Wall clocks",
+    isNew: false,
     stock: 18,
     reserved: 5,
-    price: 5212,
+    price: publicPriceByName.get("Regulator Wall Clock 30cm") || 5212,
     image: "images/product-wall.jpg",
     trend: [2, 4, 3, 5, 4, 6, 5]
   }, {
     sku: "HT-C-017",
     name: "Pendulum Table Clock",
     category: "Table Watches",
+    gender: "Unisex",
+    productType: "Table clocks",
+    isNew: false,
     stock: 23,
     reserved: 3,
-    price: 4520,
+    price: publicPriceByName.get("Pendulum Table Clock") || 4520,
     image: "images/product-table.jpg",
     trend: [1, 3, 2, 4, 3, 2, 4]
   }];
@@ -424,10 +442,10 @@ const x5 = [],
     detail: "W-330 · W-512 · W-214 and 2 more below reorder point",
     action: "Open reorder list"
   }, {
-    tone: "Pre-orders",
-    title: "27 units on pre-order",
-    detail: "Awaiting supplier confirmation — PO-0412 is 6 days late",
-    action: "Review pre-orders"
+    tone: "Favourites",
+    title: "Watch favourites are ready to review",
+    detail: "See which watches visitors save most often and plan your next promotion.",
+    action: "Review favourite counts"
   }, {
     tone: "Dealers",
     title: "1 dealer pending approval",
@@ -515,7 +533,6 @@ const fp = "ht-store-v3",
       status: a.status,
       terms: a.terms
     })),
-    preorders: Wr.map(a => ({ ...a })),
     reviews: os.map((a, idx) => ({ id: idx + 1, ...a }))
   });
 function q5() {
@@ -528,7 +545,6 @@ function q5() {
       orders: Array.isArray(n.orders) && n.orders.length ? n.orders : i.orders,
       products: Array.isArray(n.products) && n.products.length ? n.products : i.products,
       dealers: Array.isArray(n.dealers) && n.dealers.length ? n.dealers : i.dealers,
-      preorders: Array.isArray(n.preorders) && n.preorders.length ? n.preorders : i.preorders,
       reviews: Array.isArray(n.reviews) && n.reviews.length ? n.reviews : i.reviews
     };
   } catch {
@@ -536,7 +552,8 @@ function q5() {
   }
 }
 function fs(a, productsList = hA) {
-  const n = a.filter(f => f.status !== "Submitted"),
+  // Revenue is earned only after the administrator marks an order Completed.
+  const n = a.filter(f => f.status === "Completed"),
     i = n.reduce((f, q) => f + q.amount, 0),
     c = n.reduce((f, q) => f + q.units, 0),
     o = n.length,
@@ -732,7 +749,7 @@ function StoreProvider({
   const adminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   const [n, i] = React.useReducer(f5, void 0, () => {
       const base = Dr();
-      const initial = typeof window === "undefined" ? base : { ...base, orders: [], dealers: [], preorders: [], reviews: [] };
+      const initial = typeof window === "undefined" ? base : { ...base, orders: [], dealers: [], reviews: [] };
       registerProductPhotos(initial.products);
       return initial;
     }),
@@ -744,7 +761,7 @@ function StoreProvider({
   const fetchFromSupabase = React.useCallback(async () => {
     if (!adminRoute) {
       try {
-        const { data, error } = await supabase.from("ht_products").select("*").order("sort_order", { ascending: true }).order("sku", { ascending: true });
+        const { data, error } = await supabase.from("ht_products").select("sku,name,category,price,image,description,colors,gender,product_type,is_new,availability").order("sku", { ascending: true });
         if (error) {
           setSyncStatus("offline");
           return;
@@ -754,13 +771,14 @@ function StoreProvider({
           name: r.name,
           category: r.category,
           price: Number(r.price) || 0,
-          stock: Number(r.stock) || 0,
-          reserved: Number(r.reserved) || 0,
           image: r.image || "images/product-wrist.jpg",
-          brand: r.brand ?? undefined,
           description: r.description ?? undefined,
-          retailPrice: r.retail_price == null ? undefined : Number(r.retail_price),
-          trend: Array.isArray(r.trend) ? r.trend.map(Number) : [0, 0, 0, 0, 0, 0, 0],
+          colors: Array.isArray(r.colors) ? r.colors : [],
+          gender: r.gender || "Unisex",
+          productType: r.product_type || "Watches",
+          isNew: !!r.is_new,
+          availability: r.availability || "Available to order",
+          trend: hA.find(product => product.sku === r.sku)?.trend || [0, 0, 0, 0, 0, 0, 0],
         }));
         registerProductPhotos(nextProducts);
         if (nextProducts.length) i({ type: "replace", state: { products: nextProducts } });
@@ -791,7 +809,14 @@ function StoreProvider({
         image: r.image || "images/product-wrist.jpg",
         brand: r.brand ?? undefined,
         description: r.description ?? undefined,
-        retailPrice: r.retail_price == null ? undefined : Number(r.retail_price),
+        colors: Array.isArray(r.colors) ? r.colors : [],
+        gender: r.gender || "Unisex",
+        productType: r.product_type || "Watches",
+        isNew: !!r.is_new,
+        availability: r.availability || "Available to order",
+        favoriteCount: Number(r.favorite_count) || 0,
+        supplierPrice: r.supplier_price == null ? undefined : Number(r.supplier_price),
+        markupPercent: r.markup_percent == null ? undefined : Number(r.markup_percent),
         trend: Array.isArray(r.trend) ? r.trend.map(Number) : [0, 0, 0, 0, 0, 0, 0],
       }));
       const nextDealers = (payload.dealers || []).map(r => ({
@@ -821,15 +846,6 @@ function StoreProvider({
           reservedQty: ln.reservedQty != null ? Number(ln.reservedQty) : undefined,
         })) : [],
       }));
-      const nextPreorders = (payload.preorders || []).map(r => ({
-        id: r.id,
-        dealer: r.dealer,
-        item: r.item,
-        units: Number(r.units) || 0,
-        expected: r.expected,
-        status: r.status,
-        progress: Number(r.progress) || 0,
-      }));
       const nextReviews = (payload.feedback || []).map(r => ({
         id: r.id,
         author: r.name,
@@ -850,7 +866,6 @@ function StoreProvider({
         products: nextProducts,
         dealers: nextDealers,
         orders: nextOrders,
-        preorders: nextPreorders,
         reviews: nextReviews,
       }});
       setSyncStatus("live");
@@ -875,11 +890,16 @@ function StoreProvider({
   React.useEffect(() => {
     if (adminRoute && (!authReady || currentUser?.role !== "admin")) return undefined;
     fetchFromSupabase();
-    if (adminRoute) return () => window.clearTimeout(syncTimer.current);
-    const channel = supabase
-      .channel("rsd-public-products")
-      .on("postgres_changes", { event: "*", schema: "public", table: "ht_products" }, scheduleSync)
-      .subscribe();
+    let channel = supabase
+      .channel(adminRoute ? "rsd-admin-realtime" : "rsd-public-products")
+      .on("postgres_changes", { event: "*", schema: "public", table: "ht_products" }, scheduleSync);
+    if (adminRoute) {
+      channel = channel
+        .on("postgres_changes", { event: "*", schema: "public", table: "ht_orders" }, scheduleSync)
+        .on("postgres_changes", { event: "*", schema: "public", table: "feedback" }, scheduleSync)
+        .on("postgres_changes", { event: "*", schema: "public", table: "ht_product_favorites" }, scheduleSync);
+    }
+    channel.subscribe();
     return () => {
       window.clearTimeout(syncTimer.current);
       supabase.removeChannel(channel);
@@ -966,15 +986,21 @@ function StoreProvider({
       };
       i({ type: "addFeedback", item: optimistic });
       try {
-        await requestAdminAction("sendFeedback", {
-          name: cleanName,
-          contact: cleanContact,
-          rating: ratingVal,
-          message: cleanMsg,
-          isDealer: !!m.isDealer,
-          roleLabel,
+        const response = await fetch("/api/feedback", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: cleanName,
+            contact: cleanContact,
+            rating: ratingVal,
+            message: cleanMsg,
+            isDealer: !!m.isDealer,
+            roleLabel,
+          }),
         });
-        await fetchFromSupabase();
+        if (!response.ok) return false;
+        if (adminRoute) await fetchFromSupabase();
         return true;
       } catch {
         return false;
@@ -1020,11 +1046,6 @@ const F0 = a => `WC-${a.reduce((i, c) => {
       label: "Orders",
       icon: "orders",
       badge: "8"
-    }, {
-      id: "preorders",
-      label: "Pre-orders",
-      icon: "preorders",
-      badge: "3"
     }]
   }, {
     group: "Catalogue",
@@ -1061,7 +1082,6 @@ const F0 = a => `WC-${a.reduce((i, c) => {
   Md = {
     overview: "Overview",
     orders: "Orders",
-    preorders: "Pre-orders",
     products: "Products",
     "new-product": "Add product",
     dealers: "Dealers",
@@ -1539,14 +1559,16 @@ function MobileOverview({
     k = x.filter(E => E.status === "Packing").length,
     O = x.filter(E => E.status === "Ready").length,
     R = f.filter(E => E.stock <= 4).length,
+    favoriteCount = f.reduce((total, product) => total + Number(product.favoriteCount || 0), 0),
+    topFavorite = [...f].sort((left, right) => Number(right.favoriteCount || 0) - Number(left.favoriteCount || 0))[0],
     J = B5(650),
     v = L0(J ? q.revenue : 0, 1400),
     C = React.useMemo(() => q.daily.slice(-Number(A)), [q.daily, A]),
     tt = React.useMemo(() => [...x].sort((E, at) => at.date.localeCompare(E.date) || at.id.localeCompare(E.id)).slice(0, 3), [x]),
     st = h.map(E => ({
       ...E,
-      revenue: x.filter(at => at.dealer === E.name && at.status !== "Submitted").reduce((at, qt) => at + qt.amount, 0)
-    })).sort((E, at) => at.revenue - E.revenue)[0],
+      revenue: x.filter(at => at.dealer === E.name && at.status === "Completed").reduce((at, qt) => at + qt.amount, 0)
+    })).sort((E, at) => at.revenue - E.revenue)[0] || { name: "No dealer data", revenue: 0 },
     g = [{
       label: "New order",
       icon: "orders",
@@ -1566,7 +1588,7 @@ function MobileOverview({
         Xr("rsd-ledger.csv", [["Order", "Dealer", "Date", "Units", "Status", "Amount LKR"], ...x.map(E => [E.id, E.dealer, E.date, E.units, E.status, E.amount])]), o("Ledger exported as CSV", "download");
       }
     }],
-    D = E => E === 0 ? a("products") : i(E === 1 ? "preorders" : "dealers");
+    D = E => E === 0 || E === 1 ? a("products") : i("dealers");
   return J ? <div className="mx-auto w-full max-w-[560px] px-4 pt-5"><div className="flex items-start justify-between gap-4"><div><LegendText className="text-ink-3">{new Intl.DateTimeFormat("en-GB", {
             weekday: "long",
             day: "numeric",
@@ -1595,15 +1617,15 @@ function MobileOverview({
         value: String(q.units),
         sub: `Across ${q.count} confirmed orders`
       }, {
-        label: "Pre-order units",
-        value: "27",
-        sub: "Awaiting supplier",
-        alert: !0
-      }].map(E => <div className="rounded-[14px] border border-line bg-panel p-3.5" key={E.label}><div className="flex items-center justify-between gap-2"><LegendText className="text-ink-3">{E.label}</LegendText>{E.alert && <span className="h-[5px] w-[5px] rounded-full bg-alert" />}</div><div className="font-display tnum mt-2.5 text-[20px] leading-none font-semibold tracking-[-0.01em] text-ink">{E.value}</div><div className="mt-2 text-[10px] leading-snug text-ink-3">{E.sub}</div></div>)}</div><div className="mt-2.5 grid grid-cols-2 gap-2.5"><button onClick={() => a("orders")} className="flex items-center gap-3 rounded-[14px] border border-line bg-panel p-3.5 text-left active:bg-raised"><RadialGauge value={N / Math.max(1, x.length)} size={56} stroke={5} label={`${Math.round(N / Math.max(1, x.length) * 100)}%`} /><div className="min-w-0"><LegendText className="text-ink-3">Fulfilment</LegendText><div className="mt-1.5 text-[13px] font-medium text-ink">{N}{" of "}{x.length}{" completed"}</div><div className="legend mt-1.5 text-gold">{k}{" packing · "}{O}{" ready"}</div></div></button><button onClick={() => a("products")} className="flex items-center gap-3 rounded-[14px] border border-line bg-panel p-3.5 text-left active:bg-raised"><RadialGauge value={R / Math.max(1, f.length)} size={56} stroke={5} label={String(R)} sub="SKU" tone="alert" /><div className="min-w-0"><LegendText className="text-ink-3">Stock health</LegendText><div className="mt-1.5 text-[13px] font-medium text-ink">{R}{" below reorder"}</div><div className="legend mt-1.5 text-alert">Review stock</div></div></button></div><div className="mt-7"><MobileSectionHeader title="Needs attention" note="3 open items" action="All alerts" onAction={() => i("preorders")} /><div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1" onScroll={E => {
+        label: "Watch favourites",
+        value: String(favoriteCount),
+        sub: topFavorite?.name ? `Most saved: ${topFavorite.name}` : "Browser saves",
+        alert: favoriteCount > 0
+      }].map(E => <div className="rounded-[14px] border border-line bg-panel p-3.5" key={E.label}><div className="flex items-center justify-between gap-2"><LegendText className="text-ink-3">{E.label}</LegendText>{E.alert && <span className="h-[5px] w-[5px] rounded-full bg-alert" />}</div><div className="font-display tnum mt-2.5 text-[20px] leading-none font-semibold tracking-[-0.01em] text-ink">{E.value}</div><div className="mt-2 text-[10px] leading-snug text-ink-3">{E.sub}</div></div>)}</div><div className="mt-2.5 grid grid-cols-2 gap-2.5"><button onClick={() => a("orders")} className="flex items-center gap-3 rounded-[14px] border border-line bg-panel p-3.5 text-left active:bg-raised"><RadialGauge value={N / Math.max(1, x.length)} size={56} stroke={5} label={`${Math.round(N / Math.max(1, x.length) * 100)}%`} /><div className="min-w-0"><LegendText className="text-ink-3">Fulfilment</LegendText><div className="mt-1.5 text-[13px] font-medium text-ink">{N}{" of "}{x.length}{" completed"}</div><div className="legend mt-1.5 text-gold">{k}{" packing · "}{O}{" ready"}</div></div></button><button onClick={() => a("products")} className="flex items-center gap-3 rounded-[14px] border border-line bg-panel p-3.5 text-left active:bg-raised"><RadialGauge value={R / Math.max(1, f.length)} size={56} stroke={5} label={String(R)} sub="SKU" tone="alert" /><div className="min-w-0"><LegendText className="text-ink-3">Stock health</LegendText><div className="mt-1.5 text-[13px] font-medium text-ink">{R}{" below reorder"}</div><div className="legend mt-1.5 text-alert">Review stock</div></div></button></div><div className="mt-7"><MobileSectionHeader title="Needs attention" note="3 open items" action="All alerts" onAction={() => a("products")} /><div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1" onScroll={E => {
         const at = E.currentTarget,
           qt = Math.round(at.scrollLeft / (at.scrollWidth / Al.length));
         j(Math.min(Al.length - 1, Math.max(0, qt)));
-      }}>{Al.map((E, at) => <button onClick={() => D(at)} className={cn("relative w-[84%] shrink-0 snap-start overflow-hidden rounded-[16px] border border-line bg-panel p-4 text-left active:scale-[0.99]", at === 0 && "border-alert/35")} key={E.tone}><div className="flex items-center justify-between gap-3"><span className={cn("flex h-8 w-8 items-center justify-center rounded-[9px]", at === 0 ? "bg-alert/12 text-alert" : "bg-gold/10 text-gold")}><Icon name={at === 0 ? "alert" : at === 1 ? "preorders" : "dealers"} className="h-4 w-4" /></span><StatusBadge tone={at === 0 ? "alert" : "gold"}>{E.tone}</StatusBadge></div><h3 className="mt-3.5 text-[15px] leading-snug font-semibold text-ink">{E.title}</h3><p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-2">{E.detail}</p><span className="legend mt-3 flex items-center gap-1.5 text-gold">{E.action}<Icon name="arrow" className="h-3 w-3" /></span></button>)}</div><div className="mt-2.5 flex justify-center gap-1.5">{Al.map((E, at) => <span className={cn("h-1 rounded-full transition-all duration-300", at === m ? "w-4 bg-gold" : "w-1 bg-line")} key={E.tone} />)}</div></div><div className="mt-7"><MobileSectionHeader title="Recent orders" note="Latest across all channels" action="See all" onAction={() => a("orders")} /><div className="overflow-hidden rounded-[16px] border border-line bg-panel">{tt.map((E, at) => <button onClick={() => a("orders")} className={cn("flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-raised", at > 0 && "border-t border-line-soft")} key={E.id}><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-line bg-raised text-[11px] font-semibold text-ink-2">{E.dealer.split(" ").slice(0, 2).map(qt => qt[0]).join("")}</span><span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-medium text-ink">{E.dealer}</span><span className="legend mt-1.5 flex items-center gap-1.5 text-ink-3">{E.id}<span className="h-2.5 w-px bg-line" />{E.units}{" units"}</span></span><span className="shrink-0 text-right"><span className="tnum block text-[12px] font-medium text-ink">{"LKR "}{bt(E.amount)}</span><span className={cn("legend mt-1.5 flex items-center justify-end gap-1.5", E.status === "Completed" ? "text-ok" : E.status === "Ready" ? "text-alert" : "text-gold")}><span className="h-[4px] w-[4px] rounded-full bg-current" />{E.status}</span></span></button>)}</div></div><div className="relative mt-4 overflow-hidden rounded-[16px] border border-gold/25 bg-gold/[0.06] p-4"><div className="flex items-center justify-between gap-3"><LegendText className="text-gold">Insight</LegendText><span className="w-[74px]"><Sparkline values={q.daily.map(E => E.value)} /></span></div><p className="mt-3 text-[13px] leading-relaxed text-ink"><span className="font-semibold">{st.name}</span>{" accounts for"}{" "}<span className="tnum text-gold">{(st.revenue / Math.max(1, q.revenue) * 100).toFixed(1)}%</span>{" of confirmed revenue this period. Spreading the allocation would lower concentration risk."}</p><button onClick={() => a("analytics")} className="legend mt-3 flex items-center gap-1.5 text-gold">See breakdown<Icon name="chevron" className="h-3 w-3" /></button></div><div className="mt-7"><MobileSectionHeader title="Activity" note="Ledger movement" action="Ledger" onAction={() => a("orders")} /><div className="overflow-hidden rounded-[16px] border border-line bg-panel">{M0.slice(0, 3).map((E, at) => <div className={cn("flex items-center gap-3 px-4 py-3.5", at > 0 && "border-t border-line-soft")} key={E.text}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-line text-ink-2"><Icon name={E.kind === "Order" ? "orders" : E.kind === "Comment" ? "comments" : "dealers"} className="h-3.5 w-3.5" /></span><div className="min-w-0 flex-1"><p className="truncate text-[12.5px] text-ink">{E.text}</p><p className="legend mt-1.5 truncate text-ink-3">{E.meta}</p></div></div>)}</div></div><p className="mt-6 pb-2 text-center text-[10.5px] leading-relaxed text-ink-3">{"Reconciled to "}{q.count}{" confirmed orders · LKR "}{bt(q.revenue)}<br />R.S.D. Premium Watches · Colombo</p></div> : <div className="mx-auto w-full max-w-[560px] px-4 pt-5"><ShimmerBlock className="h-3 w-40" /><ShimmerBlock className="mt-3 h-8 w-64" /><ShimmerBlock className="mt-5 h-[330px] w-full rounded-[20px]" /><div className="mt-4 grid grid-cols-4 gap-2">{[0, 1, 2, 3].map(E => <ShimmerBlock className="h-[74px]" key={E} />)}</div><div className="mt-4 grid grid-cols-2 gap-2.5">{[0, 1, 2, 3].map(E => <ShimmerBlock className="h-[92px]" key={E} />)}</div></div>;
+      }}>{Al.map((E, at) => <button onClick={() => D(at)} className={cn("relative w-[84%] shrink-0 snap-start overflow-hidden rounded-[16px] border border-line bg-panel p-4 text-left active:scale-[0.99]", at === 0 && "border-alert/35")} key={E.tone}><div className="flex items-center justify-between gap-3"><span className={cn("flex h-8 w-8 items-center justify-center rounded-[9px]", at === 0 ? "bg-alert/12 text-alert" : "bg-gold/10 text-gold")}><Icon name={at === 0 ? "alert" : at === 1 ? "heart" : "dealers"} className="h-4 w-4" /></span><StatusBadge tone={at === 0 ? "alert" : "gold"}>{E.tone}</StatusBadge></div><h3 className="mt-3.5 text-[15px] leading-snug font-semibold text-ink">{E.title}</h3><p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-2">{E.detail}</p><span className="legend mt-3 flex items-center gap-1.5 text-gold">{E.action}<Icon name="arrow" className="h-3 w-3" /></span></button>)}</div><div className="mt-2.5 flex justify-center gap-1.5">{Al.map((E, at) => <span className={cn("h-1 rounded-full transition-all duration-300", at === m ? "w-4 bg-gold" : "w-1 bg-line")} key={E.tone} />)}</div></div><div className="mt-7"><MobileSectionHeader title="Recent orders" note="Latest across all channels" action="See all" onAction={() => a("orders")} /><div className="overflow-hidden rounded-[16px] border border-line bg-panel">{tt.map((E, at) => <button onClick={() => a("orders")} className={cn("flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-raised", at > 0 && "border-t border-line-soft")} key={E.id}><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-line bg-raised text-[11px] font-semibold text-ink-2">{E.dealer.split(" ").slice(0, 2).map(qt => qt[0]).join("")}</span><span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-medium text-ink">{E.dealer}</span><span className="legend mt-1.5 flex items-center gap-1.5 text-ink-3">{E.id}<span className="h-2.5 w-px bg-line" />{E.units}{" units"}</span></span><span className="shrink-0 text-right"><span className="tnum block text-[12px] font-medium text-ink">{"LKR "}{bt(E.amount)}</span><span className={cn("legend mt-1.5 flex items-center justify-end gap-1.5", E.status === "Completed" ? "text-ok" : E.status === "Ready" ? "text-alert" : "text-gold")}><span className="h-[4px] w-[4px] rounded-full bg-current" />{E.status}</span></span></button>)}</div></div><div className="relative mt-4 overflow-hidden rounded-[16px] border border-gold/25 bg-gold/[0.06] p-4"><div className="flex items-center justify-between gap-3"><LegendText className="text-gold">Insight</LegendText><span className="w-[74px]"><Sparkline values={q.daily.map(E => E.value)} /></span></div><p className="mt-3 text-[13px] leading-relaxed text-ink"><span className="font-semibold">{st.name}</span>{" accounts for"}{" "}<span className="tnum text-gold">{(st.revenue / Math.max(1, q.revenue) * 100).toFixed(1)}%</span>{" of confirmed revenue this period. Spreading the allocation would lower concentration risk."}</p><button onClick={() => a("analytics")} className="legend mt-3 flex items-center gap-1.5 text-gold">See breakdown<Icon name="chevron" className="h-3 w-3" /></button></div><div className="mt-7"><MobileSectionHeader title="Activity" note="Ledger movement" action="Ledger" onAction={() => a("orders")} /><div className="overflow-hidden rounded-[16px] border border-line bg-panel">{M0.slice(0, 3).map((E, at) => <div className={cn("flex items-center gap-3 px-4 py-3.5", at > 0 && "border-t border-line-soft")} key={E.text}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-line text-ink-2"><Icon name={E.kind === "Order" ? "orders" : E.kind === "Comment" ? "comments" : "dealers"} className="h-3.5 w-3.5" /></span><div className="min-w-0 flex-1"><p className="truncate text-[12.5px] text-ink">{E.text}</p><p className="legend mt-1.5 truncate text-ink-3">{E.meta}</p></div></div>)}</div></div><p className="mt-6 pb-2 text-center text-[10.5px] leading-relaxed text-ink-3">{"Reconciled to "}{q.count}{" confirmed orders · LKR "}{bt(q.revenue)}<br />R.S.D. Premium Watches · Colombo</p></div> : <div className="mx-auto w-full max-w-[560px] px-4 pt-5"><ShimmerBlock className="h-3 w-40" /><ShimmerBlock className="mt-3 h-8 w-64" /><ShimmerBlock className="mt-5 h-[330px] w-full rounded-[20px]" /><div className="mt-4 grid grid-cols-4 gap-2">{[0, 1, 2, 3].map(E => <ShimmerBlock className="h-[74px]" key={E} />)}</div><div className="mt-4 grid grid-cols-2 gap-2.5">{[0, 1, 2, 3].map(E => <ShimmerBlock className="h-[92px]" key={E} />)}</div></div>;
 }
 function MiniTrendChart({
   values: a
@@ -1646,42 +1668,41 @@ function ProductEditorSheet({
     [m, j] = React.useState(""),
     [x, h] = React.useState(""),
     [f, q] = React.useState("Wrist Watches"),
-    [y, N] = React.useState("0"),
-    [k, O] = React.useState("0"),
+    [gender, setGender] = React.useState("Unisex"),
+    [productType, setProductType] = React.useState("Watches"),
+    [isNew, setIsNew] = React.useState(!1),
+    [availability, setAvailability] = React.useState("Available to order"),
+    [supplierPrice, setSupplierPrice] = React.useState(""),
+    [markupPercent, setMarkupPercent] = React.useState(""),
     [brand, setBrand] = React.useState(""),
     [desc, setDesc] = React.useState(""),
-    [retail, setRetail] = React.useState(""),
+    [colors, setColors] = React.useState(""),
     [R, J] = React.useState(""),
     [photo, setPhoto] = React.useState(null),
     [photoBusy, setPhotoBusy] = React.useState(!1),
     [photoNote, setPhotoNote] = React.useState(""),
     [saving, setSaving] = React.useState(!1),
-    [extras, setExtras] = React.useState("probing"),
     fileRef = React.useRef(null);
   React.useEffect(() => {
     if (!a) return;
     j(n?.sku ?? "");
     h(n?.name ?? "");
     q(n?.category ?? "Wrist Watches");
-    N(String(n?.price ?? 0));
-    O(String(n?.stock ?? 0));
+    setGender(n?.gender ?? "Unisex");
+    setProductType(n?.productType ?? "Watches");
+    setIsNew(!!n?.isNew);
+    setAvailability(n?.availability ?? "Available to order");
+    setSupplierPrice(n?.supplierPrice == null ? "" : String(n.supplierPrice));
+    setMarkupPercent(n?.markupPercent == null ? "" : String(n.markupPercent));
     setBrand(n?.brand ?? "");
     setDesc(n?.description ?? "");
-    setRetail(n?.retailPrice == null ? "" : String(n.retailPrice));
+    setColors(Array.isArray(n?.colors) ? n.colors.join(", ") : "");
     J("");
     setPhoto(null);
     setPhotoNote("");
     setPhotoBusy(!1);
     setSaving(!1);
   }, [a, n]);
-  React.useEffect(() => {
-    if (!a) return;
-    let alive = !0;
-    detectProductColumns().then(ok => alive && setExtras(ok ? "yes" : "no"));
-    return () => {
-      alive = !1;
-    };
-  }, [a]);
   const existingPhoto = n && isUsablePhoto(n.image) ? n.image : null,
     previewSrc = photo?.dataUrl ?? existingPhoto,
     onPick = async ev => {
@@ -1711,8 +1732,8 @@ function ProductEditorSheet({
       tt.preventDefault();
       if (saving) return;
       const cleanSku = m.trim().toUpperCase(),
-        price = Number(y),
-        stock = Number(k);
+        cleanSupplierPrice = supplierPrice === "" ? null : Number(supplierPrice),
+        cleanMarkup = markupPercent === "" ? null : Number(markupPercent);
       if (!cleanSku || !x.trim()) {
         J("Enter a SKU and product name.");
         return;
@@ -1725,12 +1746,12 @@ function ProductEditorSheet({
         J("That SKU already exists.");
         return;
       }
-      if (!Number.isFinite(price) || price < 0 || !Number.isInteger(stock) || stock < 0) {
-        J("Enter a valid price and whole-number stock quantity.");
+      if ((!n && cleanSupplierPrice === null) || (cleanSupplierPrice !== null && (!Number.isFinite(cleanSupplierPrice) || cleanSupplierPrice < 0))) {
+        J("Enter the supplier watch price in LKR.");
         return;
       }
-      if (retail !== "" && (!Number.isFinite(Number(retail)) || Number(retail) < 0)) {
-        J("Enter a valid retail price, or leave it empty.");
+      if (cleanMarkup !== null && (!Number.isFinite(cleanMarkup) || cleanMarkup < 0 || cleanMarkup > 500)) {
+        J("Markup override must be between 0 and 500 percent, or leave it empty.");
         return;
       }
       setSaving(!0);
@@ -1752,19 +1773,20 @@ function ProductEditorSheet({
         const payload = {
           name: x.trim(),
           category: f,
-          price: price,
-          stock: stock
+          gender,
+          productType,
+          isNew,
+          availability,
+          brand: brand.trim() || null,
+          description: desc.trim() || null,
+          colors: colors.split(",").map(item => item.trim()).filter(Boolean).slice(0, 12),
+          markupPercent: cleanMarkup,
         };
+        if (cleanSupplierPrice !== null) payload.supplierPrice = cleanSupplierPrice;
         if (image) payload.image = image;
-        if (extras === "yes") {
-          payload.brand = brand.trim() || null;
-          payload.description = desc.trim() || null;
-          payload.retailPrice = retail === "" ? null : Number(retail);
-        }
         const result = n ? await A(n.sku, payload) : await o({
           sku: cleanSku,
           ...payload,
-          reserved: 0,
           trend: [0, 0, 0, 0, 0, 0, 0]
         });
         if (result && result.ok === !1) {
@@ -1790,38 +1812,25 @@ function ProductEditorSheet({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <label><LegendText>Category</LegendText><select className={C} value={f} onChange={tt => q(tt.target.value)}><option>Wrist Watches</option><option>Wall Watches</option><option>Table Watches</option><option>Others</option></select></label>
-          <label><LegendText>Available stock</LegendText><input className={C} type="number" min="0" step="1" value={k} onChange={tt => O(tt.target.value)} required={!0} /></label>
+          <label><LegendText>Product type</LegendText><select className={C} value={productType} onChange={tt => setProductType(tt.target.value)}><option>Watches</option><option>Bracelet</option><option>Wall clocks</option><option>Table clocks</option><option>Accessories</option></select></label>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <label><LegendText>Wholesale price (LKR)</LegendText><input className={C} type="number" min="0" step="0.01" value={y} onChange={tt => N(tt.target.value)} required={!0} /></label>
-          {extras === "yes" && <label><LegendText>Retail price (LKR)</LegendText><input className={C} type="number" min="0" step="0.01" value={retail} onChange={tt => setRetail(tt.target.value)} placeholder="Optional" /></label>}
+          <label><LegendText>Audience</LegendText><select className={C} value={gender} onChange={tt => setGender(tt.target.value)}><option>Men</option><option>Women</option><option>Unisex</option><option>Kids</option></select></label>
+          <label><LegendText>Availability label</LegendText><select className={C} value={availability} onChange={tt => setAvailability(tt.target.value)}><option>Available to order</option><option>Limited availability</option><option>Coming soon</option></select></label>
         </div>
-        {extras === "yes" && <label><LegendText>Brand</LegendText><input className={C} value={brand} onChange={tt => setBrand(tt.target.value)} placeholder="e.g. Naviforce" /></label>}
-        {extras === "yes" && <label><LegendText>Description</LegendText><textarea className="mt-2 min-h-[76px] w-full rounded-[4px] border border-line bg-surface px-3 py-2 text-[16px] text-ink lg:text-[13px]" value={desc} onChange={tt => setDesc(tt.target.value)} placeholder="Short description shown to dealers" /></label>}
-        <div>
-          <LegendText>Product image</LegendText>
-          <div className="mt-2 flex items-start gap-3">
-            <div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-[10px] border border-line bg-surface">
-              {previewSrc ? <img src={previewSrc} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full w-full place-items-center text-[10px] text-ink-3">No photo</div>}
-              {photoBusy && <div className="absolute inset-0 grid place-items-center bg-surface/75 text-[10px] text-ink-2">Working…</div>}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => fileRef.current?.click()} className="legend min-h-9 rounded-[7px] border border-line bg-surface px-3 text-ink-2">{previewSrc ? "Replace photo" : "Choose photo"}</button>
-                {photo && <button type="button" onClick={() => { setPhoto(null); setPhotoNote(""); }} className="legend min-h-9 rounded-[7px] border border-line bg-surface px-3 text-ink-2">Remove</button>}
-              </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-ink-3">JPG, PNG or WebP · max 5 MB · resized to 1000 px and compressed automatically</p>
-              {photoNote && <p className="mt-1 text-[11px] leading-relaxed text-ink-2" role="status">{photoNote}</p>}
-            </div>
-          </div>
-        </div>
+        <label className="flex items-center gap-3 rounded-[7px] border border-line bg-surface px-3 py-3 text-[13px] text-ink"><input type="checkbox" checked={isNew} onChange={tt => setIsNew(tt.target.checked)} className="h-4 w-4 accent-[var(--gold)]" />Show in New arrivals</label>
+        <div className="rounded-[8px] border border-gold/30 bg-gold/[0.06] p-3.5"><LegendText className="text-gold">Automatic customer price</LegendText><p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">Enter the supplier watch price only. R.S.D. calculates the customer price, delivery and minimum profit automatically.</p><div className="mt-3 grid grid-cols-2 gap-3"><label><LegendText>Supplier watch price (LKR)</LegendText><input className={C} type="number" min="0" step="0.01" value={supplierPrice} onChange={tt => setSupplierPrice(tt.target.value)} placeholder="e.g. 525" required={!n} /></label><label><LegendText>Markup override (%)</LegendText><input className={C} type="number" min="0" max="500" step="0.01" value={markupPercent} onChange={tt => setMarkupPercent(tt.target.value)} placeholder="Use default" /></label></div></div>
+        <label><LegendText>Brand</LegendText><input className={C} value={brand} onChange={tt => setBrand(tt.target.value)} placeholder="e.g. R.S.D." /></label>
+        <label><LegendText>Colours</LegendText><input className={C} value={colors} onChange={tt => setColors(tt.target.value)} placeholder="e.g. Steel, Black, Gold" /><p className="mt-1.5 text-[11px] text-ink-3">Separate colour names with commas.</p></label>
+        <label><LegendText>Description</LegendText><textarea className="mt-2 min-h-[76px] w-full rounded-[4px] border border-line bg-surface px-3 py-2 text-[16px] text-ink lg:text-[13px]" value={desc} onChange={tt => setDesc(tt.target.value)} placeholder="Short description for the public catalogue" maxLength={1000} /></label>
+        <div><LegendText>Product image</LegendText><div className="mt-2 flex items-start gap-3"><div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-[10px] border border-line bg-surface">{previewSrc ? <img src={previewSrc} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full w-full place-items-center text-[10px] text-ink-3">No photo</div>}{photoBusy && <div className="absolute inset-0 grid place-items-center bg-surface/75 text-[10px] text-ink-2">Working…</div>}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap gap-2"><button type="button" onClick={() => fileRef.current?.click()} className="legend min-h-9 rounded-[7px] border border-line bg-surface px-3 text-ink-2">{previewSrc ? "Replace photo" : "Choose photo"}</button>{photo && <button type="button" onClick={() => { setPhoto(null); setPhotoNote(""); }} className="legend min-h-9 rounded-[7px] border border-line bg-surface px-3 text-ink-2">Remove</button>}</div><p className="mt-2 text-[11px] leading-relaxed text-ink-3">JPG, PNG or WebP · max 5 MB · resized to 1000 px and compressed automatically</p>{photoNote && <p className="mt-1 text-[11px] leading-relaxed text-ink-2" role="status">{photoNote}</p>}</div></div></div>
         <input ref={fileRef} type="file" accept={ACCEPT_ATTRIBUTE} onChange={onPick} className="sr-only" tabIndex={-1} />
-        {extras === "no" && <p className="rounded-[8px] border border-line bg-surface px-3 py-2 text-[11px] leading-relaxed text-ink-3">Brand, description and retail price unlock after running <span className="text-ink-2">app/sql/admin-product-fields.sql</span> once in Supabase. The photo field above works now.</p>}
         {R && <p role="alert" className="text-[12px] text-alert">{R}</p>}
-        <p className="text-[11px] leading-relaxed text-ink-3">Changes are saved live to Supabase and appear immediately in the dealer catalogue.</p>
+        <p className="text-[11px] leading-relaxed text-ink-3">Only the supplier price is stored as private administrator data. Customer-facing pages receive the calculated price only.</p>
       </form>
     </SheetDialog>;
 }
+
 const gh = {
     Submitted: "muted",
     Confirmed: "muted",
@@ -1910,7 +1919,7 @@ function MobileProducts({ onNavigate: navTo }) {
           q(null), navTo ? navTo("new-product") : N(!0);
         }} className="flex h-10 w-10 items-center justify-center rounded-full bg-gold-fill text-on-gold" aria-label="Add product"><Icon name="plus" /></button></div></div><div className="relative mt-5"><Icon name="search" className="pointer-events-none absolute top-1/2 left-3.5 h-[16px] w-[16px] -translate-y-1/2 text-ink-3" /><input value={c} onChange={R => o(R.target.value)} placeholder="Search SKU or product\u2026" aria-label="Search products" className="h-11 w-full rounded-[12px] border border-line bg-panel pr-10 pl-10 text-[16px] text-ink placeholder:text-ink-3/80 focus:border-gold/50" />{c && <button onClick={() => o("")} aria-label="Clear search" className="absolute top-1/2 right-2.5 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-raised text-ink-3"><Icon name="close" className="h-3 w-3" /></button>}</div><div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">{L5.map(R => <button onClick={() => p(R)} aria-pressed={A === R} className={cn("legend flex min-h-[34px] shrink-0 items-center rounded-full border px-3", A === R ? "border-gold/50 bg-gold/12 text-gold" : "border-line bg-panel text-ink-2")} key={R}>{R === "All" ? "All lines" : R}</button>)}</div><ul className="mt-4 flex flex-col gap-2.5">{k.map(R => {
         const J = R.stock <= 4;
-        return <li key={R.sku}><button onClick={() => h(R)} className="flex w-full items-center gap-3 rounded-[15px] border border-line bg-panel p-3 text-left active:scale-[0.99] active:bg-raised"><div className="relative h-[58px] w-[58px] shrink-0 overflow-hidden rounded-[11px] border border-line bg-surface"><img src={Lr(R.sku, R.category)} alt={R.name} className="h-full w-full object-cover" loading="lazy" decoding="async" />{J && <span className="absolute top-1 right-1 h-[6px] w-[6px] rounded-full bg-alert ring-2 ring-panel" />}</div><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><span className="truncate text-[13.5px] leading-snug font-medium text-ink">{R.name}</span><Icon name="chevron" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-3" /></div><div className="legend mt-1.5 text-ink-3">{R.sku}{" · "}{R.category}</div><div className="mt-2 flex items-center justify-between gap-3"><span className="font-display tnum text-[16px] font-semibold text-ink">{"LKR "}{bt(R.price)}</span><span className={cn("legend", J ? "text-alert" : "text-ok")}>{R.stock}{" in stock"}</span></div></div></button></li>;
+        return <li key={R.sku}><button onClick={() => h(R)} className="flex w-full items-center gap-3 rounded-[15px] border border-line bg-panel p-3 text-left active:scale-[0.99] active:bg-raised"><div className="relative h-[58px] w-[58px] shrink-0 overflow-hidden rounded-[11px] border border-line bg-surface"><img src={Lr(R.sku, R.category)} alt={R.name} className="h-full w-full object-cover" loading="lazy" decoding="async" />{J && <span className="absolute top-1 right-1 h-[6px] w-[6px] rounded-full bg-alert ring-2 ring-panel" />}</div><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><span className="truncate text-[13.5px] leading-snug font-medium text-ink">{R.name}</span><Icon name="chevron" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-3" /></div><div className="legend mt-1.5 text-ink-3">{R.sku}{" · "}{R.category}</div><div className="mt-2 flex items-center justify-between gap-3"><span className="font-display tnum text-[16px] font-semibold text-ink">{"LKR "}{bt(R.price)}</span><span className="legend text-ink-3">{Number(R.favoriteCount || 0)} saved</span><span className={cn("legend", J ? "text-alert" : "text-ok")}>{R.stock}{" in stock"}</span></div></div></button></li>;
       })}</ul>{k.length === 0 && <div className="mt-4"><MobileEmptyState icon="products" title="No products found" body={`Nothing for “${c}” in ${A === "All" ? "the catalogue" : A}. Try another SKU or line.`} action={{
         label: "Reset",
         onClick: () => {
@@ -1920,7 +1929,7 @@ function MobileProducts({ onNavigate: navTo }) {
         q(x), h(null), N(!0);
       }} className="flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-[11px] border border-line text-ink"><Icon name="products" className="h-4 w-4" /><span className="legend">Edit product</span></button><button onClick={() => {
         i(x.sku, 24), a(`Added 24 units to ${x.sku}`, "check"), h(null);
-      }} className="flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-[11px] bg-gold-fill text-on-gold"><Icon name="check" className="h-4 w-4" /><span className="legend">Add 24 stock</span></button></div>}>{x && <div><div className="relative h-[168px] overflow-hidden rounded-[14px] border border-line"><img src={Lr(x.sku, x.category)} alt={x.name} className="h-full w-full object-cover" loading="eager" fetchPriority="high" decoding="async" /><div className="absolute inset-0 bg-gradient-to-t from-panel/80 to-transparent" /><span className="absolute bottom-3 left-3"><StatusBadge tone={x.stock <= 4 ? "alert" : "ok"}>{x.stock <= 4 ? "Reorder point reached" : "Healthy stock"}</StatusBadge></span></div><div className="mt-4 flex items-end justify-between gap-4"><div><LegendText className="text-ink-3">Trade price</LegendText><div className="font-display tnum mt-2 text-[28px] leading-none font-semibold tracking-[-0.02em] text-ink">{"LKR "}{bt(x.price)}</div></div><span className="w-[86px]"><Sparkline values={x.trend} /></span></div><div className="mt-5 grid grid-cols-2 gap-2.5">{[["On hand", String(x.stock), x.stock <= 4 ? "text-alert" : "text-ink"], ["Reserved", String(x.reserved), "text-ink"], ["Reorder point", x.category === "Wrist Watches" ? "4 units" : "10 units", "text-ink-2"], ["Category", x.category, "text-ink-2"]].map(([R, J, v]) => <div className="rounded-[12px] border border-line bg-surface p-3.5" key={R}><LegendText className="text-ink-3">{R}</LegendText><div className={cn("font-display tnum mt-2 text-[19px] leading-none font-semibold", v)}>{J}</div></div>)}</div><div className="mt-4 rounded-[12px] border border-line bg-surface p-4"><div className="flex items-baseline justify-between"><LegendText className="text-ink-3">7-day movement</LegendText><span className="legend text-ok">{"▲ trending"}</span></div><div className="mt-2"><Sparkline values={x.trend} /></div></div></div>}</SheetDialog><ProductEditorSheet open={y} product={f} onClose={() => N(!1)} /></div>;
+      }} className="flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-[11px] bg-gold-fill text-on-gold"><Icon name="check" className="h-4 w-4" /><span className="legend">Add 24 stock</span></button></div>}>{x && <div><div className="relative h-[168px] overflow-hidden rounded-[14px] border border-line"><img src={Lr(x.sku, x.category)} alt={x.name} className="h-full w-full object-cover" loading="eager" fetchPriority="high" decoding="async" /><div className="absolute inset-0 bg-gradient-to-t from-panel/80 to-transparent" /><span className="absolute bottom-3 left-3"><StatusBadge tone={x.stock <= 4 ? "alert" : "ok"}>{x.stock <= 4 ? "Reorder point reached" : "Healthy stock"}</StatusBadge></span></div><div className="mt-4 flex items-end justify-between gap-4"><div><LegendText className="text-ink-3">Trade price</LegendText><div className="font-display tnum mt-2 text-[28px] leading-none font-semibold tracking-[-0.02em] text-ink">{"LKR "}{bt(x.price)}</div></div><span className="w-[86px]"><Sparkline values={x.trend} /></span></div><div className="mt-5 grid grid-cols-2 gap-2.5">{[["On hand", String(x.stock), x.stock <= 4 ? "text-alert" : "text-ink"], ["Reserved", String(x.reserved), "text-ink"], ["Favourites", String(x.favoriteCount || 0), "text-gold"], ["Category", x.category, "text-ink-2"]].map(([R, J, v]) => <div className="rounded-[12px] border border-line bg-surface p-3.5" key={R}><LegendText className="text-ink-3">{R}</LegendText><div className={cn("font-display tnum mt-2 text-[19px] leading-none font-semibold", v)}>{J}</div></div>)}</div><div className="mt-4 rounded-[12px] border border-line bg-surface p-4"><div className="flex items-baseline justify-between"><LegendText className="text-ink-3">7-day movement</LegendText><span className="legend text-ok">{"▲ trending"}</span></div><div className="mt-2"><Sparkline values={x.trend} /></div></div></div>}</SheetDialog><ProductEditorSheet open={y} product={f} onClose={() => N(!1)} /></div>;
 }
 const Vh = ["var(--gold)", "var(--gold-soft)", "#a8a294", "#6e685e", "#4a4a50", "#2e2e33"];
 function MobileReports() {
@@ -1938,7 +1947,7 @@ function MobileReports() {
     h = React.useMemo(() => j.reduce((k, O) => O.value > k.value ? O : k, j[0]), [j]),
     f = React.useMemo(() => c.map(k => ({
       ...k,
-      revenue: n.filter(O => O.dealer === k.name && O.status !== "Submitted").reduce((O, R) => O + R.amount, 0)
+      revenue: n.filter(O => O.dealer === k.name && O.status === "Completed").reduce((O, R) => O + R.amount, 0)
     })).filter(k => k.revenue > 0).sort((k, O) => O.revenue - k.revenue).map((k, O) => ({
       ...k,
       share: k.revenue / Math.max(1, A),
@@ -1946,14 +1955,14 @@ function MobileReports() {
     })), [c, n, A]),
     q = React.useMemo(() => {
       const k = new Map();
-      return n.filter(O => O.status !== "Submitted").forEach(O => k.set(O.channel, (k.get(O.channel) ?? 0) + O.amount)), [...k.entries()].map(([O, R]) => ({
+      return n.filter(O => O.status === "Completed").forEach(O => k.set(O.channel, (k.get(O.channel) ?? 0) + O.amount)), [...k.entries()].map(([O, R]) => ({
         label: O,
         value: R
       })).sort((O, R) => R.value - O.value);
     }, [n]),
     y = React.useMemo(() => {
       const k = new Map();
-      return n.filter(O => O.status !== "Submitted").forEach(O => O.lines.forEach(R => {
+      return n.filter(O => O.status === "Completed").forEach(O => O.lines.forEach(R => {
         const J = k.get(R.sku) ?? {
           name: R.name,
           units: 0,
@@ -2019,18 +2028,22 @@ function MobileMore({
     {
       reset: p,
       orders: m,
+      products,
       reviews: rList = []
     } = qe(),
+    favoriteCount = products.reduce((total, product) => total + Number(product.favoriteCount || 0), 0),
+    topFavorite = [...products].sort((left, right) => Number(right.favoriteCount || 0) - Number(left.favoriteCount || 0))[0],
     ratedList = rList.filter(item => item.rating > 0),
     avgScore = ratedList.length ? (ratedList.reduce((acc, item) => acc + item.rating, 0) / ratedList.length).toFixed(1) : "–",
     [j, x] = React.useState(!0),
     [h, f] = React.useState(!0),
     [q, y] = React.useState(!0);
   return <div className="mx-auto w-full max-w-[560px] px-4 pt-5"><LegendText className="text-ink-3">System</LegendText><h1 className="font-display mt-2 text-[27px] leading-none font-semibold tracking-[-0.02em] text-ink">More</h1><div className="mt-5 flex items-center gap-4 rounded-[18px] border border-line bg-panel p-4"><div className="relative"><div className="flex h-14 w-14 items-center justify-center rounded-full border border-gold/40 bg-gold/12 text-[16px] font-semibold text-gold">AD</div><span className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-panel bg-ok" /></div><div className="min-w-0 flex-1"><div className="text-[16px] font-semibold text-ink">Admin</div><div className="legend mt-1.5 text-ink-3">Administrator · Colombo 10</div><div className="mt-2 flex items-center gap-2"><span className="legend rounded-full border border-ok/40 px-2 py-[3px] text-ok">Active session</span><span className="legend text-ink-3">Supabase Cloud</span></div></div></div><div className="mt-6"><MobileSectionHeader title="Operations" note="Everything outside the daily tabs" /><div className="overflow-hidden rounded-[16px] border border-line bg-panel">{[{
-          label: "Pre-orders",
-          value: "27 units",
-          icon: "preorders",
-          run: () => c("preorders")
+          label: "Watch favourites",
+          value: `${favoriteCount} saves`,
+          icon: "heart",
+          run: () => i("products"),
+          note: topFavorite?.name ? `Most saved: ${topFavorite.name}` : "No saves yet"
         }, {
           label: "Dealers",
           value: "1 pending",
@@ -2052,7 +2065,7 @@ function MobileMore({
           value: "30 days",
           icon: "analytics",
           run: () => i("analytics")
-        }].map((N, k) => <button onClick={N.run} className={cn("flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-raised", k > 0 && "border-t border-line-soft")} key={N.label}><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-line bg-raised text-ink-2"><Icon name={N.icon} className="h-4 w-4" /></span><span className="flex-1 text-[13.5px] text-ink">{N.label}</span><span className={cn("legend", N.alert ? "text-alert" : "text-ink-3")}>{N.value}</span><Icon name="chevron" className="h-3.5 w-3.5 text-ink-3" /></button>)}</div></div><div className="mt-6"><MobileSectionHeader title="Appearance" note="Applies instantly across the console" /><div className="rounded-[16px] border border-line bg-panel p-4"><div className="flex items-center justify-between gap-4"><div><div className="text-[13.5px] text-ink">Theme</div><p className="mt-1 text-[11.5px] text-ink-3">Graphite dial or ivory service manual.</p></div><div className="flex gap-1 rounded-[10px] border border-line bg-surface p-1">{["dark", "light"].map(N => <button onClick={() => {
+        }].map((N, k) => <button onClick={N.run} className={cn("flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-raised", k > 0 && "border-t border-line-soft")} key={N.label}><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-line bg-raised text-ink-2"><Icon name={N.icon} className="h-4 w-4" /></span><span className="flex-1 text-[13.5px] text-ink">{N.label}</span><span className="text-right"><span className={cn("legend block", N.alert ? "text-alert" : "text-ink-3")}>{N.value}</span>{N.note && <span className="legend mt-1 block max-w-[130px] truncate text-ink-3">{N.note}</span>}</span><Icon name="chevron" className="h-3.5 w-3.5 text-ink-3" /></button>)}</div></div><div className="mt-6"><MobileSectionHeader title="Appearance" note="Applies instantly across the console" /><div className="rounded-[16px] border border-line bg-panel p-4"><div className="flex items-center justify-between gap-4"><div><div className="text-[13.5px] text-ink">Theme</div><p className="mt-1 text-[11.5px] text-ink-3">Graphite dial or ivory service manual.</p></div><div className="flex gap-1 rounded-[10px] border border-line bg-surface p-1">{["dark", "light"].map(N => <button onClick={() => {
               n(N), Bn(8);
             }} aria-pressed={a === N} className={cn("legend flex min-h-[32px] items-center gap-1.5 rounded-[7px] px-2.5", a === N ? "bg-gold-fill text-on-gold" : "text-ink-2")} key={N}><Icon name={N === "dark" ? "moon" : "sun"} className="h-3.5 w-3.5" />{N === "dark" ? "Dark" : "Light"}</button>)}</div></div></div></div><div className="mt-6"><MobileSectionHeader title="Notifications" note="What reaches this device" /><div className="rounded-[16px] border border-line bg-panel px-4">{[{
           label: "Low-stock alerts",
@@ -2073,7 +2086,7 @@ function MobileMore({
             N.set(O), N.label === "Haptic feedback" && Bn(12), o(`${N.label} ${O ? "on" : "off"}`, "check");
           }} /></div>)}</div></div><div className="mt-6"><MobileSectionHeader title="Data" note="Reconciled 2 Nov 2025" /><div className="overflow-hidden rounded-[16px] border border-line bg-panel"><button onClick={() => {
           Xr("rsd-orders.csv", [["Order", "Dealer", "City", "Date", "Units", "Status", "Amount LKR"], ...m.map(N => [N.id, N.dealer, N.city, N.date, N.units, N.status, N.amount])]), o("Full ledger exported", "download");
-        }} className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-raised"><span className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-line bg-raised text-ink-2"><Icon name="download" className="h-4 w-4" /></span><span className="flex-1 text-[13.5px] text-ink">Export ledger</span><span className="legend text-ink-3">CSV</span></button><div className="flex items-center justify-between border-t border-line-soft px-4 py-3.5"><span className="text-[13.5px] text-ink">Period revenue</span><span className="tnum text-[12px] text-gold">{"LKR "}{bt(m.filter(N => N.status !== "Submitted").reduce((N, k) => N + k.amount, 0))}</span></div><div className="flex items-center justify-between border-t border-line-soft px-4 py-3.5"><span className="text-[13.5px] text-ink">Open pre-orders</span><span className="tnum text-[12px] text-ink-2">{Wr.length}{" POs"}</span></div></div></div><div className="mt-6"><MobileSectionHeader title="Supabase cloud ledger" note="Orders and stock sync live across devices" /><button onClick={() => {
+        }} className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-raised"><span className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-line bg-raised text-ink-2"><Icon name="download" className="h-4 w-4" /></span><span className="flex-1 text-[13.5px] text-ink">Export ledger</span><span className="legend text-ink-3">CSV</span></button><div className="flex items-center justify-between border-t border-line-soft px-4 py-3.5"><span className="text-[13.5px] text-ink">Period revenue</span><span className="tnum text-[12px] text-gold">{"LKR "}{bt(m.filter(N => N.status === "Completed").reduce((N, k) => N + k.amount, 0))}</span></div></div></div><div className="mt-6"><MobileSectionHeader title="Supabase cloud ledger" note="Orders and stock sync live across devices" /><button onClick={() => {
         window.confirm("Reset the Supabase cloud ledger to the baseline sample data?") && (p(), o("Cloud ledger reset to baseline sample data"));
       }} className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-[12px] border border-line text-[12.5px] text-ink-2 active:bg-raised"><Icon name="alert" className="h-4 w-4" />Reset cloud ledger to sample data</button></div><div className="mt-6 overflow-hidden rounded-[16px] border border-gold/25 bg-gold/[0.06] p-4"><div className="flex items-center gap-2.5"><span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-gold/15 text-gold"><Icon name="download" className="h-4 w-4" /></span><LegendText className="text-gold">Install to home screen</LegendText></div><p className="mt-2.5 text-[12px] leading-relaxed text-ink-2">{"In Safari or Chrome, open the share menu and choose "}<span className="text-ink">Add to Home Screen</span>. The console then launches full-screen with this theme and your last screen.</p></div><button onClick={A} className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[12px] border border-alert/35 text-[13px] text-alert active:bg-alert/10"><Icon name="logout" className="h-4 w-4" />Sign out of admin@rsd.com</button><div className="mt-6 pb-2 text-center"><LegendText className="text-ink-3">R.S.D. Premium Watches · v2.4</LegendText><p className="mt-2 text-[10.5px] leading-relaxed text-ink-3">R.S.D. Premium Watches · Colombo 01<br />Ledger reconciled 2 November 2025</p></div></div>;
 }
@@ -2198,13 +2211,11 @@ function MobileShell({
       }} transition={{
         duration: .2,
         ease: Ft
-      }} className="fixed inset-0 z-[85] overflow-y-auto bg-surface"><div className="safe-top sticky top-0 z-10 border-b border-line bg-surface/95 backdrop-blur-xl"><div className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-2.5"><div className="relative flex-1"><Icon name="search" className="pointer-events-none absolute top-1/2 left-3 h-[16px] w-[16px] -translate-y-1/2 text-ink-3" /><input autoFocus={!0} value={O} onChange={g => R(g.target.value)} placeholder="Orders, SKUs, dealers\u2026" aria-label="Search console" className="h-11 w-full rounded-[12px] border border-line bg-panel pr-3 pl-9 text-[16px] text-ink placeholder:text-ink-3/80 focus:border-gold/50" /></div><button onClick={() => f(null)} className="legend min-h-[40px] px-1 text-ink-2">Cancel</button></div></div><div className="mx-auto w-full max-w-[560px] px-4 py-4">{O.trim() ? C ? <div className="flex flex-col gap-5">{v.orders.length > 0 && <div><LegendText className="mb-2 text-ink-3">Orders</LegendText><div className="overflow-hidden rounded-[14px] border border-line bg-panel">{v.orders.map((g, D) => <button onClick={() => J("orders")} className={cn("flex w-full items-center gap-3 px-4 py-3 text-left active:bg-raised", D > 0 && "border-t border-line-soft")} key={g.id}><span className="tnum w-[62px] shrink-0 text-[11px] text-gold">{g.id}</span><span className="min-w-0 flex-1 truncate text-[12.5px] text-ink">{g.dealer}</span><span className="tnum shrink-0 text-[11px] text-ink-3">{bt(g.amount)}</span></button>)}</div></div>}{v.products.length > 0 && <div><LegendText className="mb-2 text-ink-3">Catalogue</LegendText><div className="overflow-hidden rounded-[14px] border border-line bg-panel">{v.products.map((g, D) => <button onClick={() => J("products")} className={cn("flex w-full items-center gap-3 px-4 py-3 text-left active:bg-raised", D > 0 && "border-t border-line-soft")} key={g.sku}><span className="tnum w-[62px] shrink-0 text-[11px] text-gold">{g.sku}</span><span className="min-w-0 flex-1 truncate text-[12.5px] text-ink">{g.name}</span><span className="tnum shrink-0 text-[11px] text-ink-3">{g.stock}{" in stock"}</span></button>)}</div></div>}{v.dealers.length > 0 && <div><LegendText className="mb-2 text-ink-3">Dealers</LegendText><div className="overflow-hidden rounded-[14px] border border-line bg-panel">{v.dealers.map((g, D) => <button onClick={() => f("dealers")} className={cn("flex w-full items-center gap-3 px-4 py-3 text-left active:bg-raised", D > 0 && "border-t border-line-soft")} key={g.name}><span className="min-w-0 flex-1 truncate text-[12.5px] text-ink">{g.name}</span><span className="legend shrink-0 text-ink-3">{g.city}</span></button>)}</div></div>}</div> : <div className="rounded-[16px] border border-dashed border-line px-5 py-8 text-center"><span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-line text-ink-3"><Icon name="search" className="h-5 w-5" /></span><h3 className="mt-4 text-[14px] font-semibold text-ink">{"No matches for “"}{O}{"”"}</h3><p className="mt-2 text-[12px] leading-relaxed text-ink-3">Try an order code like WC-1009, a SKU like HT-W-214, or a dealer name.</p></div> : <><LegendText className="text-ink-3">Recent searches</LegendText><div className="mt-3 flex flex-wrap gap-2">{["WC-1009", "Meridian", "Kandy", "Tourbillon", "Sakura"].map(g => <button onClick={() => R(g)} className="legend flex min-h-[34px] items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-ink-2" key={g}><Icon name="search" className="h-3 w-3 text-ink-3" />{g}</button>)}</div><div className="mt-6 overflow-hidden rounded-[16px] border border-line bg-panel">{["Orders", "Catalogue", "Reports", "Pre-orders"].map((g, D) => <button onClick={() => J(g === "Orders" ? "orders" : g === "Catalogue" ? "products" : g === "Reports" ? "analytics" : "more")} className={cn("flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-raised", D > 0 && "border-t border-line-soft")} key={g}><span className="flex h-8 w-8 items-center justify-center rounded-[9px] border border-line text-ink-2"><Icon name={g === "Orders" ? "orders" : g === "Catalogue" ? "products" : g === "Reports" ? "analytics" : "preorders"} className="h-3.5 w-3.5" /></span><span className="flex-1 text-[13px] text-ink">{"Go to "}{g}</span><Icon name="chevron" className="h-3.5 w-3.5 text-ink-3" /></button>)}</div></>}</div></motion.div>}</AnimatePresence><SheetDialog open={h === "notifications"} onClose={() => f(null)} eyebrow="Notifications" title="What needs you" footer={<button onClick={() => {
+      }} className="fixed inset-0 z-[85] overflow-y-auto bg-surface"><div className="safe-top sticky top-0 z-10 border-b border-line bg-surface/95 backdrop-blur-xl"><div className="mx-auto flex w-full max-w-[560px] items-center gap-2 px-4 py-2.5"><div className="relative flex-1"><Icon name="search" className="pointer-events-none absolute top-1/2 left-3 h-[16px] w-[16px] -translate-y-1/2 text-ink-3" /><input autoFocus={!0} value={O} onChange={g => R(g.target.value)} placeholder="Orders, SKUs, dealers\u2026" aria-label="Search console" className="h-11 w-full rounded-[12px] border border-line bg-panel pr-3 pl-9 text-[16px] text-ink placeholder:text-ink-3/80 focus:border-gold/50" /></div><button onClick={() => f(null)} className="legend min-h-[40px] px-1 text-ink-2">Cancel</button></div></div><div className="mx-auto w-full max-w-[560px] px-4 py-4">{O.trim() ? C ? <div className="flex flex-col gap-5">{v.orders.length > 0 && <div><LegendText className="mb-2 text-ink-3">Orders</LegendText><div className="overflow-hidden rounded-[14px] border border-line bg-panel">{v.orders.map((g, D) => <button onClick={() => J("orders")} className={cn("flex w-full items-center gap-3 px-4 py-3 text-left active:bg-raised", D > 0 && "border-t border-line-soft")} key={g.id}><span className="tnum w-[62px] shrink-0 text-[11px] text-gold">{g.id}</span><span className="min-w-0 flex-1 truncate text-[12.5px] text-ink">{g.dealer}</span><span className="tnum shrink-0 text-[11px] text-ink-3">{bt(g.amount)}</span></button>)}</div></div>}{v.products.length > 0 && <div><LegendText className="mb-2 text-ink-3">Catalogue</LegendText><div className="overflow-hidden rounded-[14px] border border-line bg-panel">{v.products.map((g, D) => <button onClick={() => J("products")} className={cn("flex w-full items-center gap-3 px-4 py-3 text-left active:bg-raised", D > 0 && "border-t border-line-soft")} key={g.sku}><span className="tnum w-[62px] shrink-0 text-[11px] text-gold">{g.sku}</span><span className="min-w-0 flex-1 truncate text-[12.5px] text-ink">{g.name}</span><span className="tnum shrink-0 text-[11px] text-ink-3">{g.stock}{" in stock"}</span></button>)}</div></div>}{v.dealers.length > 0 && <div><LegendText className="mb-2 text-ink-3">Dealers</LegendText><div className="overflow-hidden rounded-[14px] border border-line bg-panel">{v.dealers.map((g, D) => <button onClick={() => f("dealers")} className={cn("flex w-full items-center gap-3 px-4 py-3 text-left active:bg-raised", D > 0 && "border-t border-line-soft")} key={g.name}><span className="min-w-0 flex-1 truncate text-[12.5px] text-ink">{g.name}</span><span className="legend shrink-0 text-ink-3">{g.city}</span></button>)}</div></div>}</div> : <div className="rounded-[16px] border border-dashed border-line px-5 py-8 text-center"><span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-line text-ink-3"><Icon name="search" className="h-5 w-5" /></span><h3 className="mt-4 text-[14px] font-semibold text-ink">{"No matches for “"}{O}{"”"}</h3><p className="mt-2 text-[12px] leading-relaxed text-ink-3">Try an order code like WC-1009, a SKU like HT-W-214, or a dealer name.</p></div> : <><LegendText className="text-ink-3">Recent searches</LegendText><div className="mt-3 flex flex-wrap gap-2">{["WC-1009", "Meridian", "Kandy", "Tourbillon", "Sakura"].map(g => <button onClick={() => R(g)} className="legend flex min-h-[34px] items-center gap-1.5 rounded-full border border-line bg-panel px-3 text-ink-2" key={g}><Icon name="search" className="h-3 w-3 text-ink-3" />{g}</button>)}</div><div className="mt-6 overflow-hidden rounded-[16px] border border-line bg-panel">{["Orders", "Catalogue", "Reports"].map((g, D) => <button onClick={() => J(g === "Orders" ? "orders" : g === "Catalogue" ? "products" : g === "Reports" ? "analytics" : "more")} className={cn("flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-raised", D > 0 && "border-t border-line-soft")} key={g}><span className="flex h-8 w-8 items-center justify-center rounded-[9px] border border-line text-ink-2"><Icon name={g === "Orders" ? "orders" : g === "Catalogue" ? "products" : g === "Reports" ? "analytics" : "heart"} className="h-3.5 w-3.5" /></span><span className="flex-1 text-[13px] text-ink">{"Go to "}{g}</span><Icon name="chevron" className="h-3.5 w-3.5 text-ink-3" /></button>)}</div></>}</div></motion.div>}</AnimatePresence><SheetDialog open={h === "notifications"} onClose={() => f(null)} eyebrow="Notifications" title="What needs you" footer={<button onClick={() => {
       y(!0), f(null), o("All notifications marked read");
     }} className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-[11px] bg-gold-fill text-on-gold"><Icon name="check" className="h-4 w-4" /><span className="legend">Mark all read</span></button>}><div className="flex flex-col gap-2.5">{Al.map((g, D) => <button onClick={() => {
-          f(null), D === 0 ? J("products") : f(D === 1 ? "preorders" : "dealers");
-        }} className={cn("rounded-[13px] border bg-surface p-3.5 text-left active:bg-raised", D === 0 ? "border-alert/30" : "border-line")} key={g.tone}><div className="flex items-center gap-2"><span className={cn("h-[6px] w-[6px] rounded-full", q ? "bg-line" : "bg-gold")} /><StatusBadge tone={D === 0 ? "alert" : "gold"}>{g.tone}</StatusBadge><span className="legend ml-auto text-ink-3">2 Nov</span></div><h3 className="mt-2.5 text-[13px] font-semibold text-ink">{g.title}</h3><p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-2">{g.detail}</p></button>)}</div><div className="mt-5"><LegendText className="mb-2 text-ink-3">Recent comments</LegendText><div className="overflow-hidden rounded-[13px] border border-line bg-surface">{rList.slice(0, 2).map((g, D) => <div className={cn("px-3.5 py-3", D > 0 && "border-t border-line-soft")} key={g.id ?? g.author}><div className="flex items-center justify-between gap-2"><span className="text-[12px] text-ink">{g.author}</span>{g.rating > 0 && <MiniStars n={g.rating} size={10} />}</div><p className="mt-1.5 truncate text-[11px] text-ink-3">{g.body}</p></div>)}</div></div></SheetDialog><NewOrderSheet open={h === "newOrder"} onClose={() => f(null)} /><SheetDialog open={h === "preorders"} onClose={() => f(null)} eyebrow="Workspace" title="Pre-orders">{A.some(g => g.channel === "Pre-order") && <div className="mb-5"><LegendText className="mb-3 text-gold">Dealer requests</LegendText><div className="flex flex-col gap-2">{A.filter(g => g.channel === "Pre-order").map(g => <div className="rounded-[12px] border border-line bg-surface p-3" key={g.id}><div className="flex items-center justify-between gap-3"><span className="tnum text-[12px] text-gold">{g.id}</span><span className="text-[12px] text-ink-2">{g.units}{" units"}</span></div><div className="mt-2 text-[13px] text-ink">{g.dealer}</div><select aria-label={`Update status for ${g.id}`} value={g.status} onChange={D => x(g.id, D.target.value)} className="mt-3 h-10 w-full rounded-[7px] border border-line bg-panel px-3 text-[13px] text-ink">{["Submitted", "Confirmed", "Packing", "Ready", "Completed"].map((D, E, at) => <option value={D} disabled={E < at.indexOf(g.status)} key={D}>{D}</option>)}</select></div>)}</div></div>}<p className="text-[12px] leading-relaxed text-ink-2">27 units committed across three purchase orders. Dates are supplier-confirmed; anything over seven days late is escalated.</p><ul className="mt-4 flex flex-col gap-2.5">{Wr.map(g => <li className="rounded-[13px] border border-line bg-surface p-3.5" key={g.id}><div className="flex items-center justify-between gap-2"><span className="tnum text-[11px] text-gold">{g.id}</span><StatusBadge tone={g.status === "Awaiting supplier" ? "alert" : g.status === "In transit" ? "gold" : "ok"}>{g.status}</StatusBadge></div><div className="mt-2 text-[13px] leading-snug font-medium text-ink">{g.item}</div><div className="legend mt-1.5 text-ink-3">{g.dealer}{" · "}{g.units}{" units · due "}{g.expected}</div><div className="mt-3 h-[4px] w-full rounded-full bg-line"><div className={cn("h-full rounded-full", g.progress > .5 ? "bg-gold" : "bg-alert")} style={{
-              width: `${Math.max(6, g.progress * 100)}%`
-            }} /></div></li>)}</ul></SheetDialog><SheetDialog open={h === "dealers"} onClose={() => f(null)} eyebrow="Catalogue" title="Dealers"><div className="rounded-[14px] border border-gold/30 bg-gold/[0.06] p-4"><div className="flex items-center justify-between gap-3"><div><LegendText className="text-gold">Pending approval</LegendText><div className="mt-2 text-[14px] font-semibold text-ink">Kurunegala Hourglass</div><p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-2">Applied 19 Oct · Net 14 requested · opening order 20 units.</p></div><StatusBadge tone={k === "pending" ? "alert" : k === "approved" ? "ok" : "muted"}>{k === "pending" ? "Review" : k === "approved" ? "Approved" : "Declined"}</StatusBadge></div>{k === "pending" ? <div className="mt-3 flex gap-2"><button onClick={() => {
+          f(null), D === 2 ? J("dealers") : J("products");
+        }} className={cn("rounded-[13px] border bg-surface p-3.5 text-left active:bg-raised", D === 0 ? "border-alert/30" : "border-line")} key={g.tone}><div className="flex items-center gap-2"><span className={cn("h-[6px] w-[6px] rounded-full", q ? "bg-line" : "bg-gold")} /><StatusBadge tone={D === 0 ? "alert" : "gold"}>{g.tone}</StatusBadge><span className="legend ml-auto text-ink-3">2 Nov</span></div><h3 className="mt-2.5 text-[13px] font-semibold text-ink">{g.title}</h3><p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-2">{g.detail}</p></button>)}</div><div className="mt-5"><LegendText className="mb-2 text-ink-3">Recent comments</LegendText><div className="overflow-hidden rounded-[13px] border border-line bg-surface">{rList.slice(0, 2).map((g, D) => <div className={cn("px-3.5 py-3", D > 0 && "border-t border-line-soft")} key={g.id ?? g.author}><div className="flex items-center justify-between gap-2"><span className="text-[12px] text-ink">{g.author}</span>{g.rating > 0 && <MiniStars n={g.rating} size={10} />}</div><p className="mt-1.5 truncate text-[11px] text-ink-3">{g.body}</p></div>)}</div></div></SheetDialog><NewOrderSheet open={h === "newOrder"} onClose={() => f(null)} /><SheetDialog open={h === "dealers"} onClose={() => f(null)} eyebrow="Catalogue" title="Dealers"><div className="rounded-[14px] border border-gold/30 bg-gold/[0.06] p-4"><div className="flex items-center justify-between gap-3"><div><LegendText className="text-gold">Pending approval</LegendText><div className="mt-2 text-[14px] font-semibold text-ink">Kurunegala Hourglass</div><p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-2">Applied 19 Oct · Net 14 requested · opening order 20 units.</p></div><StatusBadge tone={k === "pending" ? "alert" : k === "approved" ? "ok" : "muted"}>{k === "pending" ? "Review" : k === "approved" ? "Approved" : "Declined"}</StatusBadge></div>{k === "pending" ? <div className="mt-3 flex gap-2"><button onClick={() => {
             j("Kurunegala Hourglass", {
               status: "On hold"
             }), o("Application placed on hold", "close");
@@ -2230,11 +2241,11 @@ function NewOrderSheet({
       orders: A,
       placeOrder: p
     } = qe(),
-    [m, j] = React.useState(c[0].name),
-    [x, h] = React.useState(o[0].sku),
+    [m, j] = React.useState(c[0]?.name || ""),
+    [x, h] = React.useState(o[0]?.sku || ""),
     [f, q] = React.useState(1),
     y = o.find(k => k.sku === x) ?? o[0],
-    N = y.price * f;
+    N = y ? y.price * f : 0;
   return <SheetDialog open={a} onClose={n} eyebrow="New order" title="Draft a dealer order" footer={<button onClick={() => {
     p({
       id: F0(A),
@@ -2294,225 +2305,51 @@ function LoginScreen() {
   </main>;
 }
 
-const Xd = [{
-    id: "explore",
-    label: "Explore",
-    icon: "overview"
-  }, {
-    id: "shop",
-    label: "Shop",
-    icon: "products"
-  }, {
-    id: "cart",
-    label: "Cart",
-    icon: "cart"
-  }, {
-    id: "orders",
-    label: "Orders",
-    icon: "orders"
-  }, {
-    id: "account",
-    label: "Account",
-    icon: "account"
-  }],
-  Rh = [{
-    label: "Watches",
-    value: "Wrist Watches",
-    icon: "preorders"
-  }, {
-    label: "Wall clocks",
-    value: "Wall Watches",
-    icon: "overview"
-  }, {
-    label: "Table clocks",
-    value: "Table Watches",
-    icon: "orders"
-  }, {
-    label: "Others",
-    value: "Others",
-    icon: "products"
-  }],
-  Hh = ["Submitted", "Confirmed", "Packing", "Ready", "Completed"],
-  $5 = {
-    Submitted: "Your order is waiting for confirmation.",
-    Confirmed: "Your order has been confirmed.",
-    Packing: "Your order is being prepared.",
-    Ready: "Your order is ready for dispatch or collection.",
-    Completed: "Your order is complete."
-  },
-  en = a => `LKR ${bt(a)}`,
-  rf = a => new Date(`${a}T00:00:00`).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric"
-  });
-function kp(a, n) {
-  try {
-    const i = localStorage.getItem(a);
-    return i ? JSON.parse(i) : n;
-  } catch {
-    return n;
-  }
-}
-function tH(a) {
-  const n = kp(a, kp("ht-dealer-cart", {}));
-  return !n || typeof n != "object" || Array.isArray(n) ? {} : Object.fromEntries(Object.entries(n).filter(i => typeof i[1] == "number" && Number.isInteger(i[1]) && i[1] > 0).map(([i, c]) => [i, Math.min(99, c)]));
-}
-function StoreBrandButton({
-  onClick: a
-}) {
-  return <button className="store-brand" onClick={a} aria-label="R.S.D. Premium Watches, go to Explore"><span className="store-brand-mark"><BrandClockLogo size={36} /></span><span className="store-brand-name">{"R.S.D. "}<small>MODERN TIMEPIECES</small></span></button>;
-}
-function StoreDialog({
-  open: a,
-  title: n,
-  eyebrow: i,
-  onClose: c,
-  children: o
-}) {
-  return React.useEffect(() => {
-    if (!a) return;
-    const A = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const p = m => {
-      m.key === "Escape" && c();
-    };
-    return window.addEventListener("keydown", p), () => {
-      document.body.style.overflow = A, window.removeEventListener("keydown", p);
-    };
-  }, [a, c]), typeof document > "u" ? null : ReactDOM.createPortal(<AnimatePresence>{a && <div className="store-dialog-wrap"><motion.button className="store-dialog-backdrop" aria-label="Close dialog" onClick={c} initial={{
-        opacity: 0
-      }} animate={{
-        opacity: 1
-      }} exit={{
-        opacity: 0
-      }} /><motion.section className="store-dialog" role="dialog" aria-modal="true" aria-label={n} initial={{
-        opacity: 0,
-        y: 28
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} exit={{
-        opacity: 0,
-        y: 20
-      }} transition={{
-        duration: .22
-      }}><div className="store-dialog-handle" /><div className="store-dialog-heading"><div>{i && <span className="store-eyebrow">{i}</span>}<h2>{n}</h2></div><button className="store-icon-button" onClick={c} aria-label="Close"><Icon name="close" /></button></div><div className="store-dialog-content">{o}</div></motion.section></div>}</AnimatePresence>, document.body);
-}
-function StoreSectionHeading({
-  eyebrow: a,
-  title: n,
-  onSeeAll: i
-}) {
-  return <div className="store-section-heading"><div>{a && <span className="store-eyebrow">{a}</span>}<h2>{n}</h2></div>{i && <button className="store-text-link" onClick={i}>{"See all "}<Icon name="chevron" /></button>}</div>;
-}
-function HeartIcon({
-  selected: a
-}) {
+const en = a => `LKR ${bt(a)}`;
+function HeartIcon({ selected: a }) {
   return <svg viewBox="0 0 24 24" fill={a ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 4.9a5.5 5.5 0 0 0-7.8 0L12 6l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.3a5.5 5.5 0 0 0 0-7.8z" /></svg>;
 }
-function StoreProductTileImpl({
-  product: a,
-  saved: n,
-  onSave: i,
-  onOpen: c,
-  onAdd: o
-}) {
-  return <motion.article className="product-tile" initial={{
-    opacity: 0,
-    y: 12
-  }} whileInView={{
-    opacity: 1,
-    y: 0
-  }} viewport={{
-    once: !0,
-    margin: "0px 0px -20px"
-  }} transition={{
-    duration: .35
-  }}><div className="product-photo"><button onClick={c} onPointerDown={() => preloadImage(Lr(a.sku, a.category))} aria-label={`View ${a.name}`} className="product-photo-button"><img src={Lr(a.sku, a.category)} srcSet={productPhoto(a.sku) ? void 0 : productImageSrcSet(a.sku)} sizes="(min-width: 1024px) 320px, 46vw" alt={a.name} loading="lazy" decoding="async" /></button><button className={`product-save ${n ? "is-saved" : ""}`} onClick={i} aria-label={`${n ? "Remove" : "Save"} ${a.name}`} aria-pressed={n}><HeartIcon selected={n} /></button>{(a.sku === "HT-W-214" || a.sku === "HT-W-512") && <span className="product-highlight">{a.sku === "HT-W-214" ? "Best seller" : "Limited edition"}</span>}<span className={`product-stock ${a.stock === 0 ? "out" : ""}`}>{a.stock === 0 ? "Pre-order" : a.stock <= 4 ? `${a.stock} available` : "In stock"}</span></div><div className="product-info"><span className="product-category">{a.category === "Wrist Watches" ? "Wrist watch" : a.category === "Wall Watches" ? "Wall clock" : "Table clock"}</span><button onClick={c} onPointerDown={() => preloadImage(Lr(a.sku, a.category))} className="product-name">{a.name}</button><div className="product-bottom"><span><strong>{en(a.price)}</strong><small>Wholesale price</small></span><button className="product-add" onClick={o} aria-label={`Add ${a.name} to cart`}><Icon name="plus" strokeWidth={2} /></button></div></div></motion.article>;
+function getPublicVisitorId() {
+  if (typeof window === "undefined") return "server-rendered";
+  try {
+    const existing = window.localStorage.getItem("rsd-visitor-id");
+    if (existing && /^[A-Za-z0-9_-]{16,120}$/.test(existing)) return existing;
+    const generated = typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID().replace(/-/g, "")
+      : `${Date.now()}${Math.random().toString(36).slice(2)}`;
+    window.localStorage.setItem("rsd-visitor-id", generated);
+    return generated;
+  } catch {
+    return `${Date.now()}${Math.random().toString(36).slice(2)}`;
+  }
 }
-// Only re-render a tile when its own product or saved flag changes. Cart
-// updates otherwise reconciled every tile in the grid on each tap.
-const StoreProductTile = React.memo(
-  StoreProductTileImpl,
-  (prev, next) => prev.product === next.product && prev.saved === next.saved
-);
 
-function QuantityStepper({
-  value: a,
-  onChange: n,
-  label: i
-}) {
-  return <div className="store-quantity" aria-label={i}><button onClick={() => n(Math.max(1, a - 1))} aria-label={`Decrease ${i}`}><Icon name="minus" /></button><span>{a}</span><button onClick={() => n(Math.min(99, a + 1))} aria-label={`Increase ${i}`}><Icon name="plus" /></button></div>;
+function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compact: o = false }) {
+  const price = Number(a.price) || 0;
+  const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
+  const availability = a.availability || "Available to order";
+  const colours = Array.isArray(a.colors) && a.colors.length ? a.colors : ["Not selected"];
+  const [colour, setColour] = React.useState(colours[0]);
+  React.useEffect(() => setColour(colours[0]), [a.sku, colours.join(",")]);
+  return <motion.article className={cn("public-product-card", o && "public-product-card-compact")} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "0px 0px -35px" }} transition={{ duration: .35 }}>
+    <div className="public-product-image">
+      <img src={Lr(a.sku, a.category)} alt={a.name} loading="lazy" decoding="async" />
+      <button type="button" className={cn("public-favorite", n && "is-saved")} onClick={() => i(a)} aria-label={`${n ? "Remove" : "Add"} ${a.name} ${n ? "from" : "to"} favourites`} aria-pressed={n}><HeartIcon selected={n} /></button>
+      <span>{availability}</span>
+    </div>
+    <div className="public-product-info">
+      <span className="product-category">{productType}</span>
+      <h3>{a.name}</h3>
+      {a.description && <p className="public-product-description">{a.description}</p>}
+      {colours.length > 1 && <label className="public-colour-picker"><span>Colour</span><select value={colour} onChange={event => setColour(event.target.value)} aria-label={`Choose a colour for ${a.name}`}>{colours.map(option => <option key={option}>{option}</option>)}</select></label>}
+      <div className="public-product-bottom">
+        <div><strong>{en(price)}</strong><small>Customer price · Free delivery</small></div>
+        <a className="public-order" href={rsdWhatsAppLink(a.name, price, colour)} target="_blank" rel="noopener noreferrer" onClick={() => c(a, colour)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
+      </div>
+    </div>
+  </motion.article>;
 }
-function OrderStatusSteps({
-  status: a
-}) {
-  const n = Hh.indexOf(a);
-  return <div className="order-steps" aria-label={`Order status: ${a}`}>{Hh.map((i, c) => <span className={c <= n ? "done" : ""} key={i}><i />{i}</span>)}</div>;
-}
-function StoreEmptyState({
-  icon: a,
-  title: n,
-  text: i,
-  action: c,
-  onAction: o
-}) {
-  return <div className="store-empty"><span><Icon name={a} /></span><h3>{n}</h3><p>{i}</p>{c && <button className="store-primary" onClick={o}>{c}</button>}</div>;
-}
-const HT_CONTACT_PHONE = RSD_WHATSAPP_NUMBER;
-const HT_CONTACT_PHONE_DISPLAY = RSD_WHATSAPP_NUMBER;
-const HT_WHATSAPP_URL = RSD_WHATSAPP_URL;
-function DealerContactView({
-  defaultName: a = "",
-  defaultContact: n = "",
-  isDealer: i = !0,
-  roleLabel: c = "Registered dealer",
-  onToast: o
-}) {
-  const {
-      sendFeedback: A
-    } = qe(),
-    [rating, setRating] = React.useState(0),
-    [name, setName] = React.useState(a),
-    [contact, setContact] = React.useState(n),
-    [comment, setComment] = React.useState(""),
-    [sending, setSending] = React.useState(!1);
 
-  React.useEffect(() => {
-    setName(prev => prev || a);
-    setContact(prev => prev || n);
-  }, [a, n]);
-
-  const handleSubmit = async ev => {
-    ev.preventDefault();
-    const cleanName = name.trim();
-    const cleanMsg = comment.trim();
-    if (!cleanName) {
-      o?.("Please enter your name");
-      return;
-    }
-    if (cleanMsg.length < 3) {
-      o?.("Please write a short comment");
-      return;
-    }
-    setSending(!0);
-    await A({
-      name: cleanName,
-      contact: contact.trim(),
-      rating: rating || null,
-      message: cleanMsg,
-      isDealer: i,
-      roleLabel: c
-    });
-    setSending(!1);
-    setComment("");
-    setRating(0);
-    o?.("Thank you. Your feedback was sent");
-  };
-
-  return <div className="ht-contact-wrap"><h1 className="ht-contact-title">Contact us</h1><div className="ht-contact-card ht-contact-hero"><div className="ht-contact-eyebrow">Call or WhatsApp</div><a className="ht-contact-phone" href={`tel:${HT_CONTACT_PHONE}`}>{HT_CONTACT_PHONE_DISPLAY}</a><div className="ht-contact-actions"><a className="ht-btn-gold" href={`tel:${HT_CONTACT_PHONE}`}><Icon name="phone" /><span>Call</span></a><a className="ht-btn-ghost" href={HT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /><span>WhatsApp</span></a></div></div><form className="ht-contact-card" onSubmit={handleSubmit}><strong className="ht-fb-heading">Send us feedback</strong><span className="ht-fb-sub">Tell us what you think. Your comments go straight to our team.</span><div className="ht-fb-field"><label>How would you rate us?</label><div className="ht-fb-stars" role="radiogroup" aria-label="How would you rate us?">{[1, 2, 3, 4, 5].map(star => <button type="button" key={star} className={rating >= star ? "on" : ""} onClick={() => setRating(rating === star ? 0 : star)} aria-label={`${star} star${star > 1 ? "s" : ""}`} aria-pressed={rating >= star}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z" /></svg></button>)}</div></div><div className="ht-fb-field"><label htmlFor="ht-contact-name">Your name</label><input id="ht-contact-name" value={name} onChange={ev => setName(ev.target.value)} autoComplete="name" maxLength={80} placeholder="Your name or store" /></div><div className="ht-fb-field"><label htmlFor="ht-contact-email">Email or phone (optional)</label><input id="ht-contact-email" value={contact} onChange={ev => setContact(ev.target.value)} autoComplete="email" maxLength={120} placeholder="you@company.com or 077 123 4567" /></div><div className="ht-fb-field"><label htmlFor="ht-contact-comment">Your comment</label><textarea id="ht-contact-comment" value={comment} onChange={ev => setComment(ev.target.value)} maxLength={2000} placeholder="Write your comment here…" /></div><button type="submit" disabled={sending} className="ht-btn-gold ht-fb-submit">{sending ? "Sending…" : "Send feedback"}</button></form></div>;
-}
 function PublicCatalog({
   theme: a,
   setTheme: n
@@ -2520,21 +2357,93 @@ function PublicCatalog({
   const { products: productRows = [], ready } = qe();
   const reducedMotion = useReducedMotion();
   const [query, setQuery] = React.useState("");
-  const [category, setCategory] = React.useState("All");
+  const [collectionMode, setCollectionMode] = React.useState("best");
+  const [showCollection, setShowCollection] = React.useState(false);
+  const [favoriteSkus, setFavoriteSkus] = React.useState(() => {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem("rsd-favourites") || "[]");
+      return new Set(Array.isArray(stored) ? stored : []);
+    } catch {
+      return new Set();
+    }
+  });
   const collectionRef = React.useRef(null);
-  const products = productRows.length ? productRows : hA;
-  const categories = React.useMemo(() => ["All", ...Array.from(new Set(products.map(product => product.category).filter(Boolean)))], [products]);
+  const visitorId = React.useMemo(() => getPublicVisitorId(), []);
+  const products = React.useMemo(() => {
+    const source = productRows.length ? productRows : hA.map(({ stock, reserved, ...product }) => product);
+    return source.map(product => {
+    const publicDetails = publicProductByName.get(product.name) || {};
+    return {
+      ...product,
+      price: Number(product.price) || publicPriceByName.get(product.name) || 0,
+      description: product.description || publicDetails.description || "",
+      colors: Array.isArray(product.colors) && product.colors.length ? product.colors : (publicDetails.colors || []),
+      gender: product.gender || "Unisex",
+      productType: product.productType || (product.category === "Wall Watches" ? "Wall clocks" : product.category === "Table Watches" ? "Table clocks" : "Watches"),
+      isNew: product.isNew ?? false,
+      availability: product.availability || publicDetails.availability || "Available to order",
+    };
+    });
+  }, [productRows]);
+  const salesScore = product => Array.isArray(product.trend) ? product.trend.reduce((sum, value) => sum + Number(value || 0), 0) : 0;
+  const bestProducts = React.useMemo(() => [...products].sort((left, right) => salesScore(right) - salesScore(left)).slice(0, 4), [products]);
+  const newProducts = React.useMemo(() => {
+    const marked = products.filter(product => product.isNew);
+    return (marked.length ? marked : [...products].reverse()).slice(0, 4);
+  }, [products]);
+  const sortOptions = [
+    ["best", "Best sales"],
+    ["new", "New arrivals"],
+    ["men", "Men"],
+    ["women", "Women"],
+    ["unisex", "Unisex"],
+    ["kids", "Kids"],
+    ["bracelet", "Bracelet"],
+    ["price-low", "Lowest price"],
+    ["price-high", "Highest price"],
+  ];
   const filteredProducts = React.useMemo(() => {
     const term = query.trim().toLowerCase();
-    return products.filter(product => {
-      const matchesCategory = category === "All" || product.category === category;
-      const matchesTerm = !term || `${product.name} ${product.sku} ${product.category} ${product.brand || ""}`.toLowerCase().includes(term);
-      return matchesCategory && matchesTerm;
-    });
-  }, [products, query, category]);
-  const scrollToCollection = () => collectionRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
-  const categoryLabel = value => value === "Wrist Watches" ? "Watches" : value === "Wall Watches" ? "Wall clocks" : value === "Table Watches" ? "Table clocks" : value;
-  const displayPrice = product => Number(product.retailPrice) > 0 ? product.retailPrice : product.price;
+    let result = products.filter(product => !term || `${product.name} ${product.sku} ${product.category} ${product.brand || ""} ${product.gender || ""} ${product.productType || ""}`.toLowerCase().includes(term));
+    if (collectionMode === "men" || collectionMode === "women" || collectionMode === "unisex" || collectionMode === "kids") {
+      result = result.filter(product => String(product.gender).toLowerCase() === collectionMode);
+    } else if (collectionMode === "bracelet") {
+      result = result.filter(product => /bracelet/i.test(`${product.productType} ${product.category} ${product.name}`));
+    }
+    if (collectionMode === "best") result.sort((left, right) => salesScore(right) - salesScore(left));
+    if (collectionMode === "new") result.sort((left, right) => Number(right.isNew) - Number(left.isNew) || salesScore(right) - salesScore(left));
+    if (collectionMode === "price-low") result.sort((left, right) => left.price - right.price);
+    if (collectionMode === "price-high") result.sort((left, right) => right.price - left.price);
+    return result;
+  }, [products, query, collectionMode]);
+  const openCollection = () => {
+    setShowCollection(true);
+    window.setTimeout(() => collectionRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" }), 30);
+  };
+  const toggleFavorite = product => {
+    const next = new Set(favoriteSkus);
+    const favorite = !next.has(product.sku);
+    favorite ? next.add(product.sku) : next.delete(product.sku);
+    setFavoriteSkus(next);
+    try { window.localStorage.setItem("rsd-favourites", JSON.stringify([...next])); } catch {}
+    fetch("/api/favorite", {
+      method: "POST",
+      credentials: "same-origin",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sku: product.sku, visitorId, favorite }),
+    }).catch(() => {});
+  };
+  const recordOrder = (product, colour = "Not selected") => {
+    fetch("/api/customer-order", {
+      method: "POST",
+      credentials: "same-origin",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sku: product.sku, quantity: 1, colour }),
+    }).catch(() => {});
+  };
+  const renderCards = (items, compact = false) => <div className="public-product-grid">{items.map(product => <PublicProductCard key={product.sku} product={product} saved={favoriteSkus.has(product.sku)} onSave={toggleFavorite} onOrder={recordOrder} compact={compact} />)}</div>;
 
   return <div className="public-site store-app">
     <header className="store-header public-header">
@@ -2544,7 +2453,7 @@ function PublicCatalog({
           <span className="store-brand-name">R.S.D.<small>PREMIUM WATCHES</small></span>
         </a>
         <nav className="public-nav" aria-label="Public navigation">
-          <a className="active" href="#collection">Collection</a>
+          <a className={showCollection ? "active" : ""} href="#collection" onClick={event => { event.preventDefault(); openCollection(); }}>Collection</a>
           <a href="#about">About R.S.D.</a>
           <a href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">WhatsApp</a>
         </nav>
@@ -2564,52 +2473,49 @@ function PublicCatalog({
           <h1>Time, beautifully<br /><em>considered.</em></h1>
           <p>A considered collection of watches and clocks for the moments that matter.</p>
           <div className="public-hero-actions">
-            <button type="button" className="store-primary" onClick={scrollToCollection}>View the collection <Icon name="arrow" /></button>
-            <a className="public-hero-link" href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /> Enquire on WhatsApp</a>
+            <button type="button" className="store-primary" onClick={openCollection}>View the collection <Icon name="arrow" /></button>
+            <a className="public-hero-link" href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /> Order on WhatsApp</a>
           </div>
         </div>
       </section>
 
       <section className="public-intro" id="about">
         <div><span className="store-eyebrow">THE R.S.D. EDIT</span><h2>Objects with a sense of time.</h2></div>
-        <p>Explore our current catalogue, then speak with the R.S.D. team directly on WhatsApp for availability, recommendations and orders.</p>
+        <p>Choose a best seller or a new arrival, then place your order in simple language through WhatsApp. Every listed customer price includes free delivery.</p>
       </section>
 
-      <section className="public-collection" id="collection" ref={collectionRef}>
+      {!showCollection && <>
+        <section className="public-curated-section">
+          <div className="public-section-heading"><div><span className="store-eyebrow">MOST LOVED</span><h2>Best sellers</h2></div><button type="button" className="store-text-link" onClick={openCollection}>See all <Icon name="chevron" /></button></div>
+          {renderCards(bestProducts, true)}
+        </section>
+        <section className="public-curated-section public-curated-new">
+          <div className="public-section-heading"><div><span className="store-eyebrow">JUST ARRIVED</span><h2>New arrivals</h2></div><button type="button" className="store-text-link" onClick={openCollection}>See all <Icon name="chevron" /></button></div>
+          {renderCards(newProducts, true)}
+        </section>
+        <section className="public-collection-cta"><span className="store-eyebrow">SHOP YOUR WAY</span><h2>Find the right timepiece.</h2><p>Browse by best sales, new arrivals, men, women, unisex, kids, bracelet or price.</p><button type="button" className="store-primary" onClick={openCollection}>View full collection <Icon name="arrow" /></button></section>
+      </>}
+
+      {showCollection && <section className="public-collection" id="collection" ref={collectionRef}>
         <div className="public-section-heading"><div><span className="store-eyebrow">THE COLLECTION</span><h2>Find your timepiece</h2></div><span className="public-count">{filteredProducts.length} {filteredProducts.length === 1 ? "piece" : "pieces"}</span></div>
+        <p className="public-delivery-note">Free delivery on every order. Buy 2 or more and save LKR 400 on delivery.</p>
         <div className="public-controls">
           <div className="public-search"><Icon name="search" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search the collection" aria-label="Search the collection" />{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search"><Icon name="close" /></button>}</div>
-          <div className="public-filters" aria-label="Filter by category">{categories.map(value => <button type="button" key={value} onClick={() => setCategory(value)} aria-pressed={category === value} className={category === value ? "active" : ""}>{categoryLabel(value)}</button>)}</div>
+          <div className="public-filters" aria-label="Sort and filter the collection">{sortOptions.map(([value, label]) => <button type="button" key={value} onClick={() => setCollectionMode(value)} aria-pressed={collectionMode === value} className={collectionMode === value ? "active" : ""}>{label}</button>)}</div>
         </div>
         {!ready && <div className="public-loading-note" role="status"><span className="public-loading-dot" />Refreshing the collection…</div>}
-        {filteredProducts.length ? <div className="public-product-grid">{filteredProducts.map((product, index) => {
-          const price = displayPrice(product);
-          return <motion.article className="public-product-card" key={product.sku} initial={reducedMotion ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "0px 0px -35px" }} transition={{ duration: .35, delay: Math.min(index * .035, .2) }}>
-            <div className="public-product-image"><img src={Lr(product.sku, product.category)} alt={product.name} loading="lazy" decoding="async" /><span>{product.stock > 0 ? "Available to enquire" : "Enquire for availability"}</span></div>
-            <div className="public-product-info"><span className="product-category">{categoryLabel(product.category)}</span><h3>{product.name}</h3>{product.brand && <p className="public-product-brand">{product.brand}</p>}<div className="public-product-bottom"><div><strong>{en(price)}</strong><small>Catalog price</small></div><a className="public-enquire" href={rsdWhatsAppLink(product.name)} target="_blank" rel="noopener noreferrer" aria-label={`Enquire about ${product.name} on WhatsApp`}><Icon name="comments" /><span>Enquire</span></a></div></div>
-          </motion.article>;
-        })}</div> : <div className="public-empty"><Icon name="search" /><h3>No pieces found</h3><p>Try another search or browse the full collection.</p><button type="button" onClick={() => { setQuery(""); setCategory("All"); }}>Clear filters</button></div>}
-      </section>
+        {filteredProducts.length ? renderCards(filteredProducts) : <div className="public-empty"><Icon name="search" /><h3>No pieces found</h3><p>Try another search or browse a different collection.</p><button type="button" onClick={() => { setQuery(""); setCollectionMode("best"); }}>Clear filters</button></div>}
+      </section>}
 
       <section className="public-order-panel">
-        <div><span className="store-eyebrow">READY WHEN YOU ARE</span><h2>Order by conversation.</h2><p>R.S.D. orders are handled personally through WhatsApp Business. Tell us what caught your eye and our team will take it from there.</p></div>
-        <a className="store-primary" href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /> WhatsApp Business · 0711368623</a>
+        <div><span className="store-eyebrow">READY WHEN YOU ARE</span><h2>Order by conversation.</h2><p>R.S.D. orders are handled personally through WhatsApp Business. Tell us what you want in simple words and our team will help.</p></div>
+        <a className="store-primary" href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /> Order on WhatsApp · 0711368623</a>
       </section>
     </main>
     <footer className="public-footer"><div><span className="public-footer-brand">R.S.D. Premium Watches</span><span>Modern timepieces · Colombo, Sri Lanka</span></div><div><span>Orders via WhatsApp Business</span><a href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">0711368623</a></div></footer>
   </div>;
 }
 
-function DealerOrdersView({
-  orders: a,
-  onOpen: n,
-  onShop: i,
-  loading: L
-}) {
-  const [c, o] = React.useState("All"),
-    A = a.filter(p => c === "All" || (c === "Completed" ? p.status === "Completed" : p.status !== "Completed"));
-  return <div className="store-width store-inner-page"><div className="store-page-heading"><div><span className="store-eyebrow">YOUR ORDER HISTORY</span><h1>My orders</h1><p>Track your orders from confirmation to completion.</p></div><button className="store-text-link" onClick={i}>{"Shop collection "}<Icon name="arrow" /></button></div><div className="shop-filters order-filters">{["All", "In progress", "Completed"].map(p => <button onClick={() => o(p)} aria-pressed={c === p} className={c === p ? "active" : ""} key={p}>{p}</button>)}</div>{L && <OrdersSkeleton rows={5} />}{A.length ? <div className={L ? "orders-list hidden lg:flex" : "orders-list"}>{A.map(p => <button className="order-card" onClick={() => n(p)} key={p.id}><div className="order-card-top"><div><strong>{p.id}</strong><small>{rf(p.date)}{" · "}{p.units}{" units"}</small></div><span className={`order-status status-${p.status.toLowerCase()}`}>{p.status}</span></div><OrderStatusSteps status={p.status} /><div className="order-card-bottom"><span>{p.lines.length}{" "}{p.lines.length === 1 ? "product" : "products"}{" · "}{p.channel}</span><strong>{en(p.amount)}</strong><Icon name="chevron" /></div></button>)}</div> : L ? null : <StoreEmptyState icon="orders" title={c === "All" ? "No orders yet" : `No ${c.toLowerCase()} orders`} text="Your orders and their latest status will appear here." action="Browse the shop" onAction={i} />}</div>;
-}
 function OverviewHeroBanner({
   value: a,
   prefix: n = "LKR "
@@ -2668,8 +2574,10 @@ function AdminOverviewView({
     }, [A.byCategory, i]),
     x = Math.max(...j.map(q => q.value), 1),
     h = m.map(q => q.value > 0 ? 1 : 0),
-    f = Math.max(...p.map(q => q.count), 1);
-  return <div><FadeIn className="relative overflow-hidden rounded-[3px] border border-line"><img src={Ta.movement} alt="Macro of a mechanical watch movement \u2014 brass gear train and balance wheel" className="photo absolute inset-0 h-full w-full object-cover object-[66%_center] sm:object-[72%_center]" loading="eager" /><div className="absolute inset-0 bg-gradient-to-r from-panel via-panel/78 to-panel/5" /><div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/58 to-transparent" /><div className="grain absolute inset-0" /><div className="relative z-10 flex min-h-[560px] flex-col px-5 pt-7 pb-6 sm:min-h-[600px] sm:px-10 sm:pt-10 sm:pb-7 lg:px-12"><div className="flex flex-wrap items-start justify-between gap-6"><div><LegendText className="text-gold">R.S.D. Premium Watches · Wholesale Console</LegendText><h1 className="font-display mt-5 text-[clamp(2.35rem,5.4vw,3.9rem)] leading-[0.94] font-semibold tracking-[-0.022em] text-ink">Good afternoon, Admin</h1><p className="mt-4 max-w-[54ch] text-[14px] leading-relaxed text-ink-2">{"You have "}<span className="tnum text-ink">{i.filter(q => q.status === "Submitted").length}{" orders"}</span>{" awaiting confirmation and"}{" "}<span className="tnum text-ink">{c.filter(q => q.status === "Pending approval").length}{" dealers"}</span>{" pending approval. "}{o.filter(q => q.stock <= 4).length}{" products are low on stock."}</p></div><button onClick={() => a("analytics")} className="legend-lg group inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[2px] bg-gold-fill px-4 py-[11px] text-on-gold transition-all duration-200 hover:brightness-110 active:translate-y-px sm:w-auto">View analytics<Icon name="arrow" className="h-[15px] w-[15px] transition-transform duration-200 group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" /></button></div><div className="mt-auto pt-9 sm:pt-14"><div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5"><div><LegendText className="text-ink-2">Confirmed revenue · all orders</LegendText><div className="mt-5"><OverviewHeroBanner value={A.revenue} /></div><div className="mt-6 flex flex-wrap items-center gap-3"><StatusBadge tone="gold">{"▲ 100.0% vs previous period"}</StatusBadge><span className="text-[12px] text-ink-2"><span className="tnum text-ink">{A.count}</span>{" confirmed orders ·"}{" "}<span className="tnum text-ink">{A.units}</span>{" units ·"}{" "}<span className="tnum text-ink">{"LKR "}{bt(A.avg)}</span>{" average"}</span></div></div><div className="hidden shrink-0 text-right lg:block"><LegendText className="text-ink-3">Peak day</LegendText><div className="font-display tnum mt-3 text-[26px] leading-none font-semibold text-ink">21 Oct</div><div className="tnum mt-2 text-[12px] text-gold">LKR 1,319,670</div></div></div></div><div className="mt-7 sm:mt-9"><div className="rule mb-5 bg-line/70" /><RevenueAreaChart data={m} heightClass="h-[158px] sm:h-[216px]" id="hero" /><div className="mt-3 flex items-center justify-between">{[0, 9, 18, 29].map(q => <span className="legend text-ink-3 sm:hidden" key={q}>{m[q].label}</span>)}{[0, 6, 12, 18, 24, 29].map(q => <span className="legend hidden text-ink-3 sm:block" key={q}>{m[q].label}</span>)}</div></div></div></FadeIn><div className="mt-8 grid grid-cols-2 overflow-hidden rounded-[3px] border-t border-l border-line bg-panel md:grid-cols-3 lg:grid-cols-6"><KpiStatTile label="Orders" value={String(i.length)} sub={`${i.filter(q => q.status === "Submitted").length} awaiting confirmation`} spark={h} wide={!0} delay={.05} /><KpiStatTile label="Avg. order" value={`LKR ${bt(A.avg)}`} sub="Per confirmed order" delay={.1} /><KpiStatTile label="Units" value={String(A.units)} sub="27 on pre-order" delay={.15} /><KpiStatTile label="Pre-order units" value="27" sub="Awaiting supplier" delay={.2} /><KpiStatTile label="Active dealers" value={String(c.filter(q => q.status === "Active").length)} sub={`${c.filter(q => q.status === "Pending approval").length} pending approval`} delay={.25} /></div><div className="mt-8 grid gap-8 lg:grid-cols-[1.45fr_1fr]"><FadeIn delay={.05}><PanelCard title="Revenue by category" sub={`Confirmed orders · ${Tr}`} action={<StatusBadge tone="muted">4 categories</StatusBadge>}><div className="flex h-[10px] w-full overflow-hidden rounded-[1px] bg-line">{j.map((q, y) => q.value > 0 ? <motion.div className="h-full" style={{
+    f = Math.max(...p.map(q => q.count), 1),
+    favoriteCount = o.reduce((total, product) => total + Number(product.favoriteCount || 0), 0),
+    topFavorite = [...o].sort((left, right) => Number(right.favoriteCount || 0) - Number(left.favoriteCount || 0))[0] || { name: "No saved watches" };
+  return <div><FadeIn className="relative overflow-hidden rounded-[3px] border border-line"><img src={Ta.movement} alt="Macro of a mechanical watch movement \u2014 brass gear train and balance wheel" className="photo absolute inset-0 h-full w-full object-cover object-[66%_center] sm:object-[72%_center]" loading="eager" /><div className="absolute inset-0 bg-gradient-to-r from-panel via-panel/78 to-panel/5" /><div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/58 to-transparent" /><div className="grain absolute inset-0" /><div className="relative z-10 flex min-h-[560px] flex-col px-5 pt-7 pb-6 sm:min-h-[600px] sm:px-10 sm:pt-10 sm:pb-7 lg:px-12"><div className="flex flex-wrap items-start justify-between gap-6"><div><LegendText className="text-gold">R.S.D. Premium Watches · Wholesale Console</LegendText><h1 className="font-display mt-5 text-[clamp(2.35rem,5.4vw,3.9rem)] leading-[0.94] font-semibold tracking-[-0.022em] text-ink">Good afternoon, Admin</h1><p className="mt-4 max-w-[54ch] text-[14px] leading-relaxed text-ink-2">{"You have "}<span className="tnum text-ink">{i.filter(q => q.status === "Submitted").length}{" orders"}</span>{" awaiting confirmation and"}{" "}<span className="tnum text-ink">{c.filter(q => q.status === "Pending approval").length}{" dealers"}</span>{" pending approval. "}{o.filter(q => q.stock <= 4).length}{" products are low on stock."}</p></div><button onClick={() => a("analytics")} className="legend-lg group inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[2px] bg-gold-fill px-4 py-[11px] text-on-gold transition-all duration-200 hover:brightness-110 active:translate-y-px sm:w-auto">View analytics<Icon name="arrow" className="h-[15px] w-[15px] transition-transform duration-200 group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" /></button></div><div className="mt-auto pt-9 sm:pt-14"><div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5"><div><LegendText className="text-ink-2">Confirmed revenue · all orders</LegendText><div className="mt-5"><OverviewHeroBanner value={A.revenue} /></div><div className="mt-6 flex flex-wrap items-center gap-3"><StatusBadge tone="gold">{"▲ 100.0% vs previous period"}</StatusBadge><span className="text-[12px] text-ink-2"><span className="tnum text-ink">{A.count}</span>{" confirmed orders ·"}{" "}<span className="tnum text-ink">{A.units}</span>{" units ·"}{" "}<span className="tnum text-ink">{"LKR "}{bt(A.avg)}</span>{" average"}</span></div></div><div className="hidden shrink-0 text-right lg:block"><LegendText className="text-ink-3">Peak day</LegendText><div className="font-display tnum mt-3 text-[26px] leading-none font-semibold text-ink">21 Oct</div><div className="tnum mt-2 text-[12px] text-gold">LKR 1,319,670</div></div></div></div><div className="mt-7 sm:mt-9"><div className="rule mb-5 bg-line/70" /><RevenueAreaChart data={m} heightClass="h-[158px] sm:h-[216px]" id="hero" /><div className="mt-3 flex items-center justify-between">{[0, 9, 18, 29].map(q => <span className="legend text-ink-3 sm:hidden" key={q}>{m[q].label}</span>)}{[0, 6, 12, 18, 24, 29].map(q => <span className="legend hidden text-ink-3 sm:block" key={q}>{m[q].label}</span>)}</div></div></div></FadeIn><div className="mt-8 grid grid-cols-2 overflow-hidden rounded-[3px] border-t border-l border-line bg-panel md:grid-cols-3 lg:grid-cols-6"><KpiStatTile label="Orders" value={String(i.length)} sub={`${i.filter(q => q.status === "Submitted").length} awaiting confirmation`} spark={h} wide={!0} delay={.05} /><KpiStatTile label="Avg. order" value={`LKR ${bt(A.avg)}`} sub="Per confirmed order" delay={.1} /><KpiStatTile label="Units" value={String(A.units)} sub="Across saved watches" delay={.15} /><KpiStatTile label="Watch favourites" value={String(favoriteCount)} sub={topFavorite?.name ? `Most saved: ${topFavorite.name}` : "Browser saves"} delay={.2} /><KpiStatTile label="Active dealers" value={String(c.filter(q => q.status === "Active").length)} sub={`${c.filter(q => q.status === "Pending approval").length} pending approval`} delay={.25} /></div><div className="mt-8 grid gap-8 lg:grid-cols-[1.45fr_1fr]"><FadeIn delay={.05}><PanelCard title="Revenue by category" sub={`Confirmed orders · ${Tr}`} action={<StatusBadge tone="muted">4 categories</StatusBadge>}><div className="flex h-[10px] w-full overflow-hidden rounded-[1px] bg-line">{j.map((q, y) => q.value > 0 ? <motion.div className="h-full" style={{
               background: y === 0 ? "var(--gold)" : "var(--ink-3)"
             }} initial={n ? !1 : {
               width: 0
@@ -2691,7 +2599,7 @@ function AdminOverviewView({
                     duration: .9,
                     delay: .25 + y * .06,
                     ease: Ft
-                  }} /></div><span className="legend text-[9px] text-ink-3 sm:shrink-0 sm:text-[10px]">{q.note}</span></div></li>)}</ul><div className="mt-6"><EmptyNotice title="Three categories idle this period" body="Wall Watches, Table Watches and Accessories are listed and priced but recorded no confirmed revenue between 4 Oct and 2 Nov. Their stock still counts toward the reorder report." icon="analytics" /></div></PanelCard></FadeIn><FadeIn delay={.12}><PanelCard title="Needs attention" sub="Three open items across stock, pre-orders and dealer approvals" action={<button onClick={() => a("analytics")} className="legend text-gold hover:underline">All alerts</button>} bodyClass="px-5 py-2 sm:px-6 sm:py-2"><ul>{Al.map((q, y) => <li className="border-b border-line-soft last:border-0" key={q.tone}><button onClick={() => a(y === 1 ? "preorders" : y === 2 ? "dealers" : "products")} className="group w-full py-5 text-left"><div className="flex items-center gap-3"><StatusBadge tone={y === 0 ? "alert" : "gold"}>{q.tone}</StatusBadge><Icon name="chevron" className="ml-auto h-3.5 w-3.5 text-ink-3 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-gold" /></div><h3 className="mt-3 text-[14.5px] leading-snug font-semibold text-ink">{q.title}</h3><p className="mt-2 text-[12.5px] leading-relaxed text-ink-2">{q.detail}</p><span className="legend mt-3 inline-flex items-center gap-1.5 text-gold">{q.action}<Icon name="arrow" className="h-3 w-3" /></span></button></li>)}</ul></PanelCard></FadeIn></div><div className="mt-8 grid gap-8 lg:grid-cols-2"><FadeIn delay={.05}><PanelCard title="Order pipeline" sub={`Current stage · ${Tr}`} action={<StatusBadge tone="muted">{A.count}{" orders"}</StatusBadge>}><div className="flex flex-col gap-6">{p.map(q => <MetricBar label={q.stage} value={q.count} max={f} sub={`${q.count} ${q.count === 1 ? "order" : "orders"}`} tone={q.count === 0 ? "muted" : q.stage === "Ready" ? "alert" : "gold"} key={q.stage} />)}</div><div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-[2px] border border-line bg-raised px-5 py-4"><div><LegendText className="text-ink-3">Value in pipeline</LegendText><div className="font-display tnum mt-2 text-[21px] font-semibold text-ink">LKR 168,389</div></div><PrimaryBtn onClick={() => a("orders")} className="w-full sm:w-auto">Open orders<Icon name="arrow" className="h-[15px] w-[15px]" /></PrimaryBtn></div></PanelCard></FadeIn><FadeIn delay={.12}><PanelCard title="Activity" sub="Everything that moved on the ledger" action={<span className="legend text-ink-3">Tap a row to open</span>} bodyClass="px-5 py-2 sm:px-6 sm:py-2"><ul>{M0.map((q, y) => <li key={y}><button onClick={() => a(q.kind === "Comment" ? "comments" : q.kind === "Dealer" ? "dealers" : "orders")} className="group flex w-full items-center gap-4 border-b border-line-soft py-[15px] text-left last:border-0"><span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] border", q.kind === "Order" ? "border-gold/35 text-gold" : q.kind === "Comment" ? "border-line text-ink-2" : "border-alert/35 text-alert")}><Icon name={q.kind === "Order" ? "orders" : q.kind === "Comment" ? "comments" : "dealers"} className="h-[15px] w-[15px]" /></span><span className="min-w-0 flex-1"><span className="block truncate text-[13.5px] text-ink">{q.text}{q.amount > 0 && <span className="tnum text-ink-3">{" · LKR "}{bt(q.amount)}</span>}</span><span className="legend mt-[7px] block truncate text-ink-3">{q.meta}</span></span><Icon name="chevron" className="h-3.5 w-3.5 shrink-0 text-ink-3 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-gold" /></button></li>)}</ul></PanelCard></FadeIn></div><RuleLine className="mt-10" /><p className="py-8 text-[11.5px] text-ink-3">{"Figures reconcile to "}{A.count}{" confirmed orders totalling LKR "}{bt(A.revenue)}{" between "}{Tr}. Exported from R.S.D. Premium Watches · Colombo.</p></div>;
+                  }} /></div><span className="legend text-[9px] text-ink-3 sm:shrink-0 sm:text-[10px]">{q.note}</span></div></li>)}</ul><div className="mt-6"><EmptyNotice title="Three categories idle this period" body="Wall Watches, Table Watches and Accessories are listed and priced but recorded no confirmed revenue between 4 Oct and 2 Nov. Their stock still counts toward the reorder report." icon="analytics" /></div></PanelCard></FadeIn><FadeIn delay={.12}><PanelCard title="Needs attention" sub="Three open items across stock, saved watches and dealer approvals" action={<button onClick={() => a("analytics")} className="legend text-gold hover:underline">All alerts</button>} bodyClass="px-5 py-2 sm:px-6 sm:py-2"><ul>{Al.map((q, y) => <li className="border-b border-line-soft last:border-0" key={q.tone}><button onClick={() => a(y === 2 ? "dealers" : "products")} className="group w-full py-5 text-left"><div className="flex items-center gap-3"><StatusBadge tone={y === 0 ? "alert" : "gold"}>{q.tone}</StatusBadge><Icon name="chevron" className="ml-auto h-3.5 w-3.5 text-ink-3 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-gold" /></div><h3 className="mt-3 text-[14.5px] leading-snug font-semibold text-ink">{q.title}</h3><p className="mt-2 text-[12.5px] leading-relaxed text-ink-2">{q.detail}</p><span className="legend mt-3 inline-flex items-center gap-1.5 text-gold">{q.action}<Icon name="arrow" className="h-3 w-3" /></span></button></li>)}</ul></PanelCard></FadeIn></div><div className="mt-8 grid gap-8 lg:grid-cols-2"><FadeIn delay={.05}><PanelCard title="Order pipeline" sub={`Current stage · ${Tr}`} action={<StatusBadge tone="muted">{A.count}{" orders"}</StatusBadge>}><div className="flex flex-col gap-6">{p.map(q => <MetricBar label={q.stage} value={q.count} max={f} sub={`${q.count} ${q.count === 1 ? "order" : "orders"}`} tone={q.count === 0 ? "muted" : q.stage === "Ready" ? "alert" : "gold"} key={q.stage} />)}</div><div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-[2px] border border-line bg-raised px-5 py-4"><div><LegendText className="text-ink-3">Value in pipeline</LegendText><div className="font-display tnum mt-2 text-[21px] font-semibold text-ink">LKR 168,389</div></div><PrimaryBtn onClick={() => a("orders")} className="w-full sm:w-auto">Open orders<Icon name="arrow" className="h-[15px] w-[15px]" /></PrimaryBtn></div></PanelCard></FadeIn><FadeIn delay={.12}><PanelCard title="Activity" sub="Everything that moved on the ledger" action={<span className="legend text-ink-3">Tap a row to open</span>} bodyClass="px-5 py-2 sm:px-6 sm:py-2"><ul>{M0.map((q, y) => <li key={y}><button onClick={() => a(q.kind === "Comment" ? "comments" : q.kind === "Dealer" ? "dealers" : "orders")} className="group flex w-full items-center gap-4 border-b border-line-soft py-[15px] text-left last:border-0"><span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] border", q.kind === "Order" ? "border-gold/35 text-gold" : q.kind === "Comment" ? "border-line text-ink-2" : "border-alert/35 text-alert")}><Icon name={q.kind === "Order" ? "orders" : q.kind === "Comment" ? "comments" : "dealers"} className="h-[15px] w-[15px]" /></span><span className="min-w-0 flex-1"><span className="block truncate text-[13.5px] text-ink">{q.text}{q.amount > 0 && <span className="tnum text-ink-3">{" · LKR "}{bt(q.amount)}</span>}</span><span className="legend mt-[7px] block truncate text-ink-3">{q.meta}</span></span><Icon name="chevron" className="h-3.5 w-3.5 shrink-0 text-ink-3 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-gold" /></button></li>)}</ul></PanelCard></FadeIn></div><RuleLine className="mt-10" /><p className="py-8 text-[11.5px] text-ink-3">{"Figures reconcile to "}{A.count}{" confirmed orders totalling LKR "}{bt(A.revenue)}{" between "}{Tr}. Exported from R.S.D. Premium Watches · Colombo.</p></div>;
 }
 const of = {
     Submitted: "muted",
@@ -2779,15 +2687,6 @@ function AdminOrdersView() {
                   }} className="overflow-hidden border-t border-line bg-raised"><div className="px-4 py-4"><LegendText className="text-ink-3">Order lines</LegendText><ul className="mt-3 flex flex-col">{q.lines.map(N => <li className="flex items-baseline justify-between gap-4 border-b border-line-soft py-3 last:border-0" key={N.sku}><div className="min-w-0"><div className="text-[12.5px] leading-snug text-ink">{N.name}</div><div className="legend mt-1.5 text-ink-3">{N.sku}{" · "}{N.qty}{" × "}{bt(N.price)}</div></div><div className="tnum shrink-0 text-[12px] text-ink">{"LKR "}{bt(N.qty * N.price)}</div></li>)}</ul><div className="mt-4 flex flex-wrap gap-2"><SecondaryBtn className="flex-1"><Icon name="download" className="h-[14px] w-[14px]" />Invoice</SecondaryBtn><SecondaryBtn className="flex-1"><Icon name="comments" className="h-[14px] w-[14px]" />Message</SecondaryBtn></div></div></motion.div>}</AnimatePresence></li>;
             })}</ul></>}</PanelCard></FadeIn><NewOrderSheet open={j} onClose={() => x(!1)} /></div>;
 }
-function AdminPreordersView() {
-  const {
-      orders: a,
-      setOrderStatus: n
-    } = qe(),
-    i = a.filter(o => o.channel === "Pre-order"),
-    c = Wr.reduce((o, A) => o + A.units, 0);
-  return <div><PageHeader eyebrow="Workspace" title="Pre-orders" sub={`${c} units committed across ${Wr.length} purchase orders before they land in the Colombo warehouse. Supplier dates are confirmed in writing; anything slipping past seven days is escalated.`} />{i.length > 0 && <div className="mb-8"><PanelCard title="Dealer pre-order requests" sub="Requests placed through the dealer shop"><div className="flex flex-col gap-3">{i.map(o => <div className="flex flex-wrap items-center gap-4 border-b border-line-soft pb-3 last:border-0 last:pb-0" key={o.id}><div className="min-w-0 flex-1"><span className="tnum text-[12px] text-gold">{o.id}</span><div className="mt-1 text-[13px] text-ink">{o.dealer}{" · "}{o.units}{" units"}</div></div><select aria-label={`Update status for ${o.id}`} value={o.status} onChange={A => n(o.id, A.target.value)} className="rounded-[3px] border border-line bg-surface px-3 py-2 text-[12px] text-ink">{xs.filter(A => A !== "All").map(A => <option value={A} disabled={xs.indexOf(A) < xs.indexOf(o.status)} key={A}>{A}</option>)}</select></div>)}</div></PanelCard></div>}<div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]"><div className="flex flex-col gap-5">{Wr.map((o, A) => <FadeIn delay={A * .06} key={o.id}><PanelCard><div className="flex flex-wrap items-start justify-between gap-5"><div><div className="flex items-center gap-3"><span className="tnum text-[12px] text-gold">{o.id}</span><StatusBadge tone={o.status === "Awaiting supplier" ? "alert" : o.status === "In transit" ? "gold" : "ok"}>{o.status}</StatusBadge></div><h3 className="font-display mt-4 text-[21px] leading-tight font-semibold text-ink">{o.item}</h3><p className="mt-2 text-[12.5px] text-ink-2">{o.dealer}{" · "}<span className="tnum text-ink">{o.units}{" units"}</span>{" · expected "}{o.expected}</p></div><div className="text-right"><LegendText className="text-ink-3">Progress</LegendText><div className="font-display tnum mt-3 text-[26px] leading-none font-semibold text-ink">{Math.round(o.progress * 100)}%</div></div></div><div className="mt-6"><MetricBar label="Supplier \u2192 warehouse" value={o.progress * 100} max={100} sub={`${o.units} units`} tone={o.progress > .5 ? "gold" : "alert"} /></div></PanelCard></FadeIn>)}</div><div className="flex flex-col gap-8"><FadeIn delay={.1}><PanelCard title="Arrival calendar" sub="Expected warehouse dates"><ul className="flex flex-col">{[["07 Nov", "PO-0404 · 6 units", "Confirmed"], ["11 Nov", "PO-0409 · 9 units", "In transit"], ["18 Nov", "PO-0412 · 12 units", "Late"]].map(([o, A, p]) => <li className="flex items-baseline gap-5 border-b border-line-soft py-4 last:border-0" key={o}><span className="tnum w-[62px] shrink-0 text-[13px] text-gold">{o}</span><span className="flex-1 text-[12.5px] text-ink-2">{A}</span><StatusBadge tone={p === "Late" ? "alert" : p === "Confirmed" ? "ok" : "gold"}>{p}</StatusBadge></li>)}</ul></PanelCard></FadeIn><FadeIn delay={.16}><PanelCard title="Supplier note" sub="PO-0412 \xB7 Skeleton Tourbillon"><p className="text-[13px] leading-relaxed text-ink-2">Movement assembly in Shenzhen is running six days behind the confirmed schedule. The supplier has offered a partial air-freight of 4 units at their cost; the balance ships by sea on 14 Nov.</p><div className="mt-6 flex flex-wrap gap-2"><PrimaryBtn>Accept partial</PrimaryBtn><SecondaryBtn>Escalate</SecondaryBtn></div></PanelCard></FadeIn></div></div></div>;
-}
 const dH = [{
   name: "Wrist Watches",
   image: Ta.productWrist,
@@ -2810,228 +2709,38 @@ const dH = [{
 function productSkuPrefix(category) {
   return category === "Wrist Watches" ? "HT-W" : category === "Wall Watches" ? "HT-C" : category === "Table Watches" ? "HT-T" : "HT-X";
 }
-function AdminAddProductView({
-  onNavigate: a
-}) {
-  const {
-      products: n,
-      addProduct: i
-    } = qe(),
-    p = In(),
-    [sku, setSku] = React.useState(""),
-    [skuTouched, setSkuTouched] = React.useState(!1),
-    [name, setName] = React.useState(""),
-    [brand, setBrand] = React.useState(""),
-    [category, setCategory] = React.useState("Wrist Watches"),
-    [description, setDescription] = React.useState(""),
-    [retail, setRetail] = React.useState("0"),
-    [wholesale, setWholesale] = React.useState("0"),
-    [stock, setStock] = React.useState("0"),
-    [photo, setPhoto] = React.useState(null),
-    [photoBusy, setPhotoBusy] = React.useState(!1),
-    [photoNote, setPhotoNote] = React.useState(""),
-    [error, setError] = React.useState(""),
-    [saving, setSaving] = React.useState(!1),
-    [extras, setExtras] = React.useState("probing"),
-    fileRef = React.useRef(null);
-  const suggestedSku = React.useMemo(() => {
-    const prefix = productSkuPrefix(category);
-    const highest = n.reduce((best, item) => {
-      const match = /^([A-Z]+-[A-Z])-(\d+)$/.exec(String(item.sku || "").toUpperCase());
-      return match && match[1] === prefix ? Math.max(best, Number(match[2])) : best;
-    }, 400);
-    return `${prefix}-${highest + 1}`;
-  }, [n, category]);
-  React.useEffect(() => {
-    if (!skuTouched) setSku(suggestedSku);
-  }, [suggestedSku, skuTouched]);
-  React.useEffect(() => {
-    let alive = !0;
-    detectProductColumns().then(ok => alive && setExtras(ok ? "yes" : "no"));
-    return () => {
-      alive = !1;
-    };
-  }, []);
-  const onPick = async ev => {
-      const file = ev.target.files?.[0];
-      ev.target.value = "";
-      if (!file) return;
-      const problem = checkPhotoFile(file);
-      if (problem) {
-        setPhoto(null);
-        setPhotoNote(problem);
-        return;
-      }
-      setPhotoBusy(!0);
-      setPhotoNote("");
-      try {
-        const opt = await optimisePhoto(file);
-        setPhoto(opt);
-        setPhotoNote(`${formatBytes(opt.originalBytes)} → ${formatBytes(opt.bytes)} · ${opt.width}×${opt.height} px`);
-      } catch (err) {
-        setPhoto(null);
-        setPhotoNote(err?.message || "That photo could not be read.");
-      } finally {
-        setPhotoBusy(!1);
-      }
-    },
-    resetForm = () => {
-      setName("");
-      setBrand("");
-      setDescription("");
-      setRetail("0");
-      setWholesale("0");
-      setStock("0");
-      setPhoto(null);
-      setPhotoNote("");
-      setSkuTouched(!1);
-      setError("");
-    },
-    submit = async ev => {
-      ev.preventDefault();
-      if (saving) return;
-      const cleanSku = sku.trim().toUpperCase(),
-        price = Number(wholesale),
-        retailPrice = Number(retail),
-        stockQty = Number(stock);
-      if (!cleanSku || !name.trim()) {
-        setError("Enter a SKU and a product title.");
-        return;
-      }
-      if (!/^[A-Z0-9][A-Z0-9-]{1,23}$/.test(cleanSku)) {
-        setError("SKU can use letters, numbers and dashes, 2–24 characters.");
-        return;
-      }
-      if (n.some(item => item.sku.toUpperCase() === cleanSku)) {
-        setError(`SKU ${cleanSku} is already in the catalogue.`);
-        return;
-      }
-      if (!Number.isFinite(price) || price < 0 || !Number.isInteger(stockQty) || stockQty < 0) {
-        setError("Enter a valid wholesale price and a whole-number stock quantity.");
-        return;
-      }
-      if (!Number.isFinite(retailPrice) || retailPrice < 0) {
-        setError("Enter a valid retail price, or leave it at 0.");
-        return;
-      }
-      setSaving(!0);
-      setError("");
-      try {
-        let image = null,
-          mode = null;
-        if (photo) {
-          const published = await publishProductPhoto(cleanSku, photo);
-          if (published.url) {
-            image = published.url;
-            mode = published.mode;
-          } else {
-            setError("The photo could not be saved. Try a smaller one, or add the product without it.");
-            setSaving(!1);
-            return;
-          }
-        }
-        const payload = {
-          sku: cleanSku,
-          name: name.trim(),
-          category: category,
-          price: price,
-          stock: stockQty,
-          reserved: 0,
-          trend: [0, 0, 0, 0, 0, 0, 0]
-        };
-        if (image) payload.image = image;
-        if (extras === "yes") {
-          payload.brand = brand.trim() || null;
-          payload.description = description.trim() || null;
-          payload.retailPrice = retailPrice;
-        }
-        const result = await i(payload);
-        if (result && result.ok === !1) {
-          setError(result.error || "Could not save the product. Check the connection and try again.");
-          setSaving(!1);
-          return;
-        }
-        p(`${name.trim()} added to the catalogue`);
-        if (mode === "inline") p("Photo stored as a small inline copy");
-        resetForm();
-        a?.("products");
-      } catch (err) {
-        setError(err?.message || "Something went wrong while saving.");
-      } finally {
-        setSaving(!1);
-      }
-    },
-    field = "mt-2 h-[46px] w-full rounded-[5px] border border-line bg-surface px-3.5 text-[15px] text-ink placeholder:text-ink-3/70 focus:border-gold/50 lg:h-11 lg:text-[13px]",
-    area = "mt-2 min-h-[118px] w-full resize-y rounded-[5px] border border-line bg-surface px-3.5 py-3 text-[15px] text-ink placeholder:text-ink-3/70 focus:border-gold/50 lg:text-[13px]";
-  return <div><PageHeader eyebrow="Catalogue" title="Add new product" sub="Fill in the details below to add a new item to the catalogue." action={<SecondaryBtn onClick={() => a?.("products")}><Icon name="arrow" className="h-[14px] w-[14px] rotate-180" />Back to catalogue</SecondaryBtn>} /><FadeIn className="max-w-[860px]"><section className="rounded-[6px] border border-line bg-panel px-4 py-5 sm:px-7 sm:py-7">
-        <form onSubmit={submit} className="flex flex-col gap-5" noValidate>
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="min-w-[180px] flex-1"><LegendText>SKU</LegendText><input className={field} value={sku} onChange={ev => {
-                setSkuTouched(!0);
-                setSku(ev.target.value.toUpperCase());
-              }} placeholder="e.g. HT-W-601" maxLength={24} /></label>
-            <button type="button" onClick={() => {
-              setSkuTouched(!1);
-              setSku(suggestedSku);
-            }} className="legend mb-0.5 min-h-[46px] shrink-0 rounded-[5px] border border-line bg-surface px-3 text-ink-2 hover:border-gold/40 hover:text-gold lg:min-h-11">Auto: {suggestedSku}</button>
-          </div>
-          <label><LegendText>Product title</LegendText><input className={field} value={name} onChange={ev => setName(ev.target.value)} placeholder="e.g. Naviforce NF9197" required /></label>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <label><LegendText>Brand</LegendText><input className={field} value={brand} onChange={ev => setBrand(ev.target.value)} placeholder="e.g. Naviforce" /></label>
-            <label><LegendText>Type / Category</LegendText><select className={field} value={category} onChange={ev => setCategory(ev.target.value)}><option>Wrist Watches</option><option>Wall Watches</option><option>Table Watches</option><option>Others</option></select></label>
-          </div>
-          <label><LegendText>Description</LegendText><textarea className={area} value={description} onChange={ev => setDescription(ev.target.value)} placeholder="Brief description of the product…" maxLength={400} /></label>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <label><LegendText>Retail price (LKR)</LegendText><input className={field} type="number" min="0" step="0.01" value={retail} onChange={ev => setRetail(ev.target.value)} /></label>
-            <label><LegendText>Wholesale price (LKR)</LegendText><input className={field} type="number" min="0" step="0.01" value={wholesale} onChange={ev => setWholesale(ev.target.value)} required /></label>
-          </div>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <label><LegendText>Stock quantity</LegendText><input className={field} type="number" min="0" step="1" value={stock} onChange={ev => setStock(ev.target.value)} required /></label>
-            <div><LegendText>Product image</LegendText>
-              <div className="mt-2 flex items-center gap-3">
-                <div className="relative h-[46px] w-[46px] shrink-0 overflow-hidden rounded-[5px] border border-line bg-surface lg:h-11 lg:w-11">
-                  {photo?.dataUrl ? <img src={photo.dataUrl} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full w-full place-items-center text-[9px] text-ink-3">{photoBusy ? "…" : "None"}</div>}
-                </div>
-                <button type="button" onClick={() => fileRef.current?.click()} className="h-[46px] min-w-0 flex-1 truncate rounded-[5px] border border-line bg-surface px-3.5 text-left text-[14px] text-ink-2 hover:border-gold/40 lg:h-11 lg:text-[13px]">{photo ? `Replace photo · ${formatBytes(photo.bytes)}` : "Choose file"}</button>
-                {photo && <button type="button" onClick={() => {
-                  setPhoto(null);
-                  setPhotoNote("");
-                }} aria-label="Remove photo" className="legend h-[46px] shrink-0 rounded-[5px] border border-line bg-surface px-2.5 text-ink-2 lg:h-11">Clear</button>}
-              </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-ink-3">JPG, PNG or WebP · max 5 MB · resized to 1000 px automatically</p>
-              {photoNote && <p className="mt-1 text-[11px] leading-relaxed text-ink-2" role="status">{photoNote}</p>}
-            </div>
-          </div>
-          <input ref={fileRef} type="file" accept={ACCEPT_ATTRIBUTE} onChange={onPick} className="sr-only" tabIndex={-1} />
-          {extras === "no" && <p className="rounded-[5px] border border-line bg-surface px-3.5 py-2.5 text-[11.5px] leading-relaxed text-ink-3">Brand, description and retail price start saving once you run <span className="text-ink-2">app/sql/admin-product-fields.sql</span> in Supabase. Everything else saves now.</p>}
-          {error && <p role="alert" className="text-[12.5px] text-alert">{error}</p>}
-          <button type="submit" disabled={saving} className="mt-1 flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[5px] bg-gold-fill px-4 text-[14px] font-semibold text-on-gold transition-[filter] hover:brightness-110 disabled:opacity-60">{saving ? "Adding…" : "Add product to catalogue"}</button>
-        </form>
-      </section></FadeIn></div>;
+function AdminAddProductView({ onNavigate: navTo }) {
+  return <AdminProductsView onNavigate={navTo} startNew />;
 }
-function AdminProductsView({ onNavigate: navTo }) {
+function AdminProductsView({ onNavigate: navTo, startNew = false }) {
   const {
       products: a,
       orders: n
     } = qe(),
     [i, c] = React.useState("All"),
-    [o, A] = React.useState(!1),
+    [o, A] = React.useState(!!startNew),
     [p, m] = React.useState(null),
     j = ["All", "Wrist Watches", "Wall Watches", "Table Watches", "Others"],
     x = a.filter(h => i === "All" || h.category === i);
-  return <div><PageHeader eyebrow="Catalogue" title="Products" sub={`${a.length} products across the catalogue. Edit a product to update its price and available stock.`} action={<div className="flex flex-wrap gap-3"><SecondaryBtn onClick={() => Xr("rsd-price-list.csv", [["SKU", "Product", "Category", "Price LKR", "Available"], ...a.map(h => [h.sku, h.name, h.category, h.price, h.stock])])}><Icon name="download" className="h-[14px] w-[14px]" />Price list</SecondaryBtn><PrimaryBtn onClick={() => navTo?.("new-product")}>Add product<Icon name="arrow" className="h-[15px] w-[15px]" /></PrimaryBtn></div>} /><div className="grid gap-6 md:grid-cols-3">{dH.map((h, f) => {
+  React.useEffect(() => {
+    if (startNew) {
+      m(null);
+      A(!0);
+    }
+  }, [startNew]);
+  return <div><PageHeader eyebrow="Catalogue" title="Products" sub={`${a.length} products across the catalogue. Edit a product to update catalogue details or its private supplier price. Customer price is calculated automatically.`} action={<div className="flex flex-wrap gap-3"><SecondaryBtn onClick={() => Xr("rsd-price-list.csv", [["SKU", "Product", "Category", "Price LKR", "Available"], ...a.map(h => [h.sku, h.name, h.category, h.price, h.stock])])}><Icon name="download" className="h-[14px] w-[14px]" />Price list</SecondaryBtn><PrimaryBtn onClick={() => navTo?.("new-product")}>Add product<Icon name="arrow" className="h-[15px] w-[15px]" /></PrimaryBtn></div>} /><div className="grid gap-6 md:grid-cols-3">{dH.map((h, f) => {
         const q = {
           ...h,
           skus: a.filter(y => y.category === h.name).length,
           revenue: fs(n).byCategory.get(h.name) ?? 0
         };
         return <FadeIn delay={f * .07} key={q.name}><article className="group relative h-full overflow-hidden rounded-[3px] border border-line bg-panel"><div className="relative h-[168px] overflow-hidden sm:h-[190px]"><img src={q.image} alt={q.name} loading="lazy" className="photo h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.045]" /><div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/25 to-transparent" /></div><div className="px-4 pt-4 pb-5 sm:px-5 sm:pt-5 sm:pb-6"><div className="flex items-baseline justify-between gap-3"><h3 className="font-display text-[19px] leading-tight font-semibold text-ink">{q.name}</h3><span className="legend text-ink-3">{q.skus}{" SKU"}</span></div><div className="font-display tnum mt-4 text-[20px] font-semibold text-ink">{q.revenue > 0 ? `LKR ${bt(q.revenue)}` : <span className="text-ink-3">LKR 0</span>}</div><LegendText className="mt-2 text-ink-3">{"Revenue · "}{Tr}</LegendText><p className="mt-4 text-[12.5px] leading-relaxed text-ink-2">{q.note}</p></div></article></FadeIn>;
-      })}</div><FadeIn delay={.1} className="mt-8"><PanelCard title="Stock ledger" sub="Quantity on hand against units reserved on open orders" action={<FilterRow>{j.map(h => <SecondaryBtn active={i === h} onClick={() => c(h)} key={h}>{h}</SecondaryBtn>)}</FilterRow>} bodyClass="px-5 py-5 sm:px-6"><div className="hidden overflow-x-auto lg:block"><table className="w-full min-w-[760px] border-collapse"><thead><tr className="border-b border-line">{["SKU", "Product", "Price", "On hand", "Reserved", "7-day movement", "State", ""].map((h, f) => <th className={cn("legend py-3 text-ink-3", f >= 2 && f <= 4 ? "text-right" : "text-left", f === 2 && "pr-6", f === 4 && "pr-6")} key={h}>{h}</th>)}</tr></thead><tbody>{x.map(h => {
+      })}</div><FadeIn delay={.1} className="mt-8"><PanelCard title="Stock ledger" sub="Quantity on hand against units reserved on open orders" action={<FilterRow>{j.map(h => <SecondaryBtn active={i === h} onClick={() => c(h)} key={h}>{h}</SecondaryBtn>)}</FilterRow>} bodyClass="px-5 py-5 sm:px-6"><div className="hidden overflow-x-auto lg:block"><table className="w-full min-w-[760px] border-collapse"><thead><tr className="border-b border-line">{["SKU", "Product", "Customer price", "On hand", "Reserved", "7-day movement", "Favourites", "State", ""].map((h, f) => <th className={cn("legend py-3 text-ink-3", f >= 2 && f <= 4 ? "text-right" : "text-left", f === 2 && "pr-6", f === 4 && "pr-6")} key={h}>{h}</th>)}</tr></thead><tbody>{x.map(h => {
                 const f = h.stock <= 4;
-                return <tr className="border-b border-line-soft transition-colors last:border-0 hover:bg-raised/60" key={h.sku}><td className="tnum py-[15px] pr-4 text-[11.5px] text-gold">{h.sku}</td><td className="py-[15px] pr-4"><div className="text-[13.5px] text-ink">{h.name}</div><div className="legend mt-[6px] text-ink-3">{h.category}</div></td><td className="tnum py-[15px] pr-6 text-right text-[12.5px] text-ink-2">{"LKR "}{bt(h.price)}</td><td className="tnum py-[15px] pr-6 text-right text-[13px] font-medium text-ink">{h.stock}</td><td className="tnum py-[15px] pr-6 text-right text-[12.5px] text-ink-2">{h.reserved}</td><td className="py-[15px] pr-6"><div className="w-[110px]"><Sparkline values={h.trend} /></div></td><td className="py-[15px]"><StatusBadge tone={f ? "alert" : "ok"}>{f ? "Reorder" : "Healthy"}</StatusBadge></td><td className="py-[15px] pl-3 text-right"><button onClick={() => {
+                return <tr className="border-b border-line-soft transition-colors last:border-0 hover:bg-raised/60" key={h.sku}><td className="tnum py-[15px] pr-4 text-[11.5px] text-gold">{h.sku}</td><td className="py-[15px] pr-4"><div className="text-[13.5px] text-ink">{h.name}</div><div className="legend mt-[6px] text-ink-3">{h.category}</div></td><td className="tnum py-[15px] pr-6 text-right text-[12.5px] text-ink-2">{"LKR "}{bt(h.price)}</td><td className="tnum py-[15px] pr-6 text-right text-[13px] font-medium text-ink">{h.stock}</td><td className="tnum py-[15px] pr-6 text-right text-[12.5px] text-ink-2">{h.reserved}</td><td className="py-[15px] pr-6"><div className="w-[110px]"><Sparkline values={h.trend} /></div></td><td className="tnum py-[15px] pr-6 text-right text-[12.5px] text-gold">{Number(h.favoriteCount || 0)}</td><td className="py-[15px]"><StatusBadge tone={f ? "alert" : "ok"}>{f ? "Reorder" : "Healthy"}</StatusBadge></td><td className="py-[15px] pl-3 text-right"><button onClick={() => {
                       m(h), A(!0);
                     }} className="legend min-h-9 text-gold" aria-label={`Edit ${h.name}`}>Edit</button></td></tr>;
-              })}</tbody></table></div><ul className="flex flex-col gap-3 lg:hidden">{x.map(h => <li className="rounded-[2px] border border-line bg-surface p-4" key={h.sku}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="text-[14px] leading-snug text-ink">{h.name}</div><div className="legend mt-2 text-gold">{h.sku}{" · "}{h.category}</div></div><StatusBadge tone={h.stock <= 4 ? "alert" : "ok"}>{h.stock <= 4 ? "Reorder" : "Healthy"}</StatusBadge></div><div className="mt-4 flex items-end justify-between gap-4 border-t border-line-soft pt-3"><div><LegendText className="text-ink-3">Price</LegendText><div className="font-display tnum mt-1.5 text-[18px] leading-none font-semibold text-ink">{"LKR "}{bt(h.price)}</div></div><div className="flex gap-5 text-right"><div><LegendText className="text-ink-3">On hand</LegendText><div className="tnum mt-1.5 text-[15px] text-ink">{h.stock}</div></div><div><LegendText className="text-ink-3">Reserved</LegendText><div className="tnum mt-1.5 text-[15px] text-ink-2">{h.reserved}</div></div></div></div><div className="mt-3 h-8"><Sparkline values={h.trend} /></div></li>)}</ul>{x.length === 0 && <div className="mt-6"><EmptyNotice title="No products in this category" body="Nothing is listed here yet. Change the filter above to see the rest of the catalogue." icon="products" /></div>}</PanelCard></FadeIn><ProductEditorSheet open={o} product={p} onClose={() => A(!1)} /></div>;
+              })}</tbody></table></div><ul className="flex flex-col gap-3 lg:hidden">{x.map(h => <li className="rounded-[2px] border border-line bg-surface p-4" key={h.sku}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="text-[14px] leading-snug text-ink">{h.name}</div><div className="legend mt-2 text-gold">{h.sku}{" · "}{h.category}</div></div><StatusBadge tone={h.stock <= 4 ? "alert" : "ok"}>{h.stock <= 4 ? "Reorder" : "Healthy"}</StatusBadge></div><div className="mt-4 flex items-end justify-between gap-4 border-t border-line-soft pt-3"><div><LegendText className="text-ink-3">Customer price</LegendText><div className="font-display tnum mt-1.5 text-[18px] leading-none font-semibold text-ink">{"LKR "}{bt(h.price)}</div></div><div className="flex gap-5 text-right"><div><LegendText className="text-ink-3">On hand</LegendText><div className="tnum mt-1.5 text-[15px] text-ink">{h.stock}</div></div><div><LegendText className="text-ink-3">Reserved</LegendText><div className="tnum mt-1.5 text-[15px] text-ink-2">{h.reserved}</div></div><div><LegendText className="text-ink-3">Saved</LegendText><div className="tnum mt-1.5 text-[15px] text-gold">{Number(h.favoriteCount || 0)}</div></div></div></div><div className="mt-3 h-8"><Sparkline values={h.trend} /></div></li>)}</ul>{x.length === 0 && <div className="mt-6"><EmptyNotice title="No products in this category" body="Nothing is listed here yet. Change the filter above to see the rest of the catalogue." icon="products" /></div>}</PanelCard></FadeIn><ProductEditorSheet open={o} product={p} onClose={() => A(!1)} /></div>;
 }
 function AdminDealersView() {
   const {
@@ -3076,7 +2785,7 @@ function AdminAnalyticsView() {
     f = p[Math.min(x, p.length - 1)],
     q = i.map(N => ({
       ...N,
-      revenue: n.filter(k => k.dealer === N.name && k.status !== "Submitted").reduce((k, O) => k + O.amount, 0)
+      revenue: n.filter(k => k.dealer === N.name && k.status === "Completed").reduce((k, O) => k + O.amount, 0)
     })).sort((N, k) => k.revenue - N.revenue),
     y = Math.max(...q.map(N => N.revenue), 1);
   return <div><PageHeader eyebrow="Intelligence" title="Analytics" sub={`Confirmed revenue and dealer concentration from the same ledger as the Overview. Chart period: ${c.periodLabel}.`} action={<FilterRow>{["7 days", "30 days"].map(N => <SecondaryBtn active={o === N} onClick={() => {
@@ -3091,10 +2800,10 @@ function AdminAnalyticsView() {
                 duration: .8,
                 delay: .1 + k * .012,
                 ease: Ft
-              }} /><div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-10 hidden -translate-x-1/2 rounded-[2px] border border-line bg-raised px-2 py-1 whitespace-nowrap sm:block sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"><span className="tnum text-[10px] text-gold">{j5(N.value)}</span></div></button>)}</div><div className="mt-4 flex justify-between">{[p[0], p[Math.floor((p.length - 1) / 3)], p[Math.floor((p.length - 1) * 2 / 3)], p[p.length - 1]].map(N => <span className="legend text-ink-3" key={N.label}>{N.label}</span>)}</div><RuleLine className="my-7" /><div className="grid gap-7 sm:grid-cols-2">{["Wholesale", "Pre-order", "Counter"].map(N => {
-              const k = n.filter(O => O.channel === N && O.status !== "Submitted").reduce((O, R) => O + R.amount, 0);
+              }} /><div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-10 hidden -translate-x-1/2 rounded-[2px] border border-line bg-raised px-2 py-1 whitespace-nowrap sm:block sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"><span className="tnum text-[10px] text-gold">{j5(N.value)}</span></div></button>)}</div><div className="mt-4 flex justify-between">{[p[0], p[Math.floor((p.length - 1) / 3)], p[Math.floor((p.length - 1) * 2 / 3)], p[p.length - 1]].map(N => <span className="legend text-ink-3" key={N.label}>{N.label}</span>)}</div><RuleLine className="my-7" /><div className="grid gap-7 sm:grid-cols-2">{["Wholesale", "Website order", "Counter"].map(N => {
+              const k = n.filter(O => O.channel === N && O.status === "Completed").reduce((O, R) => O + R.amount, 0);
               return <MetricBar label={`${N} channel`} value={k} max={c.revenue} sub={`LKR ${bt(k)}`} key={N} />;
-            })}</div></PanelCard></FadeIn><FadeIn delay={.08}><PanelCard title="Dealer concentration" sub="Share of confirmed revenue"><div className="flex flex-col gap-6">{q.map(N => <MetricBar label={N.name} value={N.revenue} max={y} sub={N.revenue > 0 ? `LKR ${bt(N.revenue)}` : "LKR 0"} tone={N.revenue === 0 ? "muted" : "gold"} key={N.name} />)}</div><div className="mt-8 rounded-[2px] border border-gold/30 bg-gold/[0.07] px-5 py-5"><LegendText className="text-gold">Concentration risk</LegendText><p className="mt-3 text-[12.5px] leading-relaxed text-ink-2">{"One dealer accounts for "}<span className="tnum text-ink">{(y / Math.max(1, c.revenue) * 100).toFixed(1)}%</span>{" of confirmed revenue. Spreading the December allocation across three accounts would bring exposure under the 45% internal guideline."}</p></div></PanelCard></FadeIn></div><FadeIn delay={.12} className="mt-8"><PanelCard title="Units by order" sub="Every confirmed order in the period"><div className="flex flex-col gap-5">{n.filter(N => N.status !== "Submitted").map(N => <MetricBar label={`${N.id} · ${N.dealer}`} value={N.units} max={Math.max(1, ...n.map(k => k.units))} sub={`${N.units} units · LKR ${bt(N.amount)}`} key={N.id} />)}</div></PanelCard></FadeIn></div>;
+            })}</div></PanelCard></FadeIn><FadeIn delay={.08}><PanelCard title="Dealer concentration" sub="Share of confirmed revenue"><div className="flex flex-col gap-6">{q.map(N => <MetricBar label={N.name} value={N.revenue} max={y} sub={N.revenue > 0 ? `LKR ${bt(N.revenue)}` : "LKR 0"} tone={N.revenue === 0 ? "muted" : "gold"} key={N.name} />)}</div><div className="mt-8 rounded-[2px] border border-gold/30 bg-gold/[0.07] px-5 py-5"><LegendText className="text-gold">Concentration risk</LegendText><p className="mt-3 text-[12.5px] leading-relaxed text-ink-2">{"One dealer accounts for "}<span className="tnum text-ink">{(y / Math.max(1, c.revenue) * 100).toFixed(1)}%</span>{" of confirmed revenue. Spreading the December allocation across three accounts would bring exposure under the 45% internal guideline."}</p></div></PanelCard></FadeIn></div><FadeIn delay={.12} className="mt-8"><PanelCard title="Units by order" sub="Every confirmed order in the period"><div className="flex flex-col gap-5">{n.filter(N => N.status === "Completed").map(N => <MetricBar label={`${N.id} · ${N.dealer}`} value={N.units} max={Math.max(1, ...n.map(k => k.units))} sub={`${N.units} units · LKR ${bt(N.amount)}`} key={N.id} />)}</div></PanelCard></FadeIn></div>;
 }
 function AdminCommentsView() {
   const toast = In(),
@@ -3265,6 +2974,6 @@ function AppRouterShell() {
   if (!authReady) return <AdminLoadingScreen />;
   if (!a) return <LoginScreen />;
   if (adminLoginRoute) return <AdminRedirect />;
-  return A ? <div className="min-h-screen overflow-x-hidden bg-surface text-ink"><aside className="fixed top-0 bottom-0 left-0 z-40 hidden w-[268px] border-r border-line lg:block"><DesktopSidebar view={n} onNavigate={i} theme={c} setTheme={o} /></aside><div className="flex min-w-0 flex-col lg:pl-[268px]"><DesktopHeader view={n} onNavigate={i} theme={c} setTheme={o} menuOpen={!1} setMenuOpen={() => {}} /><main className="flex-1 px-5 py-8 sm:px-8 sm:py-10 lg:px-10"><AnimatePresence mode="wait"><motion.div initial={p ? !1 : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={p ? void 0 : { opacity: 0, y: -10 }} transition={{ duration: .36, ease: Ft }} key={n}>{n === "overview" && <AdminOverviewView onNavigate={i} />}{n === "orders" && <AdminOrdersView />}{n === "preorders" && <AdminPreordersView />}{n === "products" && <AdminProductsView onNavigate={i} />}{n === "new-product" && <AdminAddProductView onNavigate={i} />}{n === "dealers" && <AdminDealersView />}{n === "analytics" && <AdminAnalyticsView />}{n === "comments" && <AdminCommentsView />}{(n === "account" || n === "more") && <AdminAccountView />}</motion.div></AnimatePresence></main><footer className="border-t border-line px-5 py-7 sm:px-8 lg:px-10"><div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3"><p className="legend text-ink-3">R.S.D. Premium Watches · Private administrator console</p><p className="legend text-ink-3">Live Supabase ledger · Secure session</p></div></footer></div></div> : <MobileShellRoot view={n} onNavigate={i} theme={c} setTheme={o} />;
+  return A ? <div className="min-h-screen overflow-x-hidden bg-surface text-ink"><aside className="fixed top-0 bottom-0 left-0 z-40 hidden w-[268px] border-r border-line lg:block"><DesktopSidebar view={n} onNavigate={i} theme={c} setTheme={o} /></aside><div className="flex min-w-0 flex-col lg:pl-[268px]"><DesktopHeader view={n} onNavigate={i} theme={c} setTheme={o} menuOpen={!1} setMenuOpen={() => {}} /><main className="flex-1 px-5 py-8 sm:px-8 sm:py-10 lg:px-10"><AnimatePresence mode="wait"><motion.div initial={p ? !1 : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={p ? void 0 : { opacity: 0, y: -10 }} transition={{ duration: .36, ease: Ft }} key={n}>{n === "overview" && <AdminOverviewView onNavigate={i} />}{n === "orders" && <AdminOrdersView />}{n === "products" && <AdminProductsView onNavigate={i} />}{n === "new-product" && <AdminAddProductView onNavigate={i} />}{n === "dealers" && <AdminDealersView />}{n === "analytics" && <AdminAnalyticsView />}{n === "comments" && <AdminCommentsView />}{(n === "account" || n === "more") && <AdminAccountView />}</motion.div></AnimatePresence></main><footer className="border-t border-line px-5 py-7 sm:px-8 lg:px-10"><div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3"><p className="legend text-ink-3">R.S.D. Premium Watches · Private administrator console</p><p className="legend text-ink-3">Live Supabase ledger · Secure session</p></div></footer></div></div> : <MobileShellRoot view={n} onNavigate={i} theme={c} setTheme={o} />;
 }
 export default RsdPremiumWatchesApp;

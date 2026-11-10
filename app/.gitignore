@@ -12,6 +12,9 @@ dist/
 uploads/
 *.zip
 
+# Private supplier costs — never commit or deploy
+private/
+
 # Editor & OS files
 .DS_Store
 *.log
