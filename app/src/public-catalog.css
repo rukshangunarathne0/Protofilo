@@ -166,14 +166,6 @@
   padding: clamp(58px, 8vw, 104px) 0 0;
 }
 .public-curated-new { padding-top: clamp(54px, 7vw, 92px); }
-.public-shop-page { padding-top: clamp(52px, 8vw, 104px); padding-bottom: clamp(54px, 8vw, 96px); }
-.public-shop-heading { display: flex; align-items: end; justify-content: space-between; gap: 40px; padding-bottom: clamp(42px, 6vw, 70px); border-bottom: 1px solid var(--line); }
-.public-shop-copy { max-width: 700px; }
-.public-shop-copy h1 { margin: 14px 0 0; color: var(--ink); font: 600 clamp(37px, 5vw, 66px)/.96 var(--font-display); letter-spacing: -.045em; }
-.public-shop-copy p { max-width: 58ch; margin: 22px 0 0; color: var(--ink-2); font-size: 14px; line-height: 1.8; }
-.public-shop-order { display: inline-flex; flex-shrink: 0; align-items: center; gap: 9px; min-height: 44px; white-space: nowrap; }
-.public-shop-order svg { width: 15px; height: 15px; }
-.public-shop-heading + .public-section-heading { margin-top: clamp(48px, 7vw, 82px); }
 .public-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; }
 .public-section-heading .store-text-link { display: inline-flex; align-items: center; gap: 7px; color: var(--gold-soft); font: 500 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
 .public-section-heading .store-text-link svg { width: 13px; height: 13px; }
@@ -289,10 +281,6 @@
   .public-hero-actions { align-items: stretch; flex-direction: column; width: 100%; }
   .public-hero-actions .store-primary, .public-hero-link { justify-content: center; width: 100%; }
   .public-intro, .public-collection, .public-curated-section, .public-collection-cta, .public-order-panel, .public-footer { width: calc(100% - 36px); }
-  .public-shop-heading { align-items: stretch; flex-direction: column; gap: 25px; }
-  .public-shop-copy h1 { font-size: clamp(38px, 11vw, 56px); }
-  .public-shop-copy p { margin-top: 17px; }
-  .public-shop-order { justify-content: center; width: 100%; }
   .public-intro { grid-template-columns: 1fr; gap: 20px; padding-block: 61px 44px; }
   .public-controls { align-items: stretch; flex-direction: column; }
   .public-search { width: 100%; }

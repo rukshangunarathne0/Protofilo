@@ -2355,8 +2355,10 @@ function PublicCatalog({
   setTheme: n
 }) {
   const { products: productRows = [], ready } = qe();
+  const reducedMotion = useReducedMotion();
   const [query, setQuery] = React.useState("");
   const [collectionMode, setCollectionMode] = React.useState("best");
+  const [showCollection, setShowCollection] = React.useState(false);
   const [favoriteSkus, setFavoriteSkus] = React.useState(() => {
     try {
       const stored = JSON.parse(window.localStorage.getItem("rsd-favourites") || "[]");
@@ -2365,6 +2367,7 @@ function PublicCatalog({
       return new Set();
     }
   });
+  const collectionRef = React.useRef(null);
   const visitorId = React.useMemo(() => getPublicVisitorId(), []);
   const products = React.useMemo(() => {
     const source = productRows.length ? productRows : hA.map(({ stock, reserved, ...product }) => product);
@@ -2383,6 +2386,11 @@ function PublicCatalog({
     });
   }, [productRows]);
   const salesScore = product => Array.isArray(product.trend) ? product.trend.reduce((sum, value) => sum + Number(value || 0), 0) : 0;
+  const bestProducts = React.useMemo(() => [...products].sort((left, right) => salesScore(right) - salesScore(left)).slice(0, 4), [products]);
+  const newProducts = React.useMemo(() => {
+    const marked = products.filter(product => product.isNew);
+    return (marked.length ? marked : [...products].reverse()).slice(0, 4);
+  }, [products]);
   const sortOptions = [
     ["best", "Best sales"],
     ["new", "New arrivals"],
@@ -2408,6 +2416,10 @@ function PublicCatalog({
     if (collectionMode === "price-high") result.sort((left, right) => right.price - left.price);
     return result;
   }, [products, query, collectionMode]);
+  const openCollection = () => {
+    setShowCollection(true);
+    window.setTimeout(() => collectionRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" }), 30);
+  };
   const toggleFavorite = product => {
     const next = new Set(favoriteSkus);
     const favorite = !next.has(product.sku);
@@ -2436,12 +2448,14 @@ function PublicCatalog({
   return <div className="public-site store-app">
     <header className="store-header public-header">
       <div className="store-header-inner public-header-inner">
-        <div className="public-brand" aria-label="R.S.D. Premium Watches">
+        <a className="public-brand" href="#top" aria-label="R.S.D. Premium Watches home">
           <span className="store-brand-mark"><BrandClockLogo size={36} /></span>
           <span className="store-brand-name">R.S.D.<small>PREMIUM WATCHES</small></span>
-        </div>
+        </a>
         <nav className="public-nav" aria-label="Public navigation">
-          <a className="active" href="#collection">Shop</a>
+          <a className={showCollection ? "active" : ""} href="#collection" onClick={event => { event.preventDefault(); openCollection(); }}>Collection</a>
+          <a href="#about">About R.S.D.</a>
+          <a href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">WhatsApp</a>
         </nav>
         <div className="public-header-actions">
           <button type="button" className="store-icon-button public-theme-button" onClick={() => n(a === "dark" ? "light" : "dark")} aria-label={`Use ${a === "dark" ? "light" : "dark"} theme`}><Icon name={a === "dark" ? "sun" : "moon"} /></button>
@@ -2450,13 +2464,40 @@ function PublicCatalog({
       </div>
     </header>
 
-    <main id="collection">
-      <section className="public-collection public-shop-page">
-        <div className="public-shop-heading">
-          <div className="public-shop-copy"><span className="store-eyebrow">SHOP THE COLLECTION</span><h1>Timepieces, ready to order.</h1><p>Browse the complete R.S.D. collection of watches and clocks. Choose a colour, see the calculated customer price, and order directly through WhatsApp.</p></div>
-          <a className="store-primary public-shop-order" href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /> Order on WhatsApp</a>
+    <main id="top">
+      <section className="public-hero" aria-label="R.S.D. Premium Watches">
+        <img src="/rsd-watch-hero.png" alt="A premium R.S.D. mechanical wristwatch on dark stone" loading="eager" fetchPriority="high" decoding="async" />
+        <div className="public-hero-shade" />
+        <div className="public-hero-content">
+          <span className="store-hero-kicker">R.S.D. PREMIUM WATCHES · EST. 1994</span>
+          <h1>Time, beautifully<br /><em>considered.</em></h1>
+          <p>A considered collection of watches and clocks for the moments that matter.</p>
+          <div className="public-hero-actions">
+            <button type="button" className="store-primary" onClick={openCollection}>View the collection <Icon name="arrow" /></button>
+            <a className="public-hero-link" href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /> Order on WhatsApp</a>
+          </div>
         </div>
-        <div className="public-section-heading"><div><span className="store-eyebrow">R.S.D. PREMIUM WATCHES</span><h2>Find your timepiece</h2></div><span className="public-count">{filteredProducts.length} {filteredProducts.length === 1 ? "piece" : "pieces"}</span></div>
+      </section>
+
+      <section className="public-intro" id="about">
+        <div><span className="store-eyebrow">THE R.S.D. EDIT</span><h2>Objects with a sense of time.</h2></div>
+        <p>Choose a best seller or a new arrival, then place your order in simple language through WhatsApp. Every listed customer price includes free delivery.</p>
+      </section>
+
+      {!showCollection && <>
+        <section className="public-curated-section">
+          <div className="public-section-heading"><div><span className="store-eyebrow">MOST LOVED</span><h2>Best sellers</h2></div><button type="button" className="store-text-link" onClick={openCollection}>See all <Icon name="chevron" /></button></div>
+          {renderCards(bestProducts, true)}
+        </section>
+        <section className="public-curated-section public-curated-new">
+          <div className="public-section-heading"><div><span className="store-eyebrow">JUST ARRIVED</span><h2>New arrivals</h2></div><button type="button" className="store-text-link" onClick={openCollection}>See all <Icon name="chevron" /></button></div>
+          {renderCards(newProducts, true)}
+        </section>
+        <section className="public-collection-cta"><span className="store-eyebrow">SHOP YOUR WAY</span><h2>Find the right timepiece.</h2><p>Browse by best sales, new arrivals, men, women, unisex, kids, bracelet or price.</p><button type="button" className="store-primary" onClick={openCollection}>View full collection <Icon name="arrow" /></button></section>
+      </>}
+
+      {showCollection && <section className="public-collection" id="collection" ref={collectionRef}>
+        <div className="public-section-heading"><div><span className="store-eyebrow">THE COLLECTION</span><h2>Find your timepiece</h2></div><span className="public-count">{filteredProducts.length} {filteredProducts.length === 1 ? "piece" : "pieces"}</span></div>
         <p className="public-delivery-note">Free delivery on every order. Buy 2 or more and save LKR 400 on delivery.</p>
         <div className="public-controls">
           <div className="public-search"><Icon name="search" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search the collection" aria-label="Search the collection" />{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search"><Icon name="close" /></button>}</div>
@@ -2464,6 +2505,11 @@ function PublicCatalog({
         </div>
         {!ready && <div className="public-loading-note" role="status"><span className="public-loading-dot" />Refreshing the collection…</div>}
         {filteredProducts.length ? renderCards(filteredProducts) : <div className="public-empty"><Icon name="search" /><h3>No pieces found</h3><p>Try another search or browse a different collection.</p><button type="button" onClick={() => { setQuery(""); setCollectionMode("best"); }}>Clear filters</button></div>}
+      </section>}
+
+      <section className="public-order-panel">
+        <div><span className="store-eyebrow">READY WHEN YOU ARE</span><h2>Order by conversation.</h2><p>R.S.D. orders are handled personally through WhatsApp Business. Tell us what you want in simple words and our team will help.</p></div>
+        <a className="store-primary" href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /> Order on WhatsApp · 0711368623</a>
       </section>
     </main>
     <footer className="public-footer"><div><span className="public-footer-brand">R.S.D. Premium Watches</span><span>Modern timepieces · Colombo, Sri Lanka</span></div><div><span>Orders via WhatsApp Business</span><a href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">0711368623</a></div></footer>
