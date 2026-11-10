@@ -178,7 +178,7 @@ export default async function handler(req, res) {
             result = costResult;
             break;
           }
-        } else if (patch.markupPercent !== undefined) {
+        } else if (patch.markupPercent !== undefined && patch.markupPercent !== null && patch.markupPercent !== "") {
           const existingCost = await db.from("ht_product_costs").select("supplier_price").eq("sku", sku).maybeSingle();
           if (existingCost.error || !existingCost.data) {
             result = { error: new Error("Add a supplier watch price before using a markup override.") };
