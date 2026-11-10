@@ -19,9 +19,9 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        entryFileNames: "assets/app.js",
-        chunkFileNames: "assets/[name].js",
-        assetFileNames: "assets/[name][extname]",
+        entryFileNames: "assets/app-v2.js",
+        chunkFileNames: "assets/[name]-v2.js",
+        assetFileNames: "assets/[name]-v2[extname]",
         // Keep third-party code in one chunk. Splitting React, jsPDF, and their
         // shared dependencies into separate manual chunks creates a circular
         // ESM graph (pdf -> vendor -> react -> vendor) that fails before the

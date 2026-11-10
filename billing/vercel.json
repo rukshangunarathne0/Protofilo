@@ -1,6 +1,6 @@
 {
   "redirects": [
-    { "source": "/", "destination": "/assets/billing-shell.html", "permanent": false },
-    { "source": "/index.html", "destination": "/assets/billing-shell.html", "permanent": false }
+    { "source": "/", "destination": "/assets/billing-shell-v2.html", "permanent": false },
+    { "source": "/index.html", "destination": "/assets/billing-shell-v2.html", "permanent": false }
   ]
 }
