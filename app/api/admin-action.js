@@ -195,6 +195,24 @@ export default async function handler(req, res) {
         result = await db.from("ht_products").update({ ...safePatch, ...finalPricePatch, updated_at: new Date().toISOString() }).eq("sku", sku);
         break;
       }
+      case "deleteProduct": {
+        const sku = cleanText(payload.sku, 24).toUpperCase();
+        if (!/^[A-Z0-9][A-Z0-9-]{1,23}$/.test(sku)) {
+          result = { error: new Error("A valid product SKU is required.") };
+          break;
+        }
+        const existing = await db.from("ht_products").select("sku").eq("sku", sku).maybeSingle();
+        if (existing.error) {
+          result = existing;
+          break;
+        }
+        if (!existing.data) {
+          result = { error: new Error("Product not found.") };
+          break;
+        }
+        result = await db.from("ht_products").delete().eq("sku", sku);
+        break;
+      }
       case "sendFeedback": {
         const contact = cleanText(payload.contact, 160);
         result = await db.from("feedback").insert({

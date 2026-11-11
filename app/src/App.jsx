@@ -684,6 +684,11 @@ function f5(a, n) {
           sku: i.sku
         } : i)
       };
+    case "deleteProduct":
+      return {
+        ...a,
+        products: a.products.filter(i => i.sku !== n.sku)
+      };
     case "addFeedback":
       return {
         ...a,
@@ -782,7 +787,7 @@ function StoreProvider({
           trend: hA.find(product => product.sku === r.sku)?.trend || [0, 0, 0, 0, 0, 0, 0],
         }));
         registerProductPhotos(nextProducts);
-        if (nextProducts.length) i({ type: "replace", state: { products: nextProducts } });
+        i({ type: "replace", state: { products: nextProducts } });
         setSyncStatus("live");
       } catch {
         setSyncStatus("offline");
@@ -960,6 +965,16 @@ function StoreProvider({
         return { ok: !0 };
       } catch (err) {
         return { ok: !1, error: err?.message || "Network problem — the changes were not saved." };
+      }
+    },
+    removeProduct: async sku => {
+      try {
+        await requestAdminAction("deleteProduct", { sku });
+        i({ type: "deleteProduct", sku: String(sku).trim().toUpperCase() });
+        await fetchFromSupabase();
+        return { ok: !0 };
+      } catch (err) {
+        return { ok: !1, error: err?.message || "Network problem — the product was not removed." };
       }
     },
     sendFeedback: async m => {
@@ -1663,7 +1678,8 @@ function ProductEditorSheet({
   const {
       products: c,
       addProduct: o,
-      updateProduct: A
+      updateProduct: A,
+      removeProduct: removeProduct
     } = qe(),
     p = In(),
     [m, j] = React.useState(""),
@@ -1683,6 +1699,7 @@ function ProductEditorSheet({
     [photoBusy, setPhotoBusy] = React.useState(!1),
     [photoNote, setPhotoNote] = React.useState(""),
     [saving, setSaving] = React.useState(!1),
+    [removing, setRemoving] = React.useState(!1),
     fileRef = React.useRef(null);
   React.useEffect(() => {
     if (!a) return;
@@ -1703,6 +1720,7 @@ function ProductEditorSheet({
     setPhotoNote("");
     setPhotoBusy(!1);
     setSaving(!1);
+    setRemoving(!1);
   }, [a, n]);
   const existingPhoto = n && isUsablePhoto(n.image) ? n.image : null,
     previewSrc = photo?.dataUrl ?? existingPhoto,
@@ -1804,6 +1822,25 @@ function ProductEditorSheet({
         setSaving(!1);
       }
     },
+    remove = async () => {
+      if (!n || saving || removing || typeof window === "undefined") return;
+      if (!window.confirm(`Remove “${n.name}” (${n.sku}) from the catalogue? This also removes its private supplier price and saved favourites.`)) return;
+      setRemoving(!0);
+      J("");
+      try {
+        const result = await removeProduct(n.sku);
+        if (result && result.ok === !1) {
+          J(result.error || "Could not remove the product. Check the connection and try again.");
+          return;
+        }
+        p("Product removed from the catalogue");
+        i();
+      } catch (err) {
+        J(err?.message || "Something went wrong while removing the product.");
+      } finally {
+        setRemoving(!1);
+      }
+    },
     C = "mt-2 h-12 w-full rounded-[4px] border border-line bg-surface px-3 text-[16px] text-ink lg:text-[13px]";
   return <SheetDialog open={a} onClose={i} eyebrow="Catalogue" title={n ? "Edit product" : "Add product"} footer={<button type="submit" form="product-editor" disabled={saving} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-[6px] bg-gold-fill px-4 text-[13px] font-semibold text-on-gold disabled:opacity-60"><Icon name="check" className="h-4 w-4" />{saving ? "Saving…" : n ? "Save changes" : "Add product"}</button>}>
       <form id="product-editor" onSubmit={v} className="flex flex-col gap-4">
@@ -1826,6 +1863,7 @@ function ProductEditorSheet({
         <label><LegendText>Description</LegendText><textarea className="mt-2 min-h-[76px] w-full rounded-[4px] border border-line bg-surface px-3 py-2 text-[16px] text-ink lg:text-[13px]" value={desc} onChange={tt => setDesc(tt.target.value)} placeholder="Short description for the public catalogue" maxLength={1000} /></label>
         <div><LegendText>Product image</LegendText><div className="mt-2 flex items-start gap-3"><div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-[10px] border border-line bg-surface">{previewSrc ? <img src={previewSrc} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full w-full place-items-center text-[10px] text-ink-3">No photo</div>}{photoBusy && <div className="absolute inset-0 grid place-items-center bg-surface/75 text-[10px] text-ink-2">Working…</div>}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap gap-2"><button type="button" onClick={() => fileRef.current?.click()} className="legend min-h-9 rounded-[7px] border border-line bg-surface px-3 text-ink-2">{previewSrc ? "Replace photo" : "Choose photo"}</button>{photo && <button type="button" onClick={() => { setPhoto(null); setPhotoNote(""); }} className="legend min-h-9 rounded-[7px] border border-line bg-surface px-3 text-ink-2">Remove</button>}</div><p className="mt-2 text-[11px] leading-relaxed text-ink-3">JPG, PNG or WebP · max 5 MB · resized to 1000 px and compressed automatically</p>{photoNote && <p className="mt-1 text-[11px] leading-relaxed text-ink-2" role="status">{photoNote}</p>}</div></div></div>
         <input ref={fileRef} type="file" accept={ACCEPT_ATTRIBUTE} onChange={onPick} className="sr-only" tabIndex={-1} />
+        {n && <div className="border-t border-line pt-4"><button type="button" onClick={remove} disabled={saving || removing} className="legend min-h-10 w-full rounded-[7px] border border-alert/40 px-3 text-alert transition-colors hover:bg-alert/[0.06] disabled:opacity-60">{removing ? "Removing…" : "Remove product"}</button><p className="mt-2 text-[11px] leading-relaxed text-ink-3">This permanently removes the product from the public catalogue, along with its supplier price and saved favourites.</p></div>}
         {R && <p role="alert" className="text-[12px] text-alert">{R}</p>}
         <p className="text-[11px] leading-relaxed text-ink-3">Only the supplier price is stored as private administrator data. Customer-facing pages receive the calculated price only.</p>
       </form>
