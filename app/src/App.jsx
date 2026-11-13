@@ -1951,7 +1951,7 @@ function MobileProducts() {
       return m === "stock" ? [...J].sort((v, C) => v.stock - C.stock) : m === "price" ? [...J].sort((v, C) => C.price - v.price) : J;
     }, [c, A, m, n]),
     O = n.filter(R => R.stock <= 4).length;
-  return <div className="mx-auto w-full max-w-[560px] px-4 pt-5"><div className="flex items-end justify-between gap-4"><div><LegendText className="text-ink-3">Catalogue</LegendText><h1 className="font-display mt-2 text-[27px] leading-none font-semibold tracking-[-0.02em] text-ink">Products</h1><p className="mt-2 text-[12px] text-ink-2">{n.length}{" SKUs · "}<span className="text-alert">{O}{" need reorder"}</span></p></div><div className="flex items-center gap-2"><button onClick={() => {
+  return <div className="mx-auto w-full max-w-[560px] px-4 pt-5"><div className="flex flex-wrap items-end justify-between gap-3"><div><LegendText className="text-ink-3">Catalogue</LegendText><h1 className="font-display mt-2 text-[27px] leading-none font-semibold tracking-[-0.02em] text-ink">Products</h1><p className="mt-2 text-[12px] text-ink-2">{n.length}{" SKUs · "}<span className="text-alert">{O}{" need reorder"}</span></p></div><div className="flex shrink-0 items-center gap-2"><button onClick={() => {
           const R = m === "default" ? "stock" : m === "stock" ? "price" : "default";
           j(R), a(R === "price" ? "Sorted by price" : R === "stock" ? "Lowest stock first" : "Catalogue order");
         }} className="flex min-h-[36px] items-center gap-2 rounded-full border border-line bg-panel px-3 text-[11px] text-ink-2 active:bg-raised"><Icon name="analytics" className="h-3.5 w-3.5 text-gold" />{m === "price" ? "Price" : m === "stock" ? "Stock" : "Sort"}</button><button onClick={() => {
