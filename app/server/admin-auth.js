@@ -6,6 +6,9 @@ const SESSION_TTL_SECONDS = 8 * 60 * 60;
 const MAX_FAILURES = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
 const failures = new Map();
+const publicRateLimits = new Map();
+const RATE_LIMIT_MAX_KEYS = 10000;
+let lastRateLimitPrune = 0;
 
 function base64url(value) {
   return Buffer.from(value).toString("base64url");
@@ -74,6 +77,38 @@ function verifyPassword(password) {
 function getClientAddress(req) {
   const forwarded = req.headers["x-forwarded-for"];
   return String(forwarded || req.socket?.remoteAddress || "unknown").split(",")[0].trim().slice(0, 120);
+}
+
+function pruneRateLimits(now) {
+  if (now - lastRateLimitPrune < 60 * 1000 && publicRateLimits.size <= RATE_LIMIT_MAX_KEYS) return;
+  lastRateLimitPrune = now;
+  for (const [key, record] of publicRateLimits) {
+    if (record.expiresAt <= now) publicRateLimits.delete(key);
+  }
+  while (publicRateLimits.size > RATE_LIMIT_MAX_KEYS) {
+    const oldest = publicRateLimits.keys().next().value;
+    if (oldest === undefined) break;
+    publicRateLimits.delete(oldest);
+  }
+}
+
+export function enforceRateLimit(req, res, { name, limit, windowMs, identifier = "" }) {
+  const now = Date.now();
+  pruneRateLimits(now);
+  const suffix = typeof identifier === "string" ? identifier.trim().slice(0, 120) : "";
+  const key = `${name}:${getClientAddress(req)}:${suffix}`;
+  let record = publicRateLimits.get(key);
+  if (!record || record.expiresAt <= now) {
+    record = { count: 0, expiresAt: now + windowMs };
+  }
+  record.count += 1;
+  publicRateLimits.set(key, record);
+  if (record.count > limit) {
+    res.setHeader("Retry-After", String(Math.max(1, Math.ceil((record.expiresAt - now) / 1000))));
+    sendJson(res, 429, { error: "Too many requests. Try again later." });
+    return false;
+  }
+  return true;
 }
 
 function failureKey(req, email) {

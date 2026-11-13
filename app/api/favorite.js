@@ -1,4 +1,4 @@
-import { methodNotAllowed, requestIsSameOrigin, sendJson } from "../server/admin-auth.js";
+import { enforceRateLimit, methodNotAllowed, requestIsSameOrigin, sendJson } from "../server/admin-auth.js";
 import { cleanText, getAdminDb } from "../server/admin-supabase.js";
 
 export default async function handler(req, res) {
@@ -10,6 +10,7 @@ export default async function handler(req, res) {
     sendJson(res, 403, { error: "Request rejected." });
     return;
   }
+  if (!enforceRateLimit(req, res, { name: "favorite", limit: 120, windowMs: 10 * 60 * 1000 })) return;
   const body = typeof req.body === "string" ? (() => {
     try { return JSON.parse(req.body); } catch { return {}; }
   })() : (req.body || {});

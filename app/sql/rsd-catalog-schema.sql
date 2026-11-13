@@ -154,28 +154,141 @@ create trigger ht_orders_touch_updated_at
 before update on public.ht_orders
 for each row execute function public.touch_updated_at();
 
-create or replace function public.ht_place_order(p_order jsonb)
-returns void
+drop function if exists public.ht_place_order(jsonb);
+
+create function public.ht_place_order(p_order jsonb)
+returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  requested_line jsonb;
+  requested_sku text;
+  requested_qty integer;
+  current_product public.ht_products%rowtype;
+  reserved_line jsonb;
+  normalized_lines jsonb := '[]'::jsonb;
+  line_count integer := 0;
+  total_amount numeric(12,2) := 0;
+  total_units integer := 0;
+  inserted_order_id text;
+  existing_amount numeric(12,2);
+  existing_units integer;
 begin
+  if p_order is null or nullif(trim(p_order->>'id'), '') is null then
+    raise exception using errcode = '22023', message = 'Order id is required';
+  end if;
+
+  -- Serialize retries with the same deterministic order id before checking stock.
+  perform pg_advisory_xact_lock(hashtextextended(p_order->>'id', 0));
+  select amount, units into existing_amount, existing_units
+  from public.ht_orders
+  where id = p_order->>'id';
+  if found then
+    return jsonb_build_object(
+      'created', false,
+      'orderId', p_order->>'id',
+      'amount', existing_amount,
+      'units', existing_units,
+      'unitPrice', case when existing_units > 0 then existing_amount / existing_units else 0 end
+    );
+  end if;
+
+  for requested_line in select value from jsonb_array_elements(coalesce(p_order->'lines', '[]'::jsonb)) loop
+    line_count := line_count + 1;
+    if line_count > 20 then
+      raise exception using errcode = '22023', message = 'Too many order lines';
+    end if;
+    requested_sku := upper(trim(requested_line->>'sku'));
+    requested_qty := (requested_line->>'qty')::integer;
+    if requested_sku is null or requested_qty is null or requested_qty < 1 or requested_qty > 999 then
+      raise exception using errcode = '22023', message = 'Invalid order line';
+    end if;
+
+    select * into current_product
+    from public.ht_products
+    where sku = requested_sku
+    for update;
+    if not found or current_product.availability = 'Coming soon'
+      or current_product.stock < requested_qty then
+      raise exception using errcode = 'P0001', message = 'Insufficient stock';
+    end if;
+    if current_product.price < 0 then
+      raise exception using errcode = 'P0001', message = 'Invalid product price';
+    end if;
+
+    update public.ht_products
+    set stock = stock - requested_qty,
+        reserved = reserved + requested_qty,
+        updated_at = now()
+    where sku = requested_sku;
+
+    reserved_line := jsonb_build_object(
+      'sku', current_product.sku,
+      'name', current_product.name,
+      'qty', requested_qty,
+      'price', current_product.price,
+      'reservedQty', requested_qty
+    );
+    normalized_lines := normalized_lines || jsonb_build_array(reserved_line);
+    total_amount := total_amount + (current_product.price * requested_qty);
+    total_units := total_units + requested_qty;
+  end loop;
+
+  if line_count = 0 then
+    raise exception using errcode = '22023', message = 'At least one order line is required';
+  end if;
+
   insert into public.ht_orders (id, dealer, city, date, amount, units, status, channel, delivery, reference, lines)
   values (
     p_order->>'id', p_order->>'dealer', p_order->>'city',
     coalesce((p_order->>'date')::date, current_date),
-    coalesce((p_order->>'amount')::numeric, 0), coalesce((p_order->>'units')::integer, 0),
+    total_amount, total_units,
     coalesce(p_order->>'status', 'Submitted'), p_order->>'channel', p_order->>'delivery',
-    p_order->>'reference', coalesce(p_order->'lines', '[]'::jsonb)
+    p_order->>'reference', normalized_lines
   )
-  on conflict (id) do nothing;
-end;
-$$;
+  on conflict (id) do nothing
+  returning id into inserted_order_id;
 
-create or replace function public.ht_set_order_status(p_id text, p_status text)
-returns void language sql security definer set search_path = public as $$
-  update public.ht_orders set status = p_status where id = p_id;
+  if inserted_order_id is null then
+    -- A retried idempotent request must not reserve stock a second time.
+    update public.ht_products p
+    set stock = p.stock + line.quantity,
+        reserved = greatest(0, p.reserved - line.quantity),
+        updated_at = now()
+    from (
+      select value->>'sku' as sku,
+        sum(coalesce((value->>'reservedQty')::integer, (value->>'qty')::integer, 0))::integer as quantity
+      from jsonb_array_elements(normalized_lines) as item(value)
+      group by value->>'sku'
+    ) as line
+    where p.sku = line.sku;
+    select amount, units into existing_amount, existing_units
+    from public.ht_orders
+    where id = p_order->>'id';
+    return jsonb_build_object(
+      'created', false,
+      'orderId', p_order->>'id',
+      'amount', coalesce(existing_amount, 0),
+      'units', coalesce(existing_units, 0),
+      'unitPrice', case when coalesce(existing_units, 0) > 0 then existing_amount / existing_units else 0 end
+    );
+  end if;
+
+  return jsonb_build_object(
+    'created', true,
+    'orderId', inserted_order_id,
+    'amount', total_amount,
+    'units', total_units,
+    'unitPrice', case when total_units > 0 then total_amount / total_units else 0 end
+  );
+exception
+  when others then
+    -- The function runs in one transaction, so stock reservations roll back
+    -- together with a rejected order.
+    raise;
+end;
 $$;
 
 create or replace function public.ht_adjust_stock(p_sku text, p_delta integer)
@@ -186,10 +299,84 @@ returns void language sql security definer set search_path = public as $$
 $$;
 
 create or replace function public.ht_reset_ledger()
-returns void language plpgsql security definer set search_path = public as $$
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  old_order record;
+  order_line jsonb;
+  line_qty integer;
 begin
+  -- Return reservations to available stock before deleting the ledger.
+  for old_order in select lines from public.ht_orders where status <> 'Completed' loop
+    for order_line in select value from jsonb_array_elements(coalesce(old_order.lines, '[]'::jsonb)) loop
+      line_qty := coalesce((order_line->>'reservedQty')::integer, (order_line->>'qty')::integer, 0);
+      if line_qty > 0 then
+        update public.ht_products
+        set stock = stock + line_qty,
+            reserved = greatest(0, reserved - line_qty),
+            updated_at = now()
+        where sku = order_line->>'sku';
+      end if;
+    end loop;
+  end loop;
+
   truncate table public.ht_orders, public.ht_dealers, public.feedback, public.ht_admin_profile;
   update public.ht_products set reserved = 0, updated_at = now();
+end;
+$$;
+
+-- Stock is moved from available to reserved when an order is accepted.
+-- Completion releases the reservation; reopening a completed order reserves it again.
+create or replace function public.ht_set_order_status(p_id text, p_status text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  old_order public.ht_orders%rowtype;
+  order_line jsonb;
+  line_qty integer;
+begin
+  if p_status is null or p_status not in ('Submitted', 'Confirmed', 'Packing', 'Ready', 'Completed') then
+    raise exception using errcode = '22023', message = 'Invalid order status';
+  end if;
+
+  select * into old_order from public.ht_orders where id = p_id for update;
+  if not found or old_order.status = p_status then return; end if;
+
+  if p_status = 'Completed' and old_order.status <> 'Completed' then
+    for order_line in select value from jsonb_array_elements(coalesce(old_order.lines, '[]'::jsonb)) loop
+      line_qty := coalesce((order_line->>'reservedQty')::integer, (order_line->>'qty')::integer, 0);
+      if line_qty > 0 then
+        update public.ht_products
+        set reserved = reserved - line_qty, updated_at = now()
+        where sku = order_line->>'sku' and reserved >= line_qty;
+        if not found then
+          raise exception using errcode = 'P0001', message = 'Reservation is missing';
+        end if;
+      end if;
+    end loop;
+  elsif old_order.status = 'Completed' and p_status <> 'Completed' then
+    for order_line in select value from jsonb_array_elements(coalesce(old_order.lines, '[]'::jsonb)) loop
+      line_qty := coalesce((order_line->>'reservedQty')::integer, (order_line->>'qty')::integer, 0);
+      if line_qty > 0 then
+        update public.ht_products
+        set stock = stock - line_qty,
+            reserved = reserved + line_qty,
+            updated_at = now()
+        where sku = order_line->>'sku' and stock >= line_qty;
+        if not found then
+          raise exception using errcode = 'P0001', message = 'Insufficient stock to reopen order';
+        end if;
+      end if;
+    end loop;
+  end if;
+
+  update public.ht_orders set status = p_status where id = p_id;
 end;
 $$;
 

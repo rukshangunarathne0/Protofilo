@@ -2635,11 +2635,14 @@ function PublicCatalog({
     }).catch(() => {});
   };
   const recordOrder = (product, colour = "Not selected") => {
+    const idempotencyKey = typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     fetch("/api/customer-order", {
       method: "POST",
       credentials: "same-origin",
       keepalive: true,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
       body: JSON.stringify({ sku: product.sku, quantity: 1, colour }),
     }).catch(() => {});
   };
