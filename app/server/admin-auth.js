@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { getAdminDb } from "./admin-supabase.js";
 
 export const ADMIN_EMAIL = "admin@rsd.com";
 const COOKIE_NAME = "__Host-rsd_admin_session";
@@ -92,7 +93,7 @@ function pruneRateLimits(now) {
   }
 }
 
-export function enforceRateLimit(req, res, { name, limit, windowMs, identifier = "" }) {
+export async function enforceRateLimit(req, res, { name, limit, windowMs, identifier = "" }) {
   const now = Date.now();
   pruneRateLimits(now);
   const suffix = typeof identifier === "string" ? identifier.trim().slice(0, 120) : "";
@@ -105,6 +106,31 @@ export function enforceRateLimit(req, res, { name, limit, windowMs, identifier =
   publicRateLimits.set(key, record);
   if (record.count > limit) {
     res.setHeader("Retry-After", String(Math.max(1, Math.ceil((record.expiresAt - now) / 1000))));
+    sendJson(res, 429, { error: "Too many requests. Try again later." });
+    return false;
+  }
+
+  const rateLimitSecret = process.env.RSD_ADMIN_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "rsd-public-rate-limit";
+  const bucket = createHmac("sha256", rateLimitSecret)
+    .update(`${name}:${getClientAddress(req)}:${suffix}`)
+    .digest("hex");
+  let result;
+  try {
+    result = await getAdminDb().rpc("ht_check_public_rate_limit", {
+      p_bucket: bucket,
+      p_limit: limit,
+      p_window_seconds: Math.max(1, Math.ceil(windowMs / 1000)),
+    });
+  } catch {
+    sendJson(res, 503, { error: "The request service is unavailable." });
+    return false;
+  }
+  if (result.error || !result.data || typeof result.data.allowed !== "boolean") {
+    sendJson(res, 503, { error: "The request service is unavailable." });
+    return false;
+  }
+  if (!result.data.allowed) {
+    res.setHeader("Retry-After", String(Math.max(1, Math.trunc(Number(result.data.retryAfter) || 1))));
     sendJson(res, 429, { error: "Too many requests. Try again later." });
     return false;
   }

@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     sendJson(res, 403, { error: "Request rejected." });
     return;
   }
-  if (!enforceRateLimit(req, res, { name: "customer-order", limit: 20, windowMs: 10 * 60 * 1000 })) return;
+  if (!(await enforceRateLimit(req, res, { name: "customer-order", limit: 20, windowMs: 10 * 60 * 1000 }))) return;
   const body = typeof req.body === "string" ? (() => {
     try { return JSON.parse(req.body); } catch { return {}; }
   })() : (req.body || {});

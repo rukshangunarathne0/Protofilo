@@ -101,8 +101,16 @@ create table if not exists public.ht_product_favorites (
   primary key (sku, visitor_id)
 );
 
+create table if not exists public.ht_public_rate_limits (
+  bucket text primary key check (bucket ~ '^[0-9a-f]{64}$'),
+  window_started_at timestamptz not null,
+  request_count integer not null default 0 check (request_count >= 0),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists ht_product_costs_updated_idx on public.ht_product_costs (updated_at desc);
 create index if not exists ht_product_favorites_sku_idx on public.ht_product_favorites (sku);
+create index if not exists ht_public_rate_limits_updated_idx on public.ht_public_rate_limits (updated_at desc);
 
 create index if not exists ht_products_sort_idx on public.ht_products (sort_order, sku);
 create index if not exists ht_orders_date_idx on public.ht_orders (date desc, id desc);
@@ -116,6 +124,7 @@ alter table public.feedback enable row level security;
 alter table public.ht_admin_profile enable row level security;
 alter table public.ht_product_costs enable row level security;
 alter table public.ht_product_favorites enable row level security;
+alter table public.ht_public_rate_limits enable row level security;
 
 drop policy if exists "public catalog read" on public.ht_products;
 create policy "public catalog read" on public.ht_products
@@ -125,7 +134,7 @@ create policy "public catalog read" on public.ht_products
 -- profile, cost, or favourite tables. The Vercel administrator API uses service_role,
 -- which bypasses RLS after validating the HttpOnly R.S.D. session.
 
-revoke all on public.ht_products, public.ht_dealers, public.ht_orders, public.feedback, public.ht_admin_profile, public.ht_product_costs, public.ht_product_favorites from anon, authenticated;
+revoke all on public.ht_products, public.ht_dealers, public.ht_orders, public.feedback, public.ht_admin_profile, public.ht_product_costs, public.ht_product_favorites, public.ht_public_rate_limits from anon, authenticated;
 grant select on public.ht_products to anon, authenticated;
 
 create or replace function public.touch_updated_at()
@@ -153,6 +162,67 @@ drop trigger if exists ht_orders_touch_updated_at on public.ht_orders;
 create trigger ht_orders_touch_updated_at
 before update on public.ht_orders
 for each row execute function public.touch_updated_at();
+
+create or replace function public.ht_check_public_rate_limit(p_bucket text, p_limit integer, p_window_seconds integer)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  rate_row public.ht_public_rate_limits%rowtype;
+  now_at timestamptz := now();
+  window_end timestamptz;
+begin
+  if p_bucket is null or p_bucket !~ '^[0-9a-f]{64}$'
+    or p_limit is null or p_limit < 1 or p_limit > 10000
+    or p_window_seconds is null or p_window_seconds < 1 or p_window_seconds > 86400 then
+    raise exception using errcode = '22023', message = 'Invalid rate-limit request';
+  end if;
+
+  insert into public.ht_public_rate_limits (bucket, window_started_at, request_count, updated_at)
+  values (p_bucket, now_at, 1, now_at)
+  on conflict (bucket) do nothing;
+
+  select * into rate_row
+  from public.ht_public_rate_limits
+  where bucket = p_bucket
+  for update;
+
+  if rate_row.window_started_at <= now_at - make_interval(secs => p_window_seconds) then
+    update public.ht_public_rate_limits
+    set window_started_at = now_at, request_count = 1, updated_at = now_at
+    where bucket = p_bucket;
+    return jsonb_build_object('allowed', true, 'retryAfter', p_window_seconds);
+  end if;
+
+  if rate_row.request_count >= p_limit then
+    window_end := rate_row.window_started_at + make_interval(secs => p_window_seconds);
+    return jsonb_build_object(
+      'allowed', false,
+      'retryAfter', greatest(1, ceil(extract(epoch from window_end - now_at))::integer)
+    );
+  end if;
+
+  update public.ht_public_rate_limits
+  set request_count = request_count + 1, updated_at = now_at
+  where bucket = p_bucket;
+
+  -- Keep spoofed or rotating client identifiers from growing this table forever.
+  if (select count(*) from public.ht_public_rate_limits) > 10000 then
+    delete from public.ht_public_rate_limits
+    where bucket in (
+      select bucket
+      from public.ht_public_rate_limits
+      where bucket <> p_bucket
+      order by updated_at asc
+      limit 1000
+    );
+  end if;
+
+  return jsonb_build_object('allowed', true, 'retryAfter', p_window_seconds);
+end;
+$$;
 
 drop function if exists public.ht_place_order(jsonb);
 
@@ -380,8 +450,8 @@ begin
 end;
 $$;
 
-revoke all on function public.ht_place_order(jsonb), public.ht_set_order_status(text, text), public.ht_adjust_stock(text, integer), public.ht_reset_ledger() from public, anon, authenticated;
-grant execute on function public.ht_place_order(jsonb), public.ht_set_order_status(text, text), public.ht_adjust_stock(text, integer), public.ht_reset_ledger() to service_role;
+revoke all on function public.ht_check_public_rate_limit(text, integer, integer), public.ht_place_order(jsonb), public.ht_set_order_status(text, text), public.ht_adjust_stock(text, integer), public.ht_reset_ledger() from public, anon, authenticated;
+grant execute on function public.ht_check_public_rate_limit(text, integer, integer), public.ht_place_order(jsonb), public.ht_set_order_status(text, text), public.ht_adjust_stock(text, integer), public.ht_reset_ledger() to service_role;
 
 insert into public.ht_products (sku, name, category, price, stock, reserved, image, trend, sort_order, gender, product_type, is_new, availability)
 values
