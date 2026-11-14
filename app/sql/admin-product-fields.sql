@@ -1,6 +1,6 @@
 -- R.S.D. Premium Watches — optional catalogue fields and product photo setup.
--- The customer price is calculated on the server from private supplier data;
--- this migration never adds or exposes a second customer-price input.
+-- Customer prices are entered directly by the administrator. Supplier costs remain
+-- private operational data and are not used to recalculate the public price.
 
 alter table public.ht_products add column if not exists brand text;
 alter table public.ht_products add column if not exists description text;

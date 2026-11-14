@@ -822,7 +822,6 @@ function StoreProvider({
         availability: r.availability || "Available to order",
         favoriteCount: Number(r.favorite_count) || 0,
         supplierPrice: r.supplier_price == null ? undefined : Number(r.supplier_price),
-        markupPercent: r.markup_percent == null ? undefined : Number(r.markup_percent),
         trend: Array.isArray(r.trend) ? r.trend.map(Number) : [0, 0, 0, 0, 0, 0, 0],
       }));
       const nextDealers = (payload.dealers || []).map(r => ({
@@ -1691,7 +1690,7 @@ function ProductEditorSheet({
     [isNew, setIsNew] = React.useState(!1),
     [availability, setAvailability] = React.useState("Available to order"),
     [supplierPrice, setSupplierPrice] = React.useState(""),
-    [markupPercent, setMarkupPercent] = React.useState(""),
+    [customerPrice, setCustomerPrice] = React.useState(""),
     [brand, setBrand] = React.useState(""),
     [desc, setDesc] = React.useState(""),
     [colors, setColors] = React.useState(""),
@@ -1714,7 +1713,7 @@ function ProductEditorSheet({
     setIsNew(!!n?.isNew);
     setAvailability(n?.availability ?? "Available to order");
     setSupplierPrice(n?.supplierPrice == null ? "" : String(n.supplierPrice));
-    setMarkupPercent(n?.markupPercent == null ? "" : String(n.markupPercent));
+    setCustomerPrice(n?.price == null ? "" : String(n.price));
     setBrand(n?.brand ?? "");
     setDesc(n?.description ?? "");
     setColors(Array.isArray(n?.colors) ? n.colors.join(", ") : "");
@@ -1755,7 +1754,7 @@ function ProductEditorSheet({
       if (saving) return;
       const cleanSku = m.trim().toUpperCase(),
         cleanSupplierPrice = supplierPrice === "" ? null : Number(supplierPrice),
-        cleanMarkup = markupPercent === "" ? null : Number(markupPercent);
+        cleanCustomerPrice = customerPrice === "" ? null : Number(customerPrice);
       if (!cleanSku || !x.trim()) {
         J("Enter a SKU and product name.");
         return;
@@ -1768,12 +1767,12 @@ function ProductEditorSheet({
         J("That SKU already exists.");
         return;
       }
-      if ((!n && cleanSupplierPrice === null) || (cleanSupplierPrice !== null && (!Number.isFinite(cleanSupplierPrice) || cleanSupplierPrice < 0))) {
-        J("Enter the supplier watch price in LKR.");
+      if (cleanCustomerPrice === null || !Number.isFinite(cleanCustomerPrice) || cleanCustomerPrice < 0) {
+        J("Enter the customer price in LKR.");
         return;
       }
-      if (cleanMarkup !== null && (!Number.isFinite(cleanMarkup) || cleanMarkup < 0 || cleanMarkup > 500)) {
-        J("Markup override must be between 0 and 500 percent, or leave it empty.");
+      if (cleanSupplierPrice !== null && (!Number.isFinite(cleanSupplierPrice) || cleanSupplierPrice < 0)) {
+        J("Enter a valid private supplier watch price in LKR, or leave it empty.");
         return;
       }
       setSaving(!0);
@@ -1800,7 +1799,8 @@ function ProductEditorSheet({
           brand: brand.trim() || null,
           description: desc.trim() || null,
           colors: colors.split(",").map(item => item.trim()).filter(Boolean).slice(0, 12),
-          markupPercent: cleanMarkup,
+          customerPrice: cleanCustomerPrice,
+          price: cleanCustomerPrice,
         };
         if (cleanSupplierPrice !== null) payload.supplierPrice = cleanSupplierPrice;
         if (image) payload.image = image;
@@ -1857,7 +1857,7 @@ function ProductEditorSheet({
           <label><LegendText>Availability label</LegendText><select className={C} value={availability} onChange={tt => setAvailability(tt.target.value)}><option>Available to order</option><option>Limited availability</option><option>Coming soon</option></select></label>
         </div>
         <label className="flex items-center gap-3 rounded-[7px] border border-line bg-surface px-3 py-3 text-[13px] text-ink"><input type="checkbox" checked={isNew} onChange={tt => setIsNew(tt.target.checked)} className="h-4 w-4 accent-[var(--gold)]" />Show in New arrivals</label>
-        <div className="rounded-[8px] border border-gold/30 bg-gold/[0.06] p-3.5"><LegendText className="text-gold">Automatic customer price</LegendText><p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">Enter the supplier watch price only. R.S.D. calculates the customer price, delivery and minimum profit automatically.</p><div className="mt-3 grid grid-cols-2 gap-3"><label><LegendText>Supplier watch price (LKR)</LegendText><input className={C} type="number" min="0" step="0.01" value={supplierPrice} onChange={tt => setSupplierPrice(tt.target.value)} placeholder="e.g. 525" required={!n} /></label><label><LegendText>Markup override (%)</LegendText><input className={C} type="number" min="0" max="500" step="0.01" value={markupPercent} onChange={tt => setMarkupPercent(tt.target.value)} placeholder="Use default" /></label></div></div>
+        <div className="rounded-[8px] border border-gold/30 bg-gold/[0.06] p-3.5"><LegendText className="text-gold">Customer price</LegendText><p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">Enter the customer price directly. R.S.D. will use this exact amount without adding markup, delivery, or minimum-profit calculations. The supplier price is optional private information.</p><div className="mt-3 grid grid-cols-2 gap-3"><label><LegendText>Supplier watch price (LKR)</LegendText><input className={C} type="number" min="0" step="0.01" value={supplierPrice} onChange={tt => setSupplierPrice(tt.target.value)} placeholder="Optional" /></label><label><LegendText>Customer price (LKR)</LegendText><input className={C} type="number" min="0" step="0.01" value={customerPrice} onChange={tt => setCustomerPrice(tt.target.value)} placeholder="e.g. 999" required /></label></div></div>
         <label><LegendText>Brand</LegendText><input className={C} value={brand} onChange={tt => setBrand(tt.target.value)} placeholder="e.g. R.S.D." /></label>
         <label><LegendText>Colours</LegendText><input className={C} value={colors} onChange={tt => setColors(tt.target.value)} placeholder="e.g. Steel, Black, Gold" /><p className="mt-1.5 text-[11px] text-ink-3">Separate colour names with commas.</p></label>
         <label><LegendText>Description</LegendText><textarea className="mt-2 min-h-[76px] w-full rounded-[4px] border border-line bg-surface px-3 py-2 text-[16px] text-ink lg:text-[13px]" value={desc} onChange={tt => setDesc(tt.target.value)} placeholder="Short description for the public catalogue" maxLength={1000} /></label>

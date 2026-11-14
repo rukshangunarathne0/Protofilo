@@ -1,5 +1,5 @@
 import { methodNotAllowed, readSession, requestIsSameOrigin, sendJson } from "../server/admin-auth.js";
-import { calculateProductPrice, cleanColors, cleanMarkup, cleanNumber, cleanProduct, cleanText, getAdminDb } from "../server/admin-supabase.js";
+import { cleanColors, cleanCustomerPrice, cleanNumber, cleanProduct, cleanSupplierPrice, cleanText, getAdminDb } from "../server/admin-supabase.js";
 
 function parseBody(body) {
   if (typeof body !== "string") return body || {};
@@ -20,30 +20,28 @@ function profilePatch(profile = {}) {
 
 const ORDER_STATUSES = new Set(["Submitted", "Confirmed", "Packing", "Ready", "Completed"]);
 
-function costPatch(product = {}) {
-  const pricing = calculateProductPrice(product.supplierPrice, product.markupPercent);
+function supplierCostPatch(product = {}) {
+  if (product.supplierPrice === undefined || product.supplierPrice === null || product.supplierPrice === "") return null;
   return {
-    pricing,
-    cost: {
-      sku: cleanText(product.sku, 24).toUpperCase(),
-      supplier_price: pricing.watchPrice,
-      markup_percent: cleanMarkup(product.markupPercent),
-      updated_at: new Date().toISOString(),
-    },
+    sku: cleanText(product.sku, 24).toUpperCase(),
+    supplier_price: cleanSupplierPrice(product.supplierPrice),
+    markup_percent: null,
+    updated_at: new Date().toISOString(),
   };
 }
 
 async function saveProductWithCost(db, product) {
-  const { pricing, cost } = costPatch(product);
+  const customerPrice = cleanCustomerPrice(product.customerPrice ?? product.price);
+  const cost = supplierCostPatch(product);
   const publicProduct = {
     ...cleanProduct({
       ...product,
-      price: pricing.finalPrice,
+      price: customerPrice,
       stock: 0,
       reserved: 0,
       availability: product.availability || "Available to order",
     }),
-    price: pricing.finalPrice,
+    price: customerPrice,
     availability: cleanText(product.availability, 100) || "Available to order",
   };
   if (!publicProduct.sku || !publicProduct.name || !publicProduct.category) {
@@ -51,6 +49,7 @@ async function saveProductWithCost(db, product) {
   }
   const insert = await db.from("ht_products").insert(publicProduct);
   if (insert.error) return insert;
+  if (!cost) return insert;
   const costResult = await db.from("ht_product_costs").upsert(cost);
   if (costResult.error) {
     await db.from("ht_products").delete().eq("sku", publicProduct.sku);
@@ -143,7 +142,7 @@ export default async function handler(req, res) {
       case "updateProduct": {
         const sku = cleanText(payload.sku, 24).toUpperCase();
         const patch = payload.patch && typeof payload.patch === "object" ? payload.patch : {};
-        const allowed = ["name", "category", "image", "brand", "description", "colors", "trend", "gender", "product_type", "productType", "is_new", "isNew", "availability", "sort_order", "sortOrder"];
+        const allowed = ["name", "category", "image", "brand", "description", "colors", "trend", "gender", "product_type", "productType", "is_new", "isNew", "availability", "sort_order", "sortOrder", "customerPrice", "supplierPrice"];
         const safePatch = Object.fromEntries(Object.entries(patch).filter(([key]) => allowed.includes(key)));
         if ("productType" in safePatch) {
           safePatch.product_type = cleanText(safePatch.productType, 40) || "Watches";
@@ -170,23 +169,13 @@ export default async function handler(req, res) {
           }
         }
         let finalPricePatch = {};
-        if (patch.supplierPrice !== undefined && patch.supplierPrice !== "") {
-          const { pricing, cost } = costPatch({ sku, supplierPrice: patch.supplierPrice, markupPercent: patch.markupPercent });
-          finalPricePatch = { price: pricing.finalPrice };
-          const costResult = await db.from("ht_product_costs").upsert(cost);
-          if (costResult.error) {
-            result = costResult;
-            break;
-          }
-        } else if (patch.markupPercent !== undefined && patch.markupPercent !== null && patch.markupPercent !== "") {
-          const existingCost = await db.from("ht_product_costs").select("supplier_price").eq("sku", sku).maybeSingle();
-          if (existingCost.error || !existingCost.data) {
-            result = { error: new Error("Add a supplier watch price before using a markup override.") };
-            break;
-          }
-          const { pricing, cost } = costPatch({ sku, supplierPrice: existingCost.data.supplier_price, markupPercent: patch.markupPercent });
-          finalPricePatch = { price: pricing.finalPrice };
-          const costResult = await db.from("ht_product_costs").upsert(cost);
+        if (patch.customerPrice !== undefined) {
+          finalPricePatch = { price: cleanCustomerPrice(patch.customerPrice) };
+        }
+        delete safePatch.customerPrice;
+        delete safePatch.supplierPrice;
+        if (patch.supplierPrice !== undefined && patch.supplierPrice !== null && patch.supplierPrice !== "") {
+          const costResult = await db.from("ht_product_costs").upsert(supplierCostPatch({ sku, supplierPrice: patch.supplierPrice }));
           if (costResult.error) {
             result = costResult;
             break;

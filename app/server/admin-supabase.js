@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { calculateCustomerPrice } from "./pricing.js";
 
 export function getAdminDb() {
   const url = process.env.SUPABASE_URL;
@@ -19,22 +18,31 @@ export function cleanNumber(value, fallback = 0) {
   return Number.isFinite(number) ? number : fallback;
 }
 
-export function cleanMarkup(value) {
-  if (value === undefined || value === null || value === "") return null;
-  const markup = Number(value);
-  if (!Number.isFinite(markup) || markup < 0 || markup > 500) {
-    throw new Error("Markup override must be between 0 and 500 percent.");
+export function cleanCustomerPrice(value) {
+  if (value === undefined || value === null || value === "") {
+    throw new Error("Customer price is required.");
   }
-  return markup;
+  const price = Number(value);
+  if (!Number.isFinite(price) || price < 0) {
+    throw new Error("Customer price must be a non-negative number.");
+  }
+  return price;
+}
+
+export function cleanSupplierPrice(value) {
+  if (value === undefined || value === null || value === "") {
+    throw new Error("Supplier watch price must be a non-negative number.");
+  }
+  const price = Number(value);
+  if (!Number.isFinite(price) || price < 0) {
+    throw new Error("Supplier watch price must be a non-negative number.");
+  }
+  return price;
 }
 
 export function cleanColors(value) {
   const values = Array.isArray(value) ? value : typeof value === "string" ? value.split(",") : [];
   return [...new Set(values.map(item => cleanText(item, 40)).filter(Boolean))].slice(0, 12);
-}
-
-export function calculateProductPrice(supplierPrice, markupPercent) {
-  return calculateCustomerPrice(cleanNumber(supplierPrice, NaN), cleanMarkup(markupPercent));
 }
 
 export function cleanProduct(product = {}) {
