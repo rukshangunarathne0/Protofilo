@@ -2617,7 +2617,7 @@ function PublicCatalog({
           <img src="/rsd-watch-hero.png" alt="A premium R.S.D. mechanical wristwatch on dark stone" loading="eager" fetchPriority="high" decoding="async" />
           <div className="public-hero-shade" />
           <div className="public-hero-content">
-            <span className="store-hero-kicker">R.S.D. PREMIUM WATCHES · EST. 1994</span>
+            <span className="store-hero-kicker">R.S.D. PREMIUM WATCHES</span>
             <h1>Time, beautifully<br /><em>considered.</em></h1>
             <p>A considered collection of watches and clocks for the moments that matter.</p>
             <div className="public-hero-actions">
