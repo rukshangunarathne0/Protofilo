@@ -42,7 +42,7 @@ const RSD_WHATSAPP_NUMBER = "0711368623";
 const RSD_WHATSAPP_URL = "https://wa.me/94711368623";
 const publicPriceByName = new Map(publicPriceData.map(product => [product.name, Number(product.final_price) || 0]));
 const publicProductByName = new Map(publicPriceData.map(product => [product.name, product]));
-const rsdWhatsAppLink = (productName = "", price = 0, colour = "Not selected") => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, colour: ${colour || "Not selected"}, price: LKR ${bt(Number(price) || 0)}.`)}`;
+const rsdWhatsAppLink = (productName = "", price = 0) => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, price: LKR ${bt(Number(price) || 0)}. Please contact me about available colour options.`)}`;
 
 // Warm the image cache the moment a finger/mouse goes down on a product, so the
 // photo is already decoded by the time the detail sheet slides in.
@@ -2366,66 +2366,15 @@ function getPublicVisitorId() {
 function publicProductHref(product) {
   return `/shop/${encodeURIComponent(product.sku || product.name)}`;
 }
-function publicDefaultColour(product, colours) {
-  const preferred = product.featuredColor || product.featuredColour || product.defaultColor || product.defaultColour;
-  return preferred && colours.includes(preferred) ? preferred : (colours[0] || "Not selected");
-}
-function publicColourValue(colour) {
-  const value = String(colour || "").toLowerCase();
-  if (/black|onyx|ebony/.test(value)) return "#171615";
-  if (/white|ivory|cream/.test(value)) return "#f1eee7";
-  if (/gold|champagne|yellow/.test(value)) return "#c9a44e";
-  if (/rose|copper|pink/.test(value)) return "#b97868";
-  if (/blue|navy|azure/.test(value)) return "#315a86";
-  if (/green|olive|emerald/.test(value)) return "#4c6856";
-  if (/brown|walnut|leather|bronze/.test(value)) return "#704c35";
-  if (/red|burgundy|ruby/.test(value)) return "#8b3d3b";
-  if (/silver|steel|grey|gray|chrome/.test(value)) return "#c3c5c3";
-  return "#9e968b";
-}
-function publicColourFilter(colour) {
-  const value = String(colour || "").toLowerCase();
-  if (/black|onyx|ebony/.test(value)) return "brightness(.68) contrast(1.12) saturate(.78)";
-  if (/white|ivory|cream|silver|steel|grey|gray|chrome/.test(value)) return "grayscale(.16) brightness(1.08) contrast(1.04)";
-  if (/gold|champagne|yellow/.test(value)) return "sepia(.52) saturate(1.25) hue-rotate(345deg)";
-  if (/rose|copper|pink/.test(value)) return "sepia(.3) saturate(1.28) hue-rotate(320deg)";
-  if (/blue|navy|azure/.test(value)) return "sepia(.16) saturate(1.46) hue-rotate(158deg)";
-  if (/green|olive|emerald/.test(value)) return "sepia(.22) saturate(1.18) hue-rotate(55deg)";
-  if (/brown|walnut|leather|bronze/.test(value)) return "sepia(.45) saturate(1.18) hue-rotate(335deg)";
-  if (/red|burgundy|ruby/.test(value)) return "sepia(.22) saturate(1.38) hue-rotate(300deg)";
-  return undefined;
-}
-function getPublicColourImage(product, colour, index, fallback) {
-  const sources = product.colorImages || product.colourImages || product.imagesByColor || product.imagesByColour;
-  if (Array.isArray(sources)) {
-    const source = sources[index] || sources[0];
-    if (typeof source === "string" && source.trim()) return { src: source.trim(), variant: true };
-  } else if (sources && typeof sources === "object") {
-    const requested = String(colour || "").trim().toLowerCase();
-    const key = Object.keys(sources).find(option => option.trim().toLowerCase() === requested);
-    const entry = key ? sources[key] : undefined;
-    const source = Array.isArray(entry) ? entry[index] || entry[0] : entry;
-    if (typeof source === "string" && source.trim()) return { src: source.trim(), variant: true };
-  }
-  if (Array.isArray(product.images) && product.images.length > 1) {
-    const source = product.images[index] || product.images[0];
-    if (typeof source === "string" && source.trim()) return { src: source.trim(), variant: true };
-  }
-  return { src: fallback, variant: false };
-}
-
 function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compact: o = false }) {
   const price = Number(a.price) || 0;
   const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
   const availability = a.availability || "Available to order";
-  const colours = Array.isArray(a.colors) && a.colors.length ? a.colors : ["Not selected"];
-  const defaultColour = publicDefaultColour(a, colours);
-  const defaultColourIndex = Math.max(0, colours.indexOf(defaultColour));
-  const image = getPublicColourImage(a, defaultColour, defaultColourIndex, Lr(a.sku, a.category));
+  const image = Lr(a.sku, a.category);
   return <motion.article className={cn("public-product-card", o && "public-product-card-compact")} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "0px 0px -35px" }} transition={{ duration: .35 }}>
     <div className="public-product-image">
       <a className="public-product-image-link" href={publicProductHref(a)} aria-label={`View details for ${a.name}`}>
-        <img src={image.src} alt={`${a.name} in ${defaultColour}`} loading="lazy" decoding="async" style={image.variant ? undefined : { filter: publicColourFilter(defaultColour) }} />
+        <img src={image} alt={a.name} loading="lazy" decoding="async" />
       </a>
       <button type="button" className={cn("public-favorite", n && "is-saved")} onClick={() => i(a)} aria-label={`${n ? "Remove" : "Add"} ${a.name} ${n ? "from" : "to"} favourites`} aria-pressed={n}><HeartIcon selected={n} /></button>
       <span>{availability}</span>
@@ -2436,7 +2385,7 @@ function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compac
       {a.description && <p className="public-product-description">{a.description}</p>}
       <div className="public-product-bottom">
         <div><strong>{en(price)}</strong><small className="public-delivery-badge">Free delivery</small></div>
-        <a className="public-order" href={rsdWhatsAppLink(a.name, price, defaultColour)} target="_blank" rel="noopener noreferrer" onClick={() => c(a, defaultColour)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
+        <a className="public-order" href={rsdWhatsAppLink(a.name, price)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
       </div>
     </div>
   </motion.article>;
@@ -2446,22 +2395,17 @@ function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
   const price = Number(a.price) || 0;
   const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
   const availability = a.availability || "Available to order";
-  const colours = Array.isArray(a.colors) && a.colors.length ? a.colors : ["Not selected"];
-  const [colour, setColour] = React.useState(() => publicDefaultColour(a, colours));
-  React.useEffect(() => setColour(publicDefaultColour(a, colours)), [a.sku, colours.join(",")]);
-  const colourIndex = Math.max(0, colours.indexOf(colour));
-  const image = getPublicColourImage(a, colour, colourIndex, Lr(a.sku, a.category));
+  const image = Lr(a.sku, a.category);
   const details = [["Type", productType], ["For", a.gender || "Unisex"], ["Availability", availability], ["SKU", a.sku]].filter(([, value]) => value);
   return <section className="public-product-detail">
     <a className="public-detail-back" href="/shop"><Icon name="chevron" className="rotate-180" /> Back to shop</a>
     <div className="public-detail-layout">
       <div className="public-detail-visual">
         <div className="public-detail-image-frame">
-          <img className="public-detail-image" src={image.src} alt={`${a.name} in ${colour}`} decoding="async" style={image.variant ? undefined : { filter: publicColourFilter(colour) }} />
+          <img className="public-detail-image" src={image} alt={a.name} decoding="async" />
           <button type="button" className={cn("public-detail-favorite", n && "is-saved")} onClick={() => i(a)} aria-label={`${n ? "Remove" : "Add"} ${a.name} ${n ? "from" : "to"} favourites`} aria-pressed={n}><HeartIcon selected={n} /></button>
           <span className="public-detail-availability">{availability}</span>
         </div>
-        <p className="public-detail-image-note">Image shown in {colour}</p>
       </div>
       <div className="public-detail-info">
         <span className="store-eyebrow">R.S.D. TIMEPIECE</span>
@@ -2469,15 +2413,9 @@ function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
         <p className="public-detail-type">{productType}{a.gender ? ` · ${a.gender}` : ""}</p>
         {a.description && <p className="public-detail-description">{a.description}</p>}
         <div className="public-detail-price-row"><strong>{en(price)}</strong><span className="public-delivery-badge">Free delivery</span></div>
-        <div className="public-detail-colours">
-          <div className="public-detail-colours-heading"><span>Available colours</span><strong>{colour}</strong></div>
-          <div className="public-colour-options" role="list" aria-label={`Available colours for ${a.name}`}>
-            {colours.map((option, index) => <button type="button" className={cn("public-colour-option", colour === option && "active")} onClick={() => setColour(option)} aria-label={`Show ${a.name} in ${option}`} aria-pressed={colour === option} key={option}><span className="public-colour-swatch" style={{ background: publicColourValue(option) }} /><span>{option}</span>{colour === option && <Icon name="check" />}</button>)}
-          </div>
-        </div>
         <dl className="public-detail-facts">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-        <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price, colour)} target="_blank" rel="noopener noreferrer" onClick={() => c(a, colour)}><Icon name="comments" /> Order on WhatsApp <span>· {colour}</span></a>
-        <p className="public-detail-order-note">Tell us the colour you prefer and our team will confirm the order personally.</p>
+        <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)}><Icon name="comments" /> Order on WhatsApp</a>
+        <p className="public-detail-order-note">Contact us for more colour options.</p>
       </div>
     </div>
   </section>;
