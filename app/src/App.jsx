@@ -42,7 +42,7 @@ const RSD_WHATSAPP_NUMBER = "0711368623";
 const RSD_WHATSAPP_URL = "https://wa.me/94711368623";
 const publicPriceByName = new Map(publicPriceData.map(product => [product.name, Number(product.final_price) || 0]));
 const publicProductByName = new Map(publicPriceData.map(product => [product.name, product]));
-const rsdWhatsAppLink = (productName = "", price = 0) => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, price: LKR ${bt(Number(price) || 0)}. Please contact me about available colour options.`)}`;
+const rsdWhatsAppLink = (productName = "", price = 0) => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, price: LKR ${bt(Number(price) || 0)}.`)}`;
 
 // Warm the image cache the moment a finger/mouse goes down on a product, so the
 // photo is already decoded by the time the detail sheet slides in.
@@ -2384,7 +2384,7 @@ function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compac
       <h3><a className="public-product-title-link" href={publicProductHref(a)}>{a.name}</a></h3>
       {a.description && <p className="public-product-description">{a.description}</p>}
       <div className="public-product-bottom">
-        <div><strong>{en(price)}</strong><small className="public-delivery-badge">Free delivery</small></div>
+        <div><strong>{en(price)}</strong><small className="public-delivery-badge">Free delivery</small><small className="public-delivery-badge">Contact for more color</small></div>
         <a className="public-order" href={rsdWhatsAppLink(a.name, price)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
       </div>
     </div>
@@ -2412,10 +2412,9 @@ function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
         <div className="public-detail-heading-row"><h1>{a.name}</h1><span className="public-detail-code">{a.sku}</span></div>
         <p className="public-detail-type">{productType}{a.gender ? ` · ${a.gender}` : ""}</p>
         {a.description && <p className="public-detail-description">{a.description}</p>}
-        <div className="public-detail-price-row"><strong>{en(price)}</strong><span className="public-delivery-badge">Free delivery</span></div>
+        <div className="public-detail-price-row"><strong>{en(price)}</strong><span className="public-delivery-badge">Free delivery</span><span className="public-delivery-badge">Contact for more color</span></div>
         <dl className="public-detail-facts">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
         <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)}><Icon name="comments" /> Order on WhatsApp</a>
-        <p className="public-detail-order-note">Contact us for more colour options.</p>
       </div>
     </div>
   </section>;
