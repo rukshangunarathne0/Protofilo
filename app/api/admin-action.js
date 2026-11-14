@@ -1,5 +1,5 @@
 import { methodNotAllowed, readSession, requestIsSameOrigin, sendJson } from "../server/admin-auth.js";
-import { cleanColors, cleanCustomerPrice, cleanNumber, cleanProduct, cleanSupplierPrice, cleanText, getAdminDb } from "../server/admin-supabase.js";
+import { calculateProductPrice, cleanColors, cleanCustomerPrice, cleanNumber, cleanProduct, cleanSupplierPrice, cleanText, getAdminDb } from "../server/admin-supabase.js";
 
 function parseBody(body) {
   if (typeof body !== "string") return body || {};
@@ -31,8 +31,10 @@ function supplierCostPatch(product = {}) {
 }
 
 async function saveProductWithCost(db, product) {
-  const customerPrice = cleanCustomerPrice(product.customerPrice ?? product.price);
-  const cost = supplierCostPatch(product);
+  const priceMode = product.priceMode === "cost" ? "cost" : "customer";
+  const pricing = priceMode === "cost" ? calculateProductPrice(product.supplierPrice) : null;
+  const customerPrice = pricing?.finalPrice ?? cleanCustomerPrice(product.customerPrice ?? product.price);
+  const cost = priceMode === "cost" ? supplierCostPatch(product) : null;
   const publicProduct = {
     ...cleanProduct({
       ...product,
@@ -142,7 +144,7 @@ export default async function handler(req, res) {
       case "updateProduct": {
         const sku = cleanText(payload.sku, 24).toUpperCase();
         const patch = payload.patch && typeof payload.patch === "object" ? payload.patch : {};
-        const allowed = ["name", "category", "image", "brand", "description", "colors", "trend", "gender", "product_type", "productType", "is_new", "isNew", "availability", "sort_order", "sortOrder", "customerPrice", "supplierPrice"];
+        const allowed = ["name", "category", "image", "brand", "description", "colors", "trend", "gender", "product_type", "productType", "is_new", "isNew", "availability", "sort_order", "sortOrder", "priceMode", "customerPrice", "supplierPrice"];
         const safePatch = Object.fromEntries(Object.entries(patch).filter(([key]) => allowed.includes(key)));
         if ("productType" in safePatch) {
           safePatch.product_type = cleanText(safePatch.productType, 40) || "Watches";
@@ -169,18 +171,23 @@ export default async function handler(req, res) {
           }
         }
         let finalPricePatch = {};
-        if (patch.customerPrice !== undefined) {
-          finalPricePatch = { price: cleanCustomerPrice(patch.customerPrice) };
-        }
-        delete safePatch.customerPrice;
-        delete safePatch.supplierPrice;
-        if (patch.supplierPrice !== undefined && patch.supplierPrice !== null && patch.supplierPrice !== "") {
+        const hasPriceMode = patch.priceMode !== undefined && patch.priceMode !== null && patch.priceMode !== "";
+        const priceMode = hasPriceMode ? patch.priceMode : patch.customerPrice !== undefined ? "customer" : patch.supplierPrice !== undefined ? "cost" : null;
+        if (priceMode === "cost") {
+          finalPricePatch = { price: calculateProductPrice(patch.supplierPrice).finalPrice };
           const costResult = await db.from("ht_product_costs").upsert(supplierCostPatch({ sku, supplierPrice: patch.supplierPrice }));
           if (costResult.error) {
             result = costResult;
             break;
           }
+        } else if (priceMode === "customer") {
+          finalPricePatch = { price: cleanCustomerPrice(patch.customerPrice) };
+        } else if (priceMode !== null) {
+          throw new Error("Choose either cost price or customer price.");
         }
+        delete safePatch.priceMode;
+        delete safePatch.customerPrice;
+        delete safePatch.supplierPrice;
         result = await db.from("ht_products").update({ ...safePatch, ...finalPricePatch, updated_at: new Date().toISOString() }).eq("sku", sku);
         break;
       }

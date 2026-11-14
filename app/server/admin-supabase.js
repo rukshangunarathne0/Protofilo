@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { calculateCustomerPrice } from "./pricing.js";
 
 export function getAdminDb() {
   const url = process.env.SUPABASE_URL;
@@ -43,6 +44,10 @@ export function cleanSupplierPrice(value) {
 export function cleanColors(value) {
   const values = Array.isArray(value) ? value : typeof value === "string" ? value.split(",") : [];
   return [...new Set(values.map(item => cleanText(item, 40)).filter(Boolean))].slice(0, 12);
+}
+
+export function calculateProductPrice(supplierPrice) {
+  return calculateCustomerPrice(cleanSupplierPrice(supplierPrice));
 }
 
 export function cleanProduct(product = {}) {

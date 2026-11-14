@@ -1,6 +1,6 @@
 -- R.S.D. Premium Watches — optional catalogue fields and product photo setup.
--- Customer prices are entered directly by the administrator. Supplier costs remain
--- private operational data and are not used to recalculate the public price.
+-- Customer prices may be entered directly or calculated from a private supplier
+-- cost. Only the final customer price is public; supplier costs remain private.
 
 alter table public.ht_products add column if not exists brand text;
 alter table public.ht_products add column if not exists description text;

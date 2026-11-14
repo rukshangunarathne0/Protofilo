@@ -1689,6 +1689,7 @@ function ProductEditorSheet({
     [productType, setProductType] = React.useState("Watches"),
     [isNew, setIsNew] = React.useState(!1),
     [availability, setAvailability] = React.useState("Available to order"),
+    [priceMode, setPriceMode] = React.useState("customer"),
     [supplierPrice, setSupplierPrice] = React.useState(""),
     [customerPrice, setCustomerPrice] = React.useState(""),
     [brand, setBrand] = React.useState(""),
@@ -1712,6 +1713,7 @@ function ProductEditorSheet({
     setProductType(n?.productType ?? "Watches");
     setIsNew(!!n?.isNew);
     setAvailability(n?.availability ?? "Available to order");
+    setPriceMode("customer");
     setSupplierPrice(n?.supplierPrice == null ? "" : String(n.supplierPrice));
     setCustomerPrice(n?.price == null ? "" : String(n.price));
     setBrand(n?.brand ?? "");
@@ -1767,12 +1769,13 @@ function ProductEditorSheet({
         J("That SKU already exists.");
         return;
       }
-      if (cleanCustomerPrice === null || !Number.isFinite(cleanCustomerPrice) || cleanCustomerPrice < 0) {
+      if (priceMode === "cost") {
+        if (cleanSupplierPrice === null || !Number.isFinite(cleanSupplierPrice) || cleanSupplierPrice < 0) {
+          J("Enter the purchase/cost price in LKR.");
+          return;
+        }
+      } else if (cleanCustomerPrice === null || !Number.isFinite(cleanCustomerPrice) || cleanCustomerPrice < 0) {
         J("Enter the customer price in LKR.");
-        return;
-      }
-      if (cleanSupplierPrice !== null && (!Number.isFinite(cleanSupplierPrice) || cleanSupplierPrice < 0)) {
-        J("Enter a valid private supplier watch price in LKR, or leave it empty.");
         return;
       }
       setSaving(!0);
@@ -1799,10 +1802,11 @@ function ProductEditorSheet({
           brand: brand.trim() || null,
           description: desc.trim() || null,
           colors: colors.split(",").map(item => item.trim()).filter(Boolean).slice(0, 12),
-          customerPrice: cleanCustomerPrice,
-          price: cleanCustomerPrice,
+          priceMode,
+          price: priceMode === "customer" ? cleanCustomerPrice : 0,
         };
-        if (cleanSupplierPrice !== null) payload.supplierPrice = cleanSupplierPrice;
+        if (priceMode === "cost") payload.supplierPrice = cleanSupplierPrice;
+        else payload.customerPrice = cleanCustomerPrice;
         if (image) payload.image = image;
         const result = n ? await A(n.sku, payload) : await o({
           sku: cleanSku,
@@ -1857,7 +1861,7 @@ function ProductEditorSheet({
           <label><LegendText>Availability label</LegendText><select className={C} value={availability} onChange={tt => setAvailability(tt.target.value)}><option>Available to order</option><option>Limited availability</option><option>Coming soon</option></select></label>
         </div>
         <label className="flex items-center gap-3 rounded-[7px] border border-line bg-surface px-3 py-3 text-[13px] text-ink"><input type="checkbox" checked={isNew} onChange={tt => setIsNew(tt.target.checked)} className="h-4 w-4 accent-[var(--gold)]" />Show in New arrivals</label>
-        <div className="rounded-[8px] border border-gold/30 bg-gold/[0.06] p-3.5"><LegendText className="text-gold">Customer price</LegendText><p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">Enter the customer price directly. R.S.D. will use this exact amount without adding markup, delivery, or minimum-profit calculations. The supplier price is optional private information.</p><div className="mt-3 grid grid-cols-2 gap-3"><label><LegendText>Supplier watch price (LKR)</LegendText><input className={C} type="number" min="0" step="0.01" value={supplierPrice} onChange={tt => setSupplierPrice(tt.target.value)} placeholder="Optional" /></label><label><LegendText>Customer price (LKR)</LegendText><input className={C} type="number" min="0" step="0.01" value={customerPrice} onChange={tt => setCustomerPrice(tt.target.value)} placeholder="e.g. 999" required /></label></div></div>
+        <div className="rounded-[8px] border border-gold/30 bg-gold/[0.06] p-3.5"><LegendText className="text-gold">Price method</LegendText><p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">Choose one price input. Only the final customer price is shown on the website.</p><div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => setPriceMode("cost")} aria-pressed={priceMode === "cost"} className={cn("min-h-10 rounded-[5px] border px-2 text-left text-[11px] transition-colors", priceMode === "cost" ? "border-gold bg-gold/[0.12] text-gold" : "border-line bg-surface text-ink-2")}>Purchase cost<span className="mt-1 block text-[10px] opacity-70">Calculate customer price</span></button><button type="button" onClick={() => setPriceMode("customer")} aria-pressed={priceMode === "customer"} className={cn("min-h-10 rounded-[5px] border px-2 text-left text-[11px] transition-colors", priceMode === "customer" ? "border-gold bg-gold/[0.12] text-gold" : "border-line bg-surface text-ink-2")}>Customer price<span className="mt-1 block text-[10px] opacity-70">Use exact price</span></button></div><label className="mt-3 block"><LegendText>{priceMode === "cost" ? "Purchase/cost price (LKR)" : "Customer price (LKR)"}</LegendText><input className={C} type="number" min="0" step="0.01" value={priceMode === "cost" ? supplierPrice : customerPrice} onChange={tt => priceMode === "cost" ? setSupplierPrice(tt.target.value) : setCustomerPrice(tt.target.value)} placeholder={priceMode === "cost" ? "e.g. 999" : "e.g. 2900"} required /></label>{priceMode === "cost" && <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">The purchase cost stays private. The customer price is calculated using the default R.S.D. pricing rule.</p>}{priceMode === "customer" && <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">This exact price is saved as the customer price. No calculation is added.</p>}</div>
         <label><LegendText>Brand</LegendText><input className={C} value={brand} onChange={tt => setBrand(tt.target.value)} placeholder="e.g. R.S.D." /></label>
         <label><LegendText>Colours</LegendText><input className={C} value={colors} onChange={tt => setColors(tt.target.value)} placeholder="e.g. Steel, Black, Gold" /><p className="mt-1.5 text-[11px] text-ink-3">Separate colour names with commas.</p></label>
         <label><LegendText>Description</LegendText><textarea className="mt-2 min-h-[76px] w-full rounded-[4px] border border-line bg-surface px-3 py-2 text-[16px] text-ink lg:text-[13px]" value={desc} onChange={tt => setDesc(tt.target.value)} placeholder="Short description for the public catalogue" maxLength={1000} /></label>
