@@ -1683,6 +1683,7 @@ function ProductEditorSheet({
     } = qe(),
     p = In(),
     [m, j] = React.useState(""),
+    [skuAutomatic, setSkuAutomatic] = React.useState(true),
     [x, h] = React.useState(""),
     [f, q] = React.useState("Wrist Watches"),
     [gender, setGender] = React.useState("Unisex"),
@@ -1703,9 +1704,11 @@ function ProductEditorSheet({
     fileRef = React.useRef(null);
   React.useEffect(() => {
     if (!a) return;
-    j(n?.sku ?? "");
+    const initialCategory = n?.category ?? "Wrist Watches";
+    j(n?.sku ?? nextProductSku(c, initialCategory));
+    setSkuAutomatic(!n);
     h(n?.name ?? "");
-    q(n?.category ?? "Wrist Watches");
+    q(initialCategory);
     setGender(n?.gender ?? "Unisex");
     setProductType(n?.productType ?? "Watches");
     setIsNew(!!n?.isNew);
@@ -1776,13 +1779,11 @@ function ProductEditorSheet({
       setSaving(!0);
       J("");
       try {
-        let image = n?.image,
-          mode = null;
+        let image = n?.image;
         if (photo) {
           const published = await publishProductPhoto(cleanSku, photo);
           if (published.url) {
             image = published.url;
-            mode = published.mode;
           } else {
             J("That photo could not be saved. Try a smaller one, or save without it.");
             setSaving(!1);
@@ -1813,8 +1814,7 @@ function ProductEditorSheet({
           setSaving(!1);
           return;
         }
-        p(n ? "Product updated" : "Product added to the catalogue");
-        if (mode === "inline") p("Photo stored as a small inline copy");
+        p(n ? "Done — product updated" : "Done — product added to the catalogue");
         i();
       } catch (err) {
         J(err?.message || "Something went wrong while saving.");
@@ -1845,11 +1845,11 @@ function ProductEditorSheet({
   return <SheetDialog open={a} onClose={i} eyebrow="Catalogue" title={n ? "Edit product" : "Add product"} footer={<button type="submit" form="product-editor" disabled={saving} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-[6px] bg-gold-fill px-4 text-[13px] font-semibold text-on-gold disabled:opacity-60"><Icon name="check" className="h-4 w-4" />{saving ? "Saving…" : n ? "Save changes" : "Add product"}</button>}>
       <form id="product-editor" onSubmit={v} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
-          <label><LegendText>SKU</LegendText><input className={C} value={m} onChange={tt => j(tt.target.value)} placeholder="e.g. HT-W-600" disabled={!!n} required={!0} /></label>
+          <label><div className="flex items-center justify-between gap-2"><LegendText>SKU</LegendText>{!n && <span className="legend text-ok">Auto-generated</span>}</div><input className={C} value={m} onChange={tt => { j(tt.target.value); setSkuAutomatic(!1); }} placeholder="e.g. RSD-WS-140" disabled={!!n} required={!0} />{!n && <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">Starts at RSD-WS-140 and increments automatically.</p>}</label>
           <label><LegendText>Product name</LegendText><input className={C} value={x} onChange={tt => h(tt.target.value)} placeholder="Enter product name" required={!0} /></label>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <label><LegendText>Category</LegendText><select className={C} value={f} onChange={tt => q(tt.target.value)}><option>Wrist Watches</option><option>Wall Watches</option><option>Table Watches</option><option>Others</option></select></label>
+          <label><LegendText>Category</LegendText><select className={C} value={f} onChange={tt => { const nextCategory = tt.target.value; q(nextCategory); if (!n && skuAutomatic) j(nextProductSku(c, nextCategory)); }}><option>Wrist Watches</option><option>Wall Watches</option><option>Table Watches</option><option>Others</option></select></label>
           <label><LegendText>Product type</LegendText><select className={C} value={productType} onChange={tt => setProductType(tt.target.value)}><option>Watches</option><option>Bracelet</option><option>Wall clocks</option><option>Table clocks</option><option>Accessories</option></select></label>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -2917,7 +2917,23 @@ const dH = [{
   note: "Desk and mantel clocks, mostly bought as gift stock before December."
 }];
 function productSkuPrefix(category) {
-  return category === "Wrist Watches" ? "HT-W" : category === "Wall Watches" ? "HT-C" : category === "Table Watches" ? "HT-T" : "HT-X";
+  return category === "Wrist Watches" ? "RSD-WS" : category === "Wall Watches" ? "RSD-WL" : category === "Table Watches" ? "RSD-TW" : "RSD-OT";
+}
+function nextProductSku(products, category) {
+  const prefix = productSkuPrefix(category),
+    used = new Set(products.map(product => String(product?.sku || "").trim().toUpperCase())),
+    pattern = new RegExp(`^${prefix}-(\\d+)$`);
+  let nextNumber = 140;
+  products.forEach(product => {
+    const match = String(product?.sku || "").trim().toUpperCase().match(pattern);
+    if (match) nextNumber = Math.max(nextNumber, Number(match[1]) + 1);
+  });
+  let sku = `${prefix}-${String(nextNumber).padStart(3, "0")}`;
+  while (used.has(sku)) {
+    nextNumber += 1;
+    sku = `${prefix}-${String(nextNumber).padStart(3, "0")}`;
+  }
+  return sku;
 }
 function AdminAddProductView({ onNavigate: navTo }) {
   return <AdminProductsView onNavigate={navTo} startNew />;
@@ -2957,6 +2973,10 @@ function AdminProductsView({ onNavigate: navTo, startNew = false }) {
       A(!0);
     }
   }, [startNew]);
+  const closeEditor = () => {
+    A(!1);
+    if (startNew) navTo?.("products");
+  };
   return <div><PageHeader eyebrow="Catalogue" title="Products" sub={`${a.length} products across the catalogue. Edit a product to update catalogue details or its private supplier price. Customer price is calculated automatically.`} action={<div className="flex flex-wrap gap-3"><SecondaryBtn onClick={() => Xr("rsd-price-list.csv", [["SKU", "Product", "Category", "Price LKR", "Available"], ...a.map(h => [h.sku, h.name, h.category, h.price, h.stock])])}><Icon name="download" className="h-[14px] w-[14px]" />Price list</SecondaryBtn><PrimaryBtn onClick={() => navTo?.("new-product")}>Add product<Icon name="arrow" className="h-[15px] w-[15px]" /></PrimaryBtn></div>} /><div className="grid gap-6 md:grid-cols-3">{dH.map((h, f) => {
         const q = {
           ...h,
@@ -2969,7 +2989,7 @@ function AdminProductsView({ onNavigate: navTo, startNew = false }) {
                 return <tr className="border-b border-line-soft transition-colors last:border-0 hover:bg-raised/60" key={h.sku}><td className="tnum py-[15px] pr-4 text-[11.5px] text-gold">{h.sku}</td><td className="py-[9px] pr-4"><div className="flex items-center gap-3"><img src={Lr(h.sku, h.category)} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-[6px] border border-line object-cover" /><div className="min-w-0"><div className="text-[13.5px] text-ink">{h.name}</div><div className="legend mt-[6px] text-ink-3">{h.category}</div></div></div></td><td className="tnum py-[15px] pr-6 text-right text-[12.5px] text-ink-2">{"LKR "}{bt(h.price)}</td><td className="tnum py-[15px] pr-6 text-right text-[13px] font-medium text-ink">{h.stock}</td><td className="tnum py-[15px] pr-6 text-right text-[12.5px] text-ink-2">{h.reserved}</td><td className="py-[15px] pr-6"><div className="w-[110px]"><Sparkline values={h.trend} /></div></td><td className="tnum py-[15px] pr-6 text-right text-[12.5px] text-gold">{Number(h.favoriteCount || 0)}</td><td className="py-[15px]"><StatusBadge tone={f ? "alert" : "ok"}>{f ? "Reorder" : "Healthy"}</StatusBadge></td><td className="py-[15px] pl-3 text-right"><button type="button" onClick={() => {
                       m(h), A(!0);
                     }} className="legend min-h-9 text-gold" aria-label={`View or edit ${h.name}`}>View / edit</button></td></tr>;
-              })}</tbody></table></div><ul className="flex flex-col gap-3 lg:hidden">{pageProducts.map(h => <li className="rounded-[2px] border border-line bg-surface p-4" key={h.sku}><div className="flex items-start gap-3"><img src={Lr(h.sku, h.category)} alt={h.name} loading="lazy" className="h-16 w-16 shrink-0 rounded-[6px] border border-line object-cover" /><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-3"><div><div className="text-[14px] leading-snug text-ink">{h.name}</div><div className="legend mt-2 text-gold">{h.sku}{" · "}{h.category}</div></div><StatusBadge tone={h.stock <= 4 ? "alert" : "ok"}>{h.stock <= 4 ? "Reorder" : "Healthy"}</StatusBadge></div></div></div><div className="mt-4 flex items-end justify-between gap-4 border-t border-line-soft pt-3"><div><LegendText className="text-ink-3">Customer price</LegendText><div className="font-display tnum mt-1.5 text-[18px] leading-none font-semibold text-ink">{"LKR "}{bt(h.price)}</div><button type="button" onClick={() => { m(h); A(!0); }} className="legend mt-3 min-h-9 text-gold" aria-label={`View or edit ${h.name}`}>View / edit</button></div><div className="flex gap-5 text-right"><div><LegendText className="text-ink-3">On hand</LegendText><div className="tnum mt-1.5 text-[15px] text-ink">{h.stock}</div></div><div><LegendText className="text-ink-3">Reserved</LegendText><div className="tnum mt-1.5 text-[15px] text-ink-2">{h.reserved}</div></div><div><LegendText className="text-ink-3">Saved</LegendText><div className="tnum mt-1.5 text-[15px] text-gold">{Number(h.favoriteCount || 0)}</div></div></div></div><div className="mt-3 h-8"><Sparkline values={h.trend} /></div></li>)}</ul>{x.length === 0 && <div className="mt-6"><EmptyNotice title="No products in this category" body="Nothing is listed here yet. Change the filter above to see the rest of the catalogue." icon="products" /></div>}<div className="mt-5 flex justify-end"><ProductPagination page={currentPage} pageCount={pageCount} onPageChange={setPage} /></div></PanelCard></FadeIn><ProductEditorSheet open={o} product={p} onClose={() => A(!1)} /></div>;
+              })}</tbody></table></div><ul className="flex flex-col gap-3 lg:hidden">{pageProducts.map(h => <li className="rounded-[2px] border border-line bg-surface p-4" key={h.sku}><div className="flex items-start gap-3"><img src={Lr(h.sku, h.category)} alt={h.name} loading="lazy" className="h-16 w-16 shrink-0 rounded-[6px] border border-line object-cover" /><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-3"><div><div className="text-[14px] leading-snug text-ink">{h.name}</div><div className="legend mt-2 text-gold">{h.sku}{" · "}{h.category}</div></div><StatusBadge tone={h.stock <= 4 ? "alert" : "ok"}>{h.stock <= 4 ? "Reorder" : "Healthy"}</StatusBadge></div></div></div><div className="mt-4 flex items-end justify-between gap-4 border-t border-line-soft pt-3"><div><LegendText className="text-ink-3">Customer price</LegendText><div className="font-display tnum mt-1.5 text-[18px] leading-none font-semibold text-ink">{"LKR "}{bt(h.price)}</div><button type="button" onClick={() => { m(h); A(!0); }} className="legend mt-3 min-h-9 text-gold" aria-label={`View or edit ${h.name}`}>View / edit</button></div><div className="flex gap-5 text-right"><div><LegendText className="text-ink-3">On hand</LegendText><div className="tnum mt-1.5 text-[15px] text-ink">{h.stock}</div></div><div><LegendText className="text-ink-3">Reserved</LegendText><div className="tnum mt-1.5 text-[15px] text-ink-2">{h.reserved}</div></div><div><LegendText className="text-ink-3">Saved</LegendText><div className="tnum mt-1.5 text-[15px] text-gold">{Number(h.favoriteCount || 0)}</div></div></div></div><div className="mt-3 h-8"><Sparkline values={h.trend} /></div></li>)}</ul>{x.length === 0 && <div className="mt-6"><EmptyNotice title="No products in this category" body="Nothing is listed here yet. Change the filter above to see the rest of the catalogue." icon="products" /></div>}<div className="mt-5 flex justify-end"><ProductPagination page={currentPage} pageCount={pageCount} onPageChange={setPage} /></div></PanelCard></FadeIn><ProductEditorSheet open={o} product={p} onClose={closeEditor} /></div>;
 }
 function AdminDealersView() {
   const {
