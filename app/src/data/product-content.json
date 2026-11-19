@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Meridian Automatic 40mm",
+    "images": ["/assets/photo-6-efTLFBkd.webp"],
+    "description": "A balanced automatic timepiece with a quietly considered profile.",
+    "colors": ["Steel", "Black"],
+    "availability": "Available to order"
+  },
+  {
+    "name": "Aurelia Slim Quartz",
+    "images": ["/assets/photo-2-D4lXensm.webp"],
+    "description": "A slim everyday watch with a clean, elegant dial.",
+    "colors": ["Gold", "Steel"],
+    "availability": "Available to order"
+  },
+  {
+    "name": "Diver Chronograph 42mm",
+    "images": ["/assets/photo-8-DXyB30EU.webp"],
+    "description": "A confident chronograph made for days that move quickly.",
+    "colors": ["Black", "Steel"],
+    "availability": "Available to order"
+  },
+  {
+    "name": "Skeleton Tourbillon — Dealer Ed.",
+    "images": ["/assets/photo-7-Xf6MXjw9.webp"],
+    "description": "An expressive mechanical piece for collectors who look closer.",
+    "colors": ["Steel"],
+    "availability": "Limited availability"
+  },
+  {
+    "name": "Regulator Wall Clock 30cm",
+    "images": ["/assets/photo-3-nOAFBif0.webp"],
+    "description": "A measured wall piece that brings a sense of rhythm to a room.",
+    "colors": ["Walnut"],
+    "availability": "Available to order"
+  },
+  {
+    "name": "Pendulum Table Clock",
+    "images": ["/assets/photo-4-CEzfL0lu.webp"],
+    "description": "A compact table clock for desks, shelves and thoughtful gifts.",
+    "colors": ["Walnut", "Black"],
+    "availability": "Available to order"
+  }
+]

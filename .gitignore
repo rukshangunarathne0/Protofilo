@@ -1,2 +1,4 @@
-__pycache__/
-*.pyc
+
+# Unoptimised photo originals — run `npm run images` to convert them
+app/raw-images/*
+!app/raw-images/.gitkeep

@@ -1,0 +1,20 @@
+# Dependencies & build output
+node_modules/
+dist/
+.npm/
+
+# Local environment secrets (use .env.example as template)
+.env
+.env.local
+.env.*.local
+
+# Workspace scratch & archives
+uploads/
+*.zip
+
+# Private supplier costs — never commit or deploy
+private/
+
+# Editor & OS files
+.DS_Store
+*.log
