@@ -41,7 +41,14 @@ const ADMIN_USER = {
 const RSD_WHATSAPP_NUMBER = "0711368623";
 const RSD_WHATSAPP_URL = "https://wa.me/94711368623";
 const CONTACT_PRICE_LABEL = "Contact for price";
-const isContactPrice = (product, price) => String(product?.availability || "").trim().toLowerCase() === CONTACT_PRICE_LABEL.toLowerCase() || product?.priceContact === true || price === null || price === undefined;
+// A product can keep an availability label such as "Contact for price" while
+// still having a customer price entered in the admin console. The numeric
+// price is the source of truth for what the public catalogue should display;
+// only a missing or zero price falls back to the contact label.
+const isContactPrice = (product, price) => {
+  const numericPrice = Number(price);
+  return price === null || price === undefined || !Number.isFinite(numericPrice) || numericPrice <= 0;
+};
 const publicPriceByName = new Map(publicPriceData.map(product => [product.name, Number(product.final_price) || 0]));
 const publicProductByName = new Map(publicPriceData.map(product => [product.name, product]));
 const rsdWhatsAppLink = (productName = "", price = 0, priceLabel = "") => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, price: ${priceLabel || `LKR ${bt(Number(price) || 0)}`}.`)}`;
@@ -769,7 +776,7 @@ function StoreProvider({
   const fetchFromSupabase = React.useCallback(async () => {
     if (!adminRoute) {
       try {
-        const { data, error } = await supabase.from("ht_products").select("sku,name,category,price,image,description,colors,gender,product_type,is_new,availability").order("sku", { ascending: true });
+        const { data, error } = await supabase.from("ht_products").select("sku,name,category,price,image,description,colors,gender,product_type,is_new,availability,sort_order,created_at").order("sku", { ascending: true });
         if (error) {
           setSyncStatus("offline");
           return;
@@ -779,8 +786,10 @@ function StoreProvider({
           name: r.name,
           category: r.category,
           price: r.price == null ? null : Number(r.price),
-          priceContact: r.price == null || r.availability === CONTACT_PRICE_LABEL,
+          priceContact: r.price == null || Number(r.price) <= 0,
           image: r.image || "images/product-wrist.jpg",
+          sortOrder: Number(r.sort_order) || 0,
+          createdAt: r.created_at || "",
           description: r.description ?? undefined,
           colors: Array.isArray(r.colors) ? r.colors : [],
           gender: r.gender || "Unisex",
@@ -2468,6 +2477,8 @@ function PublicCatalog({
         category: baseline.category,
         price: baseline.price,
         priceContact: baseline.priceContact,
+        sortOrder: baseline.sortOrder,
+        createdAt: baseline.createdAt,
         image: baseline.image,
         brand: baseline.brand,
         description: baseline.description,
@@ -2490,6 +2501,8 @@ function PublicCatalog({
         category: product.category,
         price: product.price,
         priceContact: product.priceContact,
+        sortOrder: product.sortOrder,
+        createdAt: product.createdAt,
         image: product.image,
         brand: product.brand,
         description: product.description,
@@ -2507,14 +2520,19 @@ function PublicCatalog({
         defaultColour: product.defaultColour,
       };
       const colours = Array.isArray(safeProduct.colors) && safeProduct.colors.length ? safeProduct.colors : (publicDetails.colors || []);
-      const contactPrice = safeProduct.priceContact === true || safeProduct.availability === CONTACT_PRICE_LABEL || product.price == null;
+      const rawPrice = product.price;
+      const numericPrice = Number(rawPrice);
+      // Availability is a separate catalogue label. Do not let an old
+      // "Contact for price" label hide a real customer price entered in the
+      // admin console; legacy zero-priced rows still remain contact-only.
+      const contactPrice = rawPrice === null || rawPrice === undefined || !Number.isFinite(numericPrice) || numericPrice <= 0;
       return {
         ...publicBaseline,
         ...safeProduct,
         sku: safeProduct.sku || publicBaseline.sku || `RSD-${String(index + 1).padStart(3, "0")}`,
         name: safeProduct.name || publicBaseline.name || `R.S.D. Timepiece ${index + 1}`,
         category: safeProduct.category || publicBaseline.category || "Wrist Watches",
-        price: contactPrice ? null : (Number(product.price) || publicPriceByName.get(product.name) || 0),
+        price: contactPrice ? null : numericPrice,
         priceContact: contactPrice,
         description: safeProduct.description || publicDetails.description || publicBaseline.description || "",
         colors: colours,
@@ -2527,6 +2545,8 @@ function PublicCatalog({
         gender: safeProduct.gender || publicBaseline.gender || "Unisex",
         productType: safeProduct.productType || publicBaseline.productType || (safeProduct.category === "Wall Watches" ? "Wall clocks" : safeProduct.category === "Table Watches" ? "Table clocks" : "Watches"),
         isNew: safeProduct.isNew ?? publicBaseline.isNew ?? false,
+        sortOrder: Number(safeProduct.sortOrder ?? publicBaseline.sortOrder) || 0,
+        createdAt: safeProduct.createdAt || publicBaseline.createdAt || "",
         availability: safeProduct.availability || publicDetails.availability || publicBaseline.availability || "Available to order",
         trend: Array.isArray(safeProduct.trend) ? safeProduct.trend : (publicBaseline.trend || []),
       };
@@ -2542,7 +2562,13 @@ function PublicCatalog({
   const bestProducts = React.useMemo(() => [...products].sort((left, right) => salesScore(right) - salesScore(left)).slice(0, 4), [products]);
   const newProducts = React.useMemo(() => {
     const marked = products.filter(product => product.isNew);
-    return (marked.length ? marked : [...products].reverse()).slice(0, 4);
+    const newestFirst = (left, right) => {
+      const leftCreated = Date.parse(left.createdAt || "");
+      const rightCreated = Date.parse(right.createdAt || "");
+      const createdDifference = (Number.isFinite(rightCreated) ? rightCreated : 0) - (Number.isFinite(leftCreated) ? leftCreated : 0);
+      return createdDifference || (Number(right.sortOrder) || 0) - (Number(left.sortOrder) || 0) || String(right.sku).localeCompare(String(left.sku));
+    };
+    return (marked.length ? [...marked].sort(newestFirst) : [...products].sort(newestFirst)).slice(0, 4);
   }, [products]);
   const sortOptions = [
     ["best", "Best sales"],
