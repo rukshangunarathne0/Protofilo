@@ -40,9 +40,11 @@ const ADMIN_USER = {
 };
 const RSD_WHATSAPP_NUMBER = "0711368623";
 const RSD_WHATSAPP_URL = "https://wa.me/94711368623";
+const CONTACT_PRICE_LABEL = "Contact for price";
+const isContactPrice = (product, price) => String(product?.availability || "").trim().toLowerCase() === CONTACT_PRICE_LABEL.toLowerCase() || product?.priceContact === true || price === null || price === undefined;
 const publicPriceByName = new Map(publicPriceData.map(product => [product.name, Number(product.final_price) || 0]));
 const publicProductByName = new Map(publicPriceData.map(product => [product.name, product]));
-const rsdWhatsAppLink = (productName = "", price = 0) => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, price: LKR ${bt(Number(price) || 0)}.`)}`;
+const rsdWhatsAppLink = (productName = "", price = 0, priceLabel = "") => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, price: ${priceLabel || `LKR ${bt(Number(price) || 0)}`}.`)}`;
 
 // Warm the image cache the moment a finger/mouse goes down on a product, so the
 // photo is already decoded by the time the detail sheet slides in.
@@ -776,7 +778,8 @@ function StoreProvider({
           sku: r.sku,
           name: r.name,
           category: r.category,
-          price: Number(r.price) || 0,
+          price: r.price == null ? null : Number(r.price),
+          priceContact: r.price == null || r.availability === CONTACT_PRICE_LABEL,
           image: r.image || "images/product-wrist.jpg",
           description: r.description ?? undefined,
           colors: Array.isArray(r.colors) ? r.colors : [],
@@ -809,7 +812,8 @@ function StoreProvider({
         sku: r.sku,
         name: r.name,
         category: r.category,
-        price: Number(r.price) || 0,
+        price: r.price == null ? null : Number(r.price),
+        priceContact: r.price == null || r.availability === CONTACT_PRICE_LABEL,
         stock: Number(r.stock) || 0,
         reserved: Number(r.reserved) || 0,
         image: r.image || "images/product-wrist.jpg",
@@ -1858,7 +1862,7 @@ function ProductEditorSheet({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <label><LegendText>Audience</LegendText><select className={C} value={gender} onChange={tt => setGender(tt.target.value)}><option>Men</option><option>Women</option><option>Unisex</option><option>Kids</option></select></label>
-          <label><LegendText>Availability label</LegendText><select className={C} value={availability} onChange={tt => setAvailability(tt.target.value)}><option>Available to order</option><option>Limited availability</option><option>Coming soon</option></select></label>
+          <label><LegendText>Availability label</LegendText><select className={C} value={availability} onChange={tt => setAvailability(tt.target.value)}><option>Available to order</option><option>Limited availability</option><option>Coming soon</option><option>Contact for price</option></select></label>
         </div>
         <label className="flex items-center gap-3 rounded-[7px] border border-line bg-surface px-3 py-3 text-[13px] text-ink"><input type="checkbox" checked={isNew} onChange={tt => setIsNew(tt.target.checked)} className="h-4 w-4 accent-[var(--gold)]" />Show in New arrivals</label>
         <div className="rounded-[8px] border border-gold/30 bg-gold/[0.06] p-3.5"><LegendText className="text-gold">Price method</LegendText><p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">Choose one price input. Only the final customer price is shown on the website.</p><div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => setPriceMode("cost")} aria-pressed={priceMode === "cost"} className={cn("min-h-10 rounded-[5px] border px-2 text-left text-[11px] transition-colors", priceMode === "cost" ? "border-gold bg-gold/[0.12] text-gold" : "border-line bg-surface text-ink-2")}>Purchase cost<span className="mt-1 block text-[10px] opacity-70">Calculate customer price</span></button><button type="button" onClick={() => setPriceMode("customer")} aria-pressed={priceMode === "customer"} className={cn("min-h-10 rounded-[5px] border px-2 text-left text-[11px] transition-colors", priceMode === "customer" ? "border-gold bg-gold/[0.12] text-gold" : "border-line bg-surface text-ink-2")}>Customer price<span className="mt-1 block text-[10px] opacity-70">Use exact price</span></button></div><label className="mt-3 block"><LegendText>{priceMode === "cost" ? "Purchase/cost price (LKR)" : "Customer price (LKR)"}</LegendText><input className={C} type="number" min="0" step="0.01" value={priceMode === "cost" ? supplierPrice : customerPrice} onChange={tt => priceMode === "cost" ? setSupplierPrice(tt.target.value) : setCustomerPrice(tt.target.value)} placeholder={priceMode === "cost" ? "e.g. 999" : "e.g. 2900"} required /></label>{priceMode === "cost" && <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">The purchase cost stays private. The customer price is calculated using the default R.S.D. pricing rule.</p>}{priceMode === "customer" && <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">This exact price is saved as the customer price. No calculation is added.</p>}</div>
@@ -2371,9 +2375,10 @@ function publicProductHref(product) {
   return `/shop/${encodeURIComponent(product.sku || product.name)}`;
 }
 function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compact: o = false }) {
-  const price = Number(a.price) || 0;
+  const price = a.price == null ? null : Number(a.price);
   const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
   const availability = a.availability || "Available to order";
+  const priceLabel = isContactPrice(a, price) ? CONTACT_PRICE_LABEL : en(price);
   const image = Lr(a.sku, a.category);
   return <motion.article className={cn("public-product-card", o && "public-product-card-compact")} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "0px 0px -35px" }} transition={{ duration: .35 }}>
     <div className="public-product-image">
@@ -2388,17 +2393,18 @@ function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compac
       <h3><a className="public-product-title-link" href={publicProductHref(a)}>{a.name}</a></h3>
       {a.description && <p className="public-product-description">{a.description}</p>}
       <div className="public-product-bottom">
-        <div><strong>{en(price)}</strong><small className="public-delivery-badge">Free delivery</small><small className="public-delivery-badge">Contact for more color</small></div>
-        <a className="public-order" href={rsdWhatsAppLink(a.name, price)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
+        <div><strong>{priceLabel}</strong><small className="public-delivery-badge">Free delivery</small><small className="public-delivery-badge">Contact for more color</small></div>
+        <a className="public-order" href={rsdWhatsAppLink(a.name, price, priceLabel)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
       </div>
     </div>
   </motion.article>;
 }
 
 function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
-  const price = Number(a.price) || 0;
+  const price = a.price == null ? null : Number(a.price);
   const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
   const availability = a.availability || "Available to order";
+  const priceLabel = isContactPrice(a, price) ? CONTACT_PRICE_LABEL : en(price);
   const image = Lr(a.sku, a.category);
   const details = [["Type", productType], ["For", a.gender || "Unisex"], ["Availability", availability], ["SKU", a.sku]].filter(([, value]) => value);
   return <section className="public-product-detail">
@@ -2416,9 +2422,9 @@ function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
         <div className="public-detail-heading-row"><h1>{a.name}</h1><span className="public-detail-code">{a.sku}</span></div>
         <p className="public-detail-type">{productType}{a.gender ? ` · ${a.gender}` : ""}</p>
         {a.description && <p className="public-detail-description">{a.description}</p>}
-        <div className="public-detail-price-row"><strong>{en(price)}</strong><span className="public-delivery-badge">Free delivery</span><span className="public-delivery-badge">Contact for more color</span></div>
+        <div className="public-detail-price-row"><strong>{priceLabel}</strong><span className="public-delivery-badge">Free delivery</span><span className="public-delivery-badge">Contact for more color</span></div>
         <dl className="public-detail-facts">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-        <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)}><Icon name="comments" /> Order on WhatsApp</a>
+        <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price, priceLabel)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)}><Icon name="comments" /> Order on WhatsApp</a>
       </div>
     </div>
   </section>;
@@ -2460,6 +2466,8 @@ function PublicCatalog({
         sku: baseline.sku,
         name: baseline.name,
         category: baseline.category,
+        price: baseline.price,
+        priceContact: baseline.priceContact,
         image: baseline.image,
         brand: baseline.brand,
         description: baseline.description,
@@ -2480,6 +2488,8 @@ function PublicCatalog({
         sku: product.sku,
         name: product.name,
         category: product.category,
+        price: product.price,
+        priceContact: product.priceContact,
         image: product.image,
         brand: product.brand,
         description: product.description,
@@ -2497,13 +2507,15 @@ function PublicCatalog({
         defaultColour: product.defaultColour,
       };
       const colours = Array.isArray(safeProduct.colors) && safeProduct.colors.length ? safeProduct.colors : (publicDetails.colors || []);
+      const contactPrice = safeProduct.priceContact === true || safeProduct.availability === CONTACT_PRICE_LABEL || product.price == null;
       return {
         ...publicBaseline,
         ...safeProduct,
         sku: safeProduct.sku || publicBaseline.sku || `RSD-${String(index + 1).padStart(3, "0")}`,
         name: safeProduct.name || publicBaseline.name || `R.S.D. Timepiece ${index + 1}`,
         category: safeProduct.category || publicBaseline.category || "Wrist Watches",
-        price: Number(product.price) || publicPriceByName.get(product.name) || 0,
+        price: contactPrice ? null : (Number(product.price) || publicPriceByName.get(product.name) || 0),
+        priceContact: contactPrice,
         description: safeProduct.description || publicDetails.description || publicBaseline.description || "",
         colors: colours,
         images: Array.isArray(safeProduct.images) && safeProduct.images.length ? safeProduct.images : (publicDetails.images || publicBaseline.images || []),
@@ -2521,6 +2533,12 @@ function PublicCatalog({
     });
   }, [productRows]);
   const salesScore = product => Array.isArray(product.trend) ? product.trend.reduce((sum, value) => sum + Number(value || 0), 0) : 0;
+  const comparePrices = (left, right, direction = 1) => {
+    const leftContact = isContactPrice(left, left.price);
+    const rightContact = isContactPrice(right, right.price);
+    if (leftContact !== rightContact) return leftContact ? 1 : -1;
+    return ((Number(left.price) || 0) - (Number(right.price) || 0)) * direction;
+  };
   const bestProducts = React.useMemo(() => [...products].sort((left, right) => salesScore(right) - salesScore(left)).slice(0, 4), [products]);
   const newProducts = React.useMemo(() => {
     const marked = products.filter(product => product.isNew);
@@ -2548,8 +2566,8 @@ function PublicCatalog({
     }
     if (collectionMode === "best") result.sort((left, right) => salesScore(right) - salesScore(left));
     if (collectionMode === "new") result.sort((left, right) => Number(right.isNew) - Number(left.isNew) || salesScore(right) - salesScore(left));
-    if (collectionMode === "price-low") result.sort((left, right) => left.price - right.price);
-    if (collectionMode === "price-high") result.sort((left, right) => right.price - left.price);
+    if (collectionMode === "price-low") result.sort((left, right) => comparePrices(left, right));
+    if (collectionMode === "price-high") result.sort((left, right) => comparePrices(left, right, -1));
     return result;
   }, [products, query, collectionMode]);
   const detailProduct = React.useMemo(() => {
