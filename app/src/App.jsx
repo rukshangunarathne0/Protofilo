@@ -776,7 +776,7 @@ function StoreProvider({
   const fetchFromSupabase = React.useCallback(async () => {
     if (!adminRoute) {
       try {
-        const { data, error } = await supabase.from("ht_products").select("sku,name,category,price,image,brand,description,colors,gender,product_type,is_new,availability,sort_order,created_at").order("sku", { ascending: true });
+        const { data, error } = await supabase.from("ht_products").select("sku,name,category,price,image,image_back,brand,description,colors,gender,product_type,is_new,is_high_value,availability,sort_order,created_at").order("sku", { ascending: true });
         if (error) {
           setSyncStatus("offline");
           return;
@@ -788,9 +788,11 @@ function StoreProvider({
           price: r.price == null ? null : Number(r.price),
           priceContact: r.price == null || Number(r.price) <= 0,
           image: r.image || "images/product-wrist.jpg",
+          imageBack: r.image_back ?? undefined,
           sortOrder: Number(r.sort_order) || 0,
           createdAt: r.created_at || "",
           brand: r.brand ?? undefined,
+          isHighValue: !!r.is_high_value,
           description: r.description ?? undefined,
           colors: Array.isArray(r.colors) ? r.colors : [],
           gender: r.gender || "Unisex",
@@ -827,7 +829,9 @@ function StoreProvider({
         stock: Number(r.stock) || 0,
         reserved: Number(r.reserved) || 0,
         image: r.image || "images/product-wrist.jpg",
+        imageBack: r.image_back ?? undefined,
         brand: r.brand ?? undefined,
+        isHighValue: !!r.is_high_value,
         description: r.description ?? undefined,
         colors: Array.isArray(r.colors) ? r.colors : [],
         gender: r.gender || "Unisex",
@@ -2427,16 +2431,21 @@ function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
   const availability = a.availability || "Available to order";
   const priceLabel = isContactPrice(a, price) ? CONTACT_PRICE_LABEL : en(price);
   const image = Lr(a.sku, a.category);
+  const backImage = a.imageBack || "";
   const details = [["Brand", publicProductBrand(a)], ["Type", productType], ["For", a.gender || "Unisex"], ["Availability", availability], ["SKU", a.sku]].filter(([, value]) => value);
   return <section className="public-product-detail">
     <a className="public-detail-back" href="/shop"><Icon name="chevron" className="rotate-180" /> Back to shop</a>
     <div className="public-detail-layout">
       <div className="public-detail-visual">
         <div className="public-detail-image-frame">
-          <img className="public-detail-image" src={image} alt={a.name} decoding="async" />
+          <img className="public-detail-image" src={image} alt={`${a.name} front view`} decoding="async" />
           <button type="button" className={cn("public-detail-favorite", n && "is-saved")} onClick={() => i(a)} aria-label={`${n ? "Remove" : "Add"} ${a.name} ${n ? "from" : "to"} favourites`} aria-pressed={n}><HeartIcon selected={n} /></button>
           <span className="public-detail-availability">{availability}</span>
         </div>
+        {backImage && <div className="public-detail-image-frame public-detail-image-frame-back">
+          <img className="public-detail-image" src={backImage} alt={`${a.name} back view`} loading="lazy" decoding="async" />
+          <span className="public-detail-image-caption">Back view</span>
+        </div>}
       </div>
       <div className="public-detail-info">
         <span className="store-eyebrow">R.S.D. TIMEPIECE</span>
@@ -2494,7 +2503,9 @@ function PublicCatalog({
         sortOrder: baseline.sortOrder,
         createdAt: baseline.createdAt,
         image: baseline.image,
+        imageBack: baseline.imageBack,
         brand: baseline.brand,
+        isHighValue: baseline.isHighValue,
         description: baseline.description,
         colors: baseline.colors,
         gender: baseline.gender,
@@ -2518,7 +2529,9 @@ function PublicCatalog({
         sortOrder: product.sortOrder,
         createdAt: product.createdAt,
         image: product.image,
+        imageBack: product.imageBack,
         brand: product.brand ?? publicDetails.brand ?? publicBaseline.brand,
+        isHighValue: product.isHighValue,
         description: product.description,
         colors: product.colors,
         gender: product.gender,
@@ -2548,6 +2561,8 @@ function PublicCatalog({
         category: safeProduct.category || publicBaseline.category || "Wrist Watches",
         price: contactPrice ? null : numericPrice,
         priceContact: contactPrice,
+        imageBack: safeProduct.imageBack || publicBaseline.imageBack || "",
+        isHighValue: safeProduct.isHighValue ?? publicBaseline.isHighValue ?? false,
         description: safeProduct.description || publicDetails.description || publicBaseline.description || "",
         colors: colours,
         images: Array.isArray(safeProduct.images) && safeProduct.images.length ? safeProduct.images : (publicDetails.images || publicBaseline.images || []),
@@ -2578,6 +2593,7 @@ function PublicCatalog({
     const marked = products.filter(product => product.isNew);
     return (marked.length ? [...marked].sort(newestProductFirst) : [...products].sort(newestProductFirst)).slice(0, 4);
   }, [products]);
+  const highValueProducts = React.useMemo(() => products.filter(product => product.isHighValue).sort(newestProductFirst), [products]);
   const sortOptions = [
     ["best", "Best sales"],
     ["new", "New arrivals"],
@@ -2701,6 +2717,10 @@ function PublicCatalog({
           <div className="public-section-heading"><div><span className="store-eyebrow">JUST ARRIVED</span><h2>New arrivals</h2></div><button type="button" className="store-text-link" onClick={openCollection}>See all <Icon name="chevron" /></button></div>
           {renderCards(newProducts, true)}
         </section>
+        {highValueProducts.length > 0 && <section className="public-curated-section public-curated-high-value">
+          <div className="public-section-heading"><div><span className="store-eyebrow">THE HIGH-VALUE EDIT</span><h2>High-quality watches</h2><p className="public-curated-note">Inspired timepieces valued above LKR 95,000. Contact us for the current price.</p></div><button type="button" className="store-text-link" onClick={openCollection}>See all <Icon name="chevron" /></button></div>
+          {renderCards(highValueProducts, true)}
+        </section>}
         <section className="public-collection-cta"><span className="store-eyebrow">SHOP YOUR WAY</span><h2>Find the right timepiece.</h2><p>Browse by best sales, new arrivals, men, women, unisex, kids, bracelet or price.</p><button type="button" className="store-primary" onClick={openCollection}>View full collection <Icon name="arrow" /></button></section>
 
         <section className="public-order-panel">

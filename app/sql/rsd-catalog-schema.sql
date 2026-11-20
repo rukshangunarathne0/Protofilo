@@ -10,7 +10,9 @@ create table if not exists public.ht_products (
   stock integer not null default 0 check (stock >= 0),
   reserved integer not null default 0 check (reserved >= 0),
   image text,
+  image_back text,
   brand text,
+  is_high_value boolean not null default false,
   description text,
   colors jsonb not null default '[]'::jsonb,
   trend jsonb not null default '[]'::jsonb,
@@ -84,6 +86,8 @@ alter table public.ht_products add column if not exists gender text not null def
 alter table public.ht_products add column if not exists product_type text not null default 'Watches';
 alter table public.ht_products add column if not exists is_new boolean not null default false;
 alter table public.ht_products add column if not exists availability text not null default 'Available to order';
+alter table public.ht_products add column if not exists image_back text;
+alter table public.ht_products add column if not exists is_high_value boolean not null default false;
 alter table public.ht_orders drop constraint if exists ht_orders_status_check;
 alter table public.ht_orders add constraint ht_orders_status_check check (status in ('Submitted', 'Confirmed', 'Packing', 'Ready', 'Completed'));
 
@@ -471,5 +475,92 @@ on conflict (sku) do update set
   gender = excluded.gender,
   product_type = excluded.product_type,
   is_new = excluded.is_new,
+  availability = excluded.availability,
+  updated_at = now();
+
+-- High-value front/back catalogue entries. A zero customer price is used as
+-- the database's contact-only sentinel; the public catalogue renders it as
+-- "Contact for price" rather than showing LKR 0.
+insert into public.ht_products (
+  sku, name, category, price, stock, reserved, image, image_back, brand,
+  description, colors, trend, sort_order, gender, product_type, is_new,
+  is_high_value, availability
+)
+values
+  (
+    'RSD-WS-162',
+    'Hanboro Rose-Gold Skeleton Watch',
+    'Wrist Watches',
+    0,
+    0,
+    0,
+    '/products/RSD-WS-162-front.png',
+    '/products/RSD-WS-162-back.png',
+    'Hanboro',
+    'High-quality inspired timepiece with a rose-gold skeleton-style case, celestial dial, and black rubber strap. Positioned above LKR 95,000; contact us for current pricing.',
+    '["Rose gold", "Black"]'::jsonb,
+    '[0,0,0,0,0,0,0]'::jsonb,
+    22,
+    'Unisex',
+    'Watches',
+    false,
+    true,
+    'Contact for price'
+  ),
+  (
+    'RSD-WS-163',
+    'Jacob & Co. Inspired The Godfather Opera Watch',
+    'Wrist Watches',
+    0,
+    0,
+    0,
+    '/products/RSD-WS-163-front.png',
+    '/products/RSD-WS-163-back.png',
+    'Jacob & Co. inspired',
+    'High-quality inspired timepiece with an open mechanical dial and The Godfather Opera styling. Positioned above LKR 95,000; contact us for current pricing.',
+    '["Rose gold", "Black"]'::jsonb,
+    '[0,0,0,0,0,0,0]'::jsonb,
+    23,
+    'Unisex',
+    'Watches',
+    false,
+    true,
+    'Contact for price'
+  ),
+  (
+    'RSD-WS-164',
+    'Jacob & Co. Inspired Bugatti Tourbillon Watch',
+    'Wrist Watches',
+    0,
+    0,
+    0,
+    '/products/RSD-WS-164-front.png',
+    '/products/RSD-WS-164-back.png',
+    'Jacob & Co. inspired',
+    'High-quality inspired timepiece with a black sculptural case, visible movement, and Bugatti styling. Positioned above LKR 95,000; contact us for current pricing.',
+    '["Black", "Blue"]'::jsonb,
+    '[0,0,0,0,0,0,0]'::jsonb,
+    24,
+    'Unisex',
+    'Watches',
+    false,
+    true,
+    'Contact for price'
+  )
+on conflict (sku) do update set
+  name = excluded.name,
+  category = excluded.category,
+  price = excluded.price,
+  image = excluded.image,
+  image_back = excluded.image_back,
+  brand = excluded.brand,
+  description = excluded.description,
+  colors = excluded.colors,
+  trend = excluded.trend,
+  sort_order = excluded.sort_order,
+  gender = excluded.gender,
+  product_type = excluded.product_type,
+  is_new = excluded.is_new,
+  is_high_value = excluded.is_high_value,
   availability = excluded.availability,
   updated_at = now();
