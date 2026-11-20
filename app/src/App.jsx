@@ -40,9 +40,18 @@ const ADMIN_USER = {
 };
 const RSD_WHATSAPP_NUMBER = "0711368623";
 const RSD_WHATSAPP_URL = "https://wa.me/94711368623";
+const CONTACT_PRICE_LABEL = "Contact for price";
+// A product can keep an availability label such as "Contact for price" while
+// still having a customer price entered in the admin console. The numeric
+// price is the source of truth for what the public catalogue should display;
+// only a missing or zero price falls back to the contact label.
+const isContactPrice = (product, price) => {
+  const numericPrice = Number(price);
+  return price === null || price === undefined || !Number.isFinite(numericPrice) || numericPrice <= 0;
+};
 const publicPriceByName = new Map(publicPriceData.map(product => [product.name, Number(product.final_price) || 0]));
 const publicProductByName = new Map(publicPriceData.map(product => [product.name, product]));
-const rsdWhatsAppLink = (productName = "", price = 0) => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, price: LKR ${bt(Number(price) || 0)}.`)}`;
+const rsdWhatsAppLink = (productName = "", price = 0, priceLabel = "") => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, price: ${priceLabel || `LKR ${bt(Number(price) || 0)}`}.`)}`;
 
 // Warm the image cache the moment a finger/mouse goes down on a product, so the
 // photo is already decoded by the time the detail sheet slides in.
@@ -767,7 +776,7 @@ function StoreProvider({
   const fetchFromSupabase = React.useCallback(async () => {
     if (!adminRoute) {
       try {
-        const { data, error } = await supabase.from("ht_products").select("sku,name,category,price,image,description,colors,gender,product_type,is_new,availability").order("sku", { ascending: true });
+        const { data, error } = await supabase.from("ht_products").select("sku,name,category,price,image,brand,description,colors,gender,product_type,is_new,availability,sort_order,created_at").order("sku", { ascending: true });
         if (error) {
           setSyncStatus("offline");
           return;
@@ -776,8 +785,12 @@ function StoreProvider({
           sku: r.sku,
           name: r.name,
           category: r.category,
-          price: Number(r.price) || 0,
+          price: r.price == null ? null : Number(r.price),
+          priceContact: r.price == null || Number(r.price) <= 0,
           image: r.image || "images/product-wrist.jpg",
+          sortOrder: Number(r.sort_order) || 0,
+          createdAt: r.created_at || "",
+          brand: r.brand ?? undefined,
           description: r.description ?? undefined,
           colors: Array.isArray(r.colors) ? r.colors : [],
           gender: r.gender || "Unisex",
@@ -809,7 +822,8 @@ function StoreProvider({
         sku: r.sku,
         name: r.name,
         category: r.category,
-        price: Number(r.price) || 0,
+        price: r.price == null ? null : Number(r.price),
+        priceContact: r.price == null || r.availability === CONTACT_PRICE_LABEL,
         stock: Number(r.stock) || 0,
         reserved: Number(r.reserved) || 0,
         image: r.image || "images/product-wrist.jpg",
@@ -1858,7 +1872,7 @@ function ProductEditorSheet({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <label><LegendText>Audience</LegendText><select className={C} value={gender} onChange={tt => setGender(tt.target.value)}><option>Men</option><option>Women</option><option>Unisex</option><option>Kids</option></select></label>
-          <label><LegendText>Availability label</LegendText><select className={C} value={availability} onChange={tt => setAvailability(tt.target.value)}><option>Available to order</option><option>Limited availability</option><option>Coming soon</option></select></label>
+          <label><LegendText>Availability label</LegendText><select className={C} value={availability} onChange={tt => setAvailability(tt.target.value)}><option>Available to order</option><option>Limited availability</option><option>Coming soon</option><option>Contact for price</option></select></label>
         </div>
         <label className="flex items-center gap-3 rounded-[7px] border border-line bg-surface px-3 py-3 text-[13px] text-ink"><input type="checkbox" checked={isNew} onChange={tt => setIsNew(tt.target.checked)} className="h-4 w-4 accent-[var(--gold)]" />Show in New arrivals</label>
         <div className="rounded-[8px] border border-gold/30 bg-gold/[0.06] p-3.5"><LegendText className="text-gold">Price method</LegendText><p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">Choose one price input. Only the final customer price is shown on the website.</p><div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => setPriceMode("cost")} aria-pressed={priceMode === "cost"} className={cn("min-h-10 rounded-[5px] border px-2 text-left text-[11px] transition-colors", priceMode === "cost" ? "border-gold bg-gold/[0.12] text-gold" : "border-line bg-surface text-ink-2")}>Purchase cost<span className="mt-1 block text-[10px] opacity-70">Calculate customer price</span></button><button type="button" onClick={() => setPriceMode("customer")} aria-pressed={priceMode === "customer"} className={cn("min-h-10 rounded-[5px] border px-2 text-left text-[11px] transition-colors", priceMode === "customer" ? "border-gold bg-gold/[0.12] text-gold" : "border-line bg-surface text-ink-2")}>Customer price<span className="mt-1 block text-[10px] opacity-70">Use exact price</span></button></div><label className="mt-3 block"><LegendText>{priceMode === "cost" ? "Purchase/cost price (LKR)" : "Customer price (LKR)"}</LegendText><input className={C} type="number" min="0" step="0.01" value={priceMode === "cost" ? supplierPrice : customerPrice} onChange={tt => priceMode === "cost" ? setSupplierPrice(tt.target.value) : setCustomerPrice(tt.target.value)} placeholder={priceMode === "cost" ? "e.g. 999" : "e.g. 2900"} required /></label>{priceMode === "cost" && <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">The purchase cost stays private. The customer price is calculated using the default R.S.D. pricing rule.</p>}{priceMode === "customer" && <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">This exact price is saved as the customer price. No calculation is added.</p>}</div>
@@ -2370,10 +2384,21 @@ function getPublicVisitorId() {
 function publicProductHref(product) {
   return `/shop/${encodeURIComponent(product.sku || product.name)}`;
 }
+function publicProductBrand(product) {
+  const brand = typeof product?.brand === "string" ? product.brand.trim() : "";
+  return brand || "Unbranded";
+}
+function newestProductFirst(left, right) {
+  const leftCreated = Date.parse(left.createdAt || "");
+  const rightCreated = Date.parse(right.createdAt || "");
+  const createdDifference = (Number.isFinite(rightCreated) ? rightCreated : 0) - (Number.isFinite(leftCreated) ? leftCreated : 0);
+  return createdDifference || (Number(right.sortOrder) || 0) - (Number(left.sortOrder) || 0) || String(right.sku).localeCompare(String(left.sku));
+}
 function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compact: o = false }) {
-  const price = Number(a.price) || 0;
+  const price = a.price == null ? null : Number(a.price);
   const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
   const availability = a.availability || "Available to order";
+  const priceLabel = isContactPrice(a, price) ? CONTACT_PRICE_LABEL : en(price);
   const image = Lr(a.sku, a.category);
   return <motion.article className={cn("public-product-card", o && "public-product-card-compact")} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "0px 0px -35px" }} transition={{ duration: .35 }}>
     <div className="public-product-image">
@@ -2386,21 +2411,23 @@ function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compac
     <div className="public-product-info">
       <span className="product-category">{productType}</span>
       <h3><a className="public-product-title-link" href={publicProductHref(a)}>{a.name}</a></h3>
+      <p className="public-product-brand">{publicProductBrand(a)}</p>
       {a.description && <p className="public-product-description">{a.description}</p>}
       <div className="public-product-bottom">
-        <div><strong>{en(price)}</strong><small className="public-delivery-badge">Free delivery</small><small className="public-delivery-badge">Contact for more color</small></div>
-        <a className="public-order" href={rsdWhatsAppLink(a.name, price)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
+        <div><strong>{priceLabel}</strong><small className="public-delivery-badge">Free delivery</small><small className="public-delivery-badge">Contact for more color</small></div>
+        <a className="public-order" href={rsdWhatsAppLink(a.name, price, priceLabel)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
       </div>
     </div>
   </motion.article>;
 }
 
 function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
-  const price = Number(a.price) || 0;
+  const price = a.price == null ? null : Number(a.price);
   const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
   const availability = a.availability || "Available to order";
+  const priceLabel = isContactPrice(a, price) ? CONTACT_PRICE_LABEL : en(price);
   const image = Lr(a.sku, a.category);
-  const details = [["Type", productType], ["For", a.gender || "Unisex"], ["Availability", availability], ["SKU", a.sku]].filter(([, value]) => value);
+  const details = [["Brand", publicProductBrand(a)], ["Type", productType], ["For", a.gender || "Unisex"], ["Availability", availability], ["SKU", a.sku]].filter(([, value]) => value);
   return <section className="public-product-detail">
     <a className="public-detail-back" href="/shop"><Icon name="chevron" className="rotate-180" /> Back to shop</a>
     <div className="public-detail-layout">
@@ -2416,9 +2443,9 @@ function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
         <div className="public-detail-heading-row"><h1>{a.name}</h1><span className="public-detail-code">{a.sku}</span></div>
         <p className="public-detail-type">{productType}{a.gender ? ` · ${a.gender}` : ""}</p>
         {a.description && <p className="public-detail-description">{a.description}</p>}
-        <div className="public-detail-price-row"><strong>{en(price)}</strong><span className="public-delivery-badge">Free delivery</span><span className="public-delivery-badge">Contact for more color</span></div>
+        <div className="public-detail-price-row"><strong>{priceLabel}</strong><span className="public-delivery-badge">Free delivery</span><span className="public-delivery-badge">Contact for more color</span></div>
         <dl className="public-detail-facts">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-        <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)}><Icon name="comments" /> Order on WhatsApp</a>
+        <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price, priceLabel)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)}><Icon name="comments" /> Order on WhatsApp</a>
       </div>
     </div>
   </section>;
@@ -2440,8 +2467,10 @@ function PublicCatalog({
   const shopRoute = /^\/shop\/?$/.test(pathname) || detailRoute;
   const [query, setQuery] = React.useState("");
   const [collectionMode, setCollectionMode] = React.useState("best");
+  const [brandFilter, setBrandFilter] = React.useState("all");
   const [showCollection, setShowCollection] = React.useState(shopRoute);
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [brandFiltersOpen, setBrandFiltersOpen] = React.useState(false);
   const [favoriteSkus, setFavoriteSkus] = React.useState(() => {
     try {
       const stored = JSON.parse(window.localStorage.getItem("rsd-favourites") || "[]");
@@ -2460,6 +2489,10 @@ function PublicCatalog({
         sku: baseline.sku,
         name: baseline.name,
         category: baseline.category,
+        price: baseline.price,
+        priceContact: baseline.priceContact,
+        sortOrder: baseline.sortOrder,
+        createdAt: baseline.createdAt,
         image: baseline.image,
         brand: baseline.brand,
         description: baseline.description,
@@ -2480,8 +2513,12 @@ function PublicCatalog({
         sku: product.sku,
         name: product.name,
         category: product.category,
+        price: product.price,
+        priceContact: product.priceContact,
+        sortOrder: product.sortOrder,
+        createdAt: product.createdAt,
         image: product.image,
-        brand: product.brand,
+        brand: product.brand ?? publicDetails.brand ?? publicBaseline.brand,
         description: product.description,
         colors: product.colors,
         gender: product.gender,
@@ -2497,13 +2534,20 @@ function PublicCatalog({
         defaultColour: product.defaultColour,
       };
       const colours = Array.isArray(safeProduct.colors) && safeProduct.colors.length ? safeProduct.colors : (publicDetails.colors || []);
+      const rawPrice = product.price;
+      const numericPrice = Number(rawPrice);
+      // Availability is a separate catalogue label. Do not let an old
+      // "Contact for price" label hide a real customer price entered in the
+      // admin console; legacy zero-priced rows still remain contact-only.
+      const contactPrice = rawPrice === null || rawPrice === undefined || !Number.isFinite(numericPrice) || numericPrice <= 0;
       return {
         ...publicBaseline,
         ...safeProduct,
         sku: safeProduct.sku || publicBaseline.sku || `RSD-${String(index + 1).padStart(3, "0")}`,
         name: safeProduct.name || publicBaseline.name || `R.S.D. Timepiece ${index + 1}`,
         category: safeProduct.category || publicBaseline.category || "Wrist Watches",
-        price: Number(product.price) || publicPriceByName.get(product.name) || 0,
+        price: contactPrice ? null : numericPrice,
+        priceContact: contactPrice,
         description: safeProduct.description || publicDetails.description || publicBaseline.description || "",
         colors: colours,
         images: Array.isArray(safeProduct.images) && safeProduct.images.length ? safeProduct.images : (publicDetails.images || publicBaseline.images || []),
@@ -2515,16 +2559,24 @@ function PublicCatalog({
         gender: safeProduct.gender || publicBaseline.gender || "Unisex",
         productType: safeProduct.productType || publicBaseline.productType || (safeProduct.category === "Wall Watches" ? "Wall clocks" : safeProduct.category === "Table Watches" ? "Table clocks" : "Watches"),
         isNew: safeProduct.isNew ?? publicBaseline.isNew ?? false,
+        sortOrder: Number(safeProduct.sortOrder ?? publicBaseline.sortOrder) || 0,
+        createdAt: safeProduct.createdAt || publicBaseline.createdAt || "",
         availability: safeProduct.availability || publicDetails.availability || publicBaseline.availability || "Available to order",
         trend: Array.isArray(safeProduct.trend) ? safeProduct.trend : (publicBaseline.trend || []),
       };
     });
   }, [productRows]);
   const salesScore = product => Array.isArray(product.trend) ? product.trend.reduce((sum, value) => sum + Number(value || 0), 0) : 0;
+  const comparePrices = (left, right, direction = 1) => {
+    const leftContact = isContactPrice(left, left.price);
+    const rightContact = isContactPrice(right, right.price);
+    if (leftContact !== rightContact) return leftContact ? 1 : -1;
+    return ((Number(left.price) || 0) - (Number(right.price) || 0)) * direction;
+  };
   const bestProducts = React.useMemo(() => [...products].sort((left, right) => salesScore(right) - salesScore(left)).slice(0, 4), [products]);
   const newProducts = React.useMemo(() => {
     const marked = products.filter(product => product.isNew);
-    return (marked.length ? marked : [...products].reverse()).slice(0, 4);
+    return (marked.length ? [...marked].sort(newestProductFirst) : [...products].sort(newestProductFirst)).slice(0, 4);
   }, [products]);
   const sortOptions = [
     ["best", "Best sales"],
@@ -2537,21 +2589,30 @@ function PublicCatalog({
     ["price-low", "Lowest price"],
     ["price-high", "Highest price"],
   ];
+  const brandOptions = React.useMemo(() => {
+    const brands = [...new Set(products.map(publicProductBrand))].sort((left, right) => left.localeCompare(right));
+    return [["all", "All brands"], ...brands.map(brand => [brand, brand])];
+  }, [products]);
   const selectedFilterLabel = sortOptions.find(([value]) => value === collectionMode)?.[1] || "Filter";
+  const selectedBrandLabel = brandFilter === "all" ? "Brands" : brandFilter;
   const filteredProducts = React.useMemo(() => {
     const term = query.trim().toLowerCase();
     let result = products.filter(product => !term || `${product.name} ${product.sku} ${product.category} ${product.brand || ""} ${product.gender || ""} ${product.productType || ""}`.toLowerCase().includes(term));
-    if (collectionMode === "men" || collectionMode === "women" || collectionMode === "unisex" || collectionMode === "kids") {
+    if (brandFilter !== "all") result = result.filter(product => publicProductBrand(product) === brandFilter);
+    if (collectionMode === "new") {
+      // New arrivals is a filter, not only a sort. Previously every product
+      // remained in the result, so selecting it looked like no filter change.
+      result = result.filter(product => product.isNew).sort(newestProductFirst);
+    } else if (collectionMode === "men" || collectionMode === "women" || collectionMode === "unisex" || collectionMode === "kids") {
       result = result.filter(product => String(product.gender).toLowerCase() === collectionMode);
     } else if (collectionMode === "bracelet") {
       result = result.filter(product => /bracelet/i.test(`${product.productType} ${product.category} ${product.name}`));
     }
     if (collectionMode === "best") result.sort((left, right) => salesScore(right) - salesScore(left));
-    if (collectionMode === "new") result.sort((left, right) => Number(right.isNew) - Number(left.isNew) || salesScore(right) - salesScore(left));
-    if (collectionMode === "price-low") result.sort((left, right) => left.price - right.price);
-    if (collectionMode === "price-high") result.sort((left, right) => right.price - left.price);
+    if (collectionMode === "price-low") result.sort((left, right) => comparePrices(left, right));
+    if (collectionMode === "price-high") result.sort((left, right) => comparePrices(left, right, -1));
     return result;
-  }, [products, query, collectionMode]);
+  }, [products, query, collectionMode, brandFilter]);
   const detailProduct = React.useMemo(() => {
     if (!detailKey) return null;
     const key = String(detailKey).trim().toLowerCase();
@@ -2653,13 +2714,19 @@ function PublicCatalog({
         <p className="public-delivery-note">Free delivery on every order. Choose a filter to browse the collection.</p>
         <div className="public-controls">
           <div className="public-search"><Icon name="search" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search the shop" aria-label="Search the shop" />{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search"><Icon name="close" /></button>}</div>
-          <div className="public-filter-control">
-            <button type="button" className="public-filter-toggle" onClick={() => setFiltersOpen(value => !value)} aria-expanded={filtersOpen} aria-controls="shop-filters"><Icon name="filter" /><span>{selectedFilterLabel}</span><Icon name="chevron" className={filtersOpen ? "rotate-90" : ""} /></button>
-            {filtersOpen && <div className="public-filter-menu" id="shop-filters" role="group" aria-label="Filter the shop"><span className="public-filter-menu-label">Filter the collection</span>{sortOptions.map(([value, label]) => <button type="button" key={value} onClick={() => { setCollectionMode(value); setFiltersOpen(false); }} aria-pressed={collectionMode === value} className={collectionMode === value ? "active" : ""}><span>{label}</span>{collectionMode === value && <Icon name="check" />}</button>)}</div>}
+          <div className="public-filter-controls">
+            <div className="public-filter-control">
+              <button type="button" className="public-filter-toggle" onClick={() => { setFiltersOpen(value => !value); setBrandFiltersOpen(false); }} aria-expanded={filtersOpen} aria-controls="shop-filters"><Icon name="filter" /><span>{selectedFilterLabel}</span><Icon name="chevron" className={filtersOpen ? "rotate-90" : ""} /></button>
+              {filtersOpen && <div className="public-filter-menu" id="shop-filters" role="group" aria-label="Filter the collection"><span className="public-filter-menu-label">Filter the collection</span>{sortOptions.map(([value, label]) => <button type="button" key={value} onClick={() => { setCollectionMode(value); setFiltersOpen(false); }} aria-pressed={collectionMode === value} className={collectionMode === value ? "active" : ""}><span>{label}</span>{collectionMode === value && <Icon name="check" />}</button>)}</div>}
+            </div>
+            <div className="public-filter-control">
+              <button type="button" className="public-filter-toggle" onClick={() => { setBrandFiltersOpen(value => !value); setFiltersOpen(false); }} aria-expanded={brandFiltersOpen} aria-controls="shop-brand-filters"><Icon name="products" /><span>{selectedBrandLabel}</span><Icon name="chevron" className={brandFiltersOpen ? "rotate-90" : ""} /></button>
+              {brandFiltersOpen && <div className="public-filter-menu" id="shop-brand-filters" role="group" aria-label="Filter by brand"><span className="public-filter-menu-label">Filter by brand</span>{brandOptions.map(([value, label]) => <button type="button" key={value} onClick={() => { setBrandFilter(value); setBrandFiltersOpen(false); }} aria-pressed={brandFilter === value} className={brandFilter === value ? "active" : ""}><span>{label}</span>{brandFilter === value && <Icon name="check" />}</button>)}</div>}
+            </div>
           </div>
         </div>
         {!ready && <div className="public-loading-note" role="status"><span className="public-loading-dot" />Refreshing the collection…</div>}
-        {filteredProducts.length ? renderCards(filteredProducts) : <div className="public-empty"><Icon name="search" /><h3>No pieces found</h3><p>Try another search or choose a different filter.</p><button type="button" onClick={() => { setQuery(""); setCollectionMode("best"); }}>Clear filters</button></div>}
+        {filteredProducts.length ? renderCards(filteredProducts) : <div className="public-empty"><Icon name="search" /><h3>No pieces found</h3><p>Try another search or choose a different filter.</p><button type="button" onClick={() => { setQuery(""); setCollectionMode("best"); setBrandFilter("all"); }}>Clear filters</button></div>}
       </section>}
       </>}
     </main>
