@@ -2593,7 +2593,6 @@ function PublicCatalog({
     const marked = products.filter(product => product.isNew);
     return (marked.length ? [...marked].sort(newestProductFirst) : [...products].sort(newestProductFirst)).slice(0, 4);
   }, [products]);
-  const highValueProducts = React.useMemo(() => products.filter(product => product.isHighValue).sort(newestProductFirst), [products]);
   const sortOptions = [
     ["best", "Best sales"],
     ["new", "New arrivals"],
@@ -2717,10 +2716,6 @@ function PublicCatalog({
           <div className="public-section-heading"><div><span className="store-eyebrow">JUST ARRIVED</span><h2>New arrivals</h2></div><button type="button" className="store-text-link" onClick={openCollection}>See all <Icon name="chevron" /></button></div>
           {renderCards(newProducts, true)}
         </section>
-        {highValueProducts.length > 0 && <section className="public-curated-section public-curated-high-value">
-          <div className="public-section-heading"><div><span className="store-eyebrow">THE HIGH-VALUE EDIT</span><h2>High-quality watches</h2><p className="public-curated-note">Inspired timepieces valued above LKR 95,000. Contact us for the current price.</p></div><button type="button" className="store-text-link" onClick={openCollection}>See all <Icon name="chevron" /></button></div>
-          {renderCards(highValueProducts, true)}
-        </section>}
         <section className="public-collection-cta"><span className="store-eyebrow">SHOP YOUR WAY</span><h2>Find the right timepiece.</h2><p>Browse by best sales, new arrivals, men, women, unisex, kids, bracelet or price.</p><button type="button" className="store-primary" onClick={openCollection}>View full collection <Icon name="arrow" /></button></section>
 
         <section className="public-order-panel">
