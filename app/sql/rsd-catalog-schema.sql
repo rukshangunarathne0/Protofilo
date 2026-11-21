@@ -479,20 +479,20 @@ on conflict (sku) do update set
   updated_at = now();
 
 -- Tissot PRX chronograph collection photographed for the public catalogue.
--- The private supplier price is stored separately below; only the calculated
--- customer price is exposed to public catalogue clients.
+-- The private supplier price is stored separately below; the company retail
+-- price is exposed to public catalogue clients.
 insert into public.ht_products (
   sku, name, category, price, stock, reserved, image, trend, sort_order,
   brand, description, colors, gender, product_type, is_new, availability, is_high_value
 )
 values
-  ('RSD-WS-165', 'Tissot PRX Chronograph Turquoise Dial', 'Wrist Watches', 6600, 0, 0, '/products/RSD-WS-165.webp', '[0,0,0,0,0,0,0]'::jsonb, 22, 'Tissot', 'Tissot PRX chronograph with a turquoise dial and integrated steel bracelet.', '["Turquoise","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
-  ('RSD-WS-166', 'Tissot PRX Chronograph Two-Tone Black Dial', 'Wrist Watches', 6600, 0, 0, '/products/RSD-WS-166.webp', '[0,0,0,0,0,0,0]'::jsonb, 23, 'Tissot', 'Tissot PRX chronograph with a black dial and two-tone gold-and-steel bracelet.', '["Black","Gold","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
-  ('RSD-WS-167', 'Tissot PRX Chronograph Black Dial Steel', 'Wrist Watches', 6600, 0, 0, '/products/RSD-WS-167.webp', '[0,0,0,0,0,0,0]'::jsonb, 24, 'Tissot', 'Tissot PRX chronograph with a black dial and integrated steel bracelet.', '["Black","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
-  ('RSD-WS-168', 'Tissot PRX Chronograph White Dial Black Steel', 'Wrist Watches', 6600, 0, 0, '/products/RSD-WS-168.webp', '[0,0,0,0,0,0,0]'::jsonb, 25, 'Tissot', 'Tissot PRX chronograph with a white dial, black case and integrated black bracelet.', '["White","Black"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
-  ('RSD-WS-169', 'Tissot PRX Chronograph White Dial Gold', 'Wrist Watches', 6600, 0, 0, '/products/RSD-WS-169.webp', '[0,0,0,0,0,0,0]'::jsonb, 26, 'Tissot', 'Tissot PRX chronograph with a white dial and full gold-tone integrated bracelet.', '["White","Gold"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
-  ('RSD-WS-170', 'Tissot PRX Chronograph Black Dial Gold', 'Wrist Watches', 6600, 0, 0, '/products/RSD-WS-170.webp', '[0,0,0,0,0,0,0]'::jsonb, 27, 'Tissot', 'Tissot PRX chronograph with a black dial and full gold-tone integrated bracelet.', '["Black","Gold"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
-  ('RSD-WS-171', 'Tissot PRX Chronograph Black Dial Fluted Bezel', 'Wrist Watches', 6600, 0, 0, '/products/RSD-WS-171.webp', '[0,0,0,0,0,0,0]'::jsonb, 28, 'Tissot', 'Tissot PRX chronograph with a black dial, steel bracelet and fluted bezel.', '["Black","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false)
+  ('RSD-WS-165', 'Tissot PRX Chronograph Turquoise Dial', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-165.webp', '[0,0,0,0,0,0,0]'::jsonb, 22, 'Tissot', 'Tissot PRX chronograph with a turquoise dial and integrated steel bracelet.', '["Turquoise","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
+  ('RSD-WS-166', 'Tissot PRX Chronograph Two-Tone Black Dial', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-166.webp', '[0,0,0,0,0,0,0]'::jsonb, 23, 'Tissot', 'Tissot PRX chronograph with a black dial and two-tone gold-and-steel bracelet.', '["Black","Gold","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
+  ('RSD-WS-167', 'Tissot PRX Chronograph Black Dial Steel', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-167.webp', '[0,0,0,0,0,0,0]'::jsonb, 24, 'Tissot', 'Tissot PRX chronograph with a black dial and integrated steel bracelet.', '["Black","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
+  ('RSD-WS-168', 'Tissot PRX Chronograph White Dial Black Steel', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-168.webp', '[0,0,0,0,0,0,0]'::jsonb, 25, 'Tissot', 'Tissot PRX chronograph with a white dial, black case and integrated black bracelet.', '["White","Black"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
+  ('RSD-WS-169', 'Tissot PRX Chronograph White Dial Gold', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-169.webp', '[0,0,0,0,0,0,0]'::jsonb, 26, 'Tissot', 'Tissot PRX chronograph with a white dial and full gold-tone integrated bracelet.', '["White","Gold"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
+  ('RSD-WS-170', 'Tissot PRX Chronograph Black Dial Gold', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-170.webp', '[0,0,0,0,0,0,0]'::jsonb, 27, 'Tissot', 'Tissot PRX chronograph with a black dial and full gold-tone integrated bracelet.', '["Black","Gold"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
+  ('RSD-WS-171', 'Tissot PRX Chronograph Black Dial Fluted Bezel', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-171.webp', '[0,0,0,0,0,0,0]'::jsonb, 28, 'Tissot', 'Tissot PRX chronograph with a black dial, steel bracelet and fluted bezel.', '["Black","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false)
 on conflict (sku) do update set
   name = excluded.name,
   category = excluded.category,
