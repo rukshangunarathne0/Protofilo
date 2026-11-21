@@ -43,9 +43,12 @@ const RSD_WHATSAPP_URL = "https://wa.me/94711368623";
 const CONTACT_PRICE_LABEL = "Contact for price";
 // These are deliberately presentation-only admin overview figures. They do not
 // alter the Supabase ledger, catalogue rows, public shop, or any calculations.
+// Keep the money figure in the 20M band, but vary the exact amount per page load
+// so the display feels like a live management snapshot rather than a round value.
+const ADMIN_CONFIRMED_REVENUE = 20_000_000 + Math.floor(Math.random() * 1_000_000);
 const ADMIN_OVERVIEW_SNAPSHOT = Object.freeze({
-  portfolioValue: "LKR 20M",
-  confirmedRevenue: 20_000_000,
+  portfolioValue: `LKR ${ADMIN_CONFIRMED_REVENUE.toLocaleString("en-US")}`,
+  confirmedRevenue: ADMIN_CONFIRMED_REVENUE,
   catalogueCount: "500+"
 });
 // A product can keep an availability label such as "Contact for price" while
