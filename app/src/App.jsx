@@ -2470,7 +2470,7 @@ function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compac
       <p className="public-product-brand">{publicProductBrand(a)}</p>
       {a.description && <p className="public-product-description">{a.description}</p>}
       <div className="public-product-bottom">
-        <div><strong>{priceLabel}</strong><small className="public-delivery-badge">Free delivery</small><small className="public-delivery-badge">Contact for more color</small></div>
+        <div><strong>{priceLabel}</strong><small className="public-delivery-badge">Free delivery</small>{variants.length > 1 && <a className="public-variant-hint" href={publicProductHref(a)}>Click to see more colours <Icon name="chevron" /></a>}</div>
         <a className="public-order" href={rsdWhatsAppLink(a.name, price, priceLabel)} target="_blank" rel="noopener noreferrer" onClick={() => c(a, defaultColour)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
       </div>
     </div>
@@ -2481,8 +2481,9 @@ function PublicVariantSelector({ variants, selected, onSelect }) {
   if (variants.length < 2) return null;
   return <div className="public-variant-picker">
     <div className="public-variant-picker-heading"><span>Available colours</span><strong>{selected?.color || "Select a colour"}</strong></div>
+    <p className="public-variant-picker-note">Click a colour to view it</p>
     <div className="public-variant-options" role="list" aria-label="Available colours">
-      {variants.map(variant => <button type="button" role="listitem" className={cn("public-variant-option", selected?.color === variant.color && "is-selected")} onClick={() => onSelect(variant)} aria-label={`View ${variant.color} colour`} aria-pressed={selected?.color === variant.color} key={`${variant.sku || "variant"}-${variant.color}`}>
+      {variants.map(variant => <button type="button" className={cn("public-variant-option", selected?.color === variant.color && "is-selected")} onClick={() => onSelect(variant)} aria-label={`View ${variant.color} colour`} aria-pressed={selected?.color === variant.color} key={`${variant.sku || "variant"}-${variant.color}`}>
         <img src={variant.image} alt="" loading="lazy" decoding="async" />
         <span>{variant.color}</span>
       </button>)}
@@ -2528,7 +2529,7 @@ function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
         <p className="public-detail-type">{productType}{a.gender ? ` · ${a.gender}` : ""}</p>
         {a.description && <p className="public-detail-description">{a.description}</p>}
         <PublicVariantSelector variants={variants} selected={selectedVariant} onSelect={selectVariant} />
-        <div className="public-detail-price-row"><strong>{priceLabel}</strong><span className="public-delivery-badge">Free delivery</span><span className="public-delivery-badge">Contact for more color</span></div>
+        <div className="public-detail-price-row"><strong>{priceLabel}</strong><span className="public-delivery-badge">Free delivery</span></div>
         <dl className="public-detail-facts">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
         <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price, priceLabel)} target="_blank" rel="noopener noreferrer" onClick={() => c(a, selectedVariant?.color || "Not selected")}><Icon name="comments" /> Order on WhatsApp</a>
       </div>
