@@ -7,15 +7,18 @@
 --   RSD-WS-159: Swatch radial minute-track dial, four dial colours
 --   RSD-WS-160: Swatch bold-number dial, five dial colours
 --   RSD-WS-161: Swatch open-work dial, five dial colours
+--   RSD-WS-165: Tissot PRX Chronograph smooth-bezel family, six dial/bracelet variants
 --
 -- The two extra RSD-WS-141 photos are alternate shots of colours already
--- represented, not additional colour variants. The seven Tissot PRX rows were
--- checked separately and have different dials, bracelets or bezels, so they
--- remain separate products rather than being collapsed by brand.
+-- represented, not additional colour variants. Tissot RSD-WS-165 through
+-- RSD-WS-170 share the same PRX chronograph case, dial layout and smooth bezel;
+-- only the dial/bracelet colourway changes. RSD-WS-171 has a fluted bezel and
+-- remains a separate product. This is visual matching, not brand grouping.
 --
 -- Each family keeps its existing representative SKU and price. The other
 -- colours are image variants on that row, so the public collection remains
--- one card per dial family. No unrelated catalogue rows are touched.
+-- one card per genuinely matching design. No unrelated catalogue rows are
+-- touched.
 
 alter table public.ht_products
   add column if not exists variant_group text;
@@ -85,8 +88,38 @@ set
   updated_at = now()
 where sku in ('RSD-WS-141', 'RSD-WS-145', 'RSD-WS-146', 'RSD-WS-159', 'RSD-WS-160', 'RSD-WS-161');
 
--- Audit the six representatives after applying the migration.
+-- Tissot PRX Chronograph: group only the six visually matching smooth-bezel
+-- colourways. Keep the fluted-bezel RSD-WS-171 row independent.
+update public.ht_products
+set
+  variant_group = case
+    when sku in ('RSD-WS-165', 'RSD-WS-166', 'RSD-WS-167', 'RSD-WS-168', 'RSD-WS-169', 'RSD-WS-170') then 'RSD-WS-165'
+    else null
+  end,
+  colors = case sku
+    when 'RSD-WS-165' then '["Turquoise / Steel","Black / Two-tone","Black / Steel","White / Black","White / Gold","Black / Gold"]'::jsonb
+    else colors
+  end,
+  image = case sku
+    when 'RSD-WS-165' then '/products/RSD-WS-165.webp'
+    else image
+  end,
+  variant_images = case sku
+    when 'RSD-WS-165' then '[
+      {"sku":"RSD-WS-165","color":"Turquoise / Steel","image":"/products/RSD-WS-165.webp"},
+      {"sku":"RSD-WS-166","color":"Black / Two-tone","image":"/products/RSD-WS-166.webp"},
+      {"sku":"RSD-WS-167","color":"Black / Steel","image":"/products/RSD-WS-167.webp"},
+      {"sku":"RSD-WS-168","color":"White / Black","image":"/products/RSD-WS-168.webp"},
+      {"sku":"RSD-WS-169","color":"White / Gold","image":"/products/RSD-WS-169.webp"},
+      {"sku":"RSD-WS-170","color":"Black / Gold","image":"/products/RSD-WS-170.webp"}
+    ]'::jsonb
+    else '[]'::jsonb
+  end,
+  updated_at = now()
+where sku in ('RSD-WS-165', 'RSD-WS-166', 'RSD-WS-167', 'RSD-WS-168', 'RSD-WS-169', 'RSD-WS-170', 'RSD-WS-171');
+
+-- Audit the six colour families and the intentionally separate Tissot row.
 select sku, variant_group, colors, variant_images
 from public.ht_products
-where sku in ('RSD-WS-141', 'RSD-WS-145', 'RSD-WS-146', 'RSD-WS-159', 'RSD-WS-160', 'RSD-WS-161')
+where sku in ('RSD-WS-141', 'RSD-WS-145', 'RSD-WS-146', 'RSD-WS-159', 'RSD-WS-160', 'RSD-WS-161', 'RSD-WS-165', 'RSD-WS-166', 'RSD-WS-167', 'RSD-WS-168', 'RSD-WS-169', 'RSD-WS-170', 'RSD-WS-171')
 order by sku;
