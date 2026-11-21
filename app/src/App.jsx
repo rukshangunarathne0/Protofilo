@@ -776,7 +776,7 @@ function StoreProvider({
   const fetchFromSupabase = React.useCallback(async () => {
     if (!adminRoute) {
       try {
-        const { data, error } = await supabase.from("ht_products").select("sku,name,category,price,image,image_back,brand,description,colors,gender,product_type,is_new,is_high_value,availability,sort_order,created_at").order("sku", { ascending: true });
+        const { data, error } = await supabase.from("ht_products").select("sku,name,category,price,image,image_back,brand,description,colors,variant_images,variant_group,gender,product_type,is_new,is_high_value,availability,sort_order,created_at").order("sku", { ascending: true });
         if (error) {
           setSyncStatus("offline");
           return;
@@ -795,6 +795,8 @@ function StoreProvider({
           isHighValue: !!r.is_high_value,
           description: r.description ?? undefined,
           colors: Array.isArray(r.colors) ? r.colors : [],
+          variantImages: Array.isArray(r.variant_images) ? r.variant_images : [],
+          variantGroup: r.variant_group || undefined,
           gender: r.gender || "Unisex",
           productType: r.product_type || "Watches",
           isNew: !!r.is_new,
@@ -834,6 +836,8 @@ function StoreProvider({
         isHighValue: !!r.is_high_value,
         description: r.description ?? undefined,
         colors: Array.isArray(r.colors) ? r.colors : [],
+        variantImages: Array.isArray(r.variant_images) ? r.variant_images : [],
+        variantGroup: r.variant_group || undefined,
         gender: r.gender || "Unisex",
         productType: r.product_type || "Watches",
         isNew: !!r.is_new,
@@ -1290,6 +1294,40 @@ function Lr(a, n) {
     "HT-C-042": Np,
     "HT-C-017": Sp
   }[a] ?? (n === "Wall Watches" ? Np : n === "Table Watches" ? Sp : W5);
+}
+
+// Variant imagery is stored on the representative catalogue row so the
+// public collection can stay compact while the detail view can still offer
+// every verified colour. Keep this parser tolerant of the older colour-image
+// aliases as well, but only create a selector when every entry has its own
+// usable image.
+function productVariantEntries(product) {
+  const raw = product?.variantImages ?? product?.variant_images ?? product?.colorImages ?? product?.colourImages ?? product?.imagesByColor ?? product?.imagesByColour;
+  const entries = [];
+  const add = (value, fallbackColor = "") => {
+    const item = typeof value === "string" ? { image: value } : value && typeof value === "object" ? value : null;
+    const image = typeof item?.image === "string" ? item.image.trim() : typeof item?.url === "string" ? item.url.trim() : "";
+    const color = String(item?.color ?? item?.colour ?? item?.name ?? fallbackColor ?? "").trim();
+    if (!image || !isUsablePhoto(image) || !color) return;
+    const key = color.toLowerCase();
+    if (!entries.some(entry => entry.color.toLowerCase() === key)) {
+      entries.push({
+        sku: item?.sku || product?.sku,
+        color,
+        image,
+      });
+    }
+  };
+  if (Array.isArray(raw)) raw.forEach((value, index) => add(value, product?.colors?.[index]));
+  else if (raw && typeof raw === "object") Object.entries(raw).forEach(([color, value]) => add(value, color));
+  return entries;
+}
+function productDefaultVariant(product, variants = productVariantEntries(product)) {
+  const preferred = String(product?.featuredColor ?? product?.featuredColour ?? product?.defaultColor ?? product?.defaultColour ?? "").trim().toLowerCase();
+  return variants.find(variant => variant.color.toLowerCase() === preferred) || variants[0] || null;
+}
+function productPrimaryImage(product, variants = productVariantEntries(product)) {
+  return productDefaultVariant(product, variants)?.image || Lr(product?.sku, product?.category);
 }
 function D5() {
   const [a, n] = React.useState(() => typeof window > "u" ? !0 : window.matchMedia("(min-width: 1024px)").matches);
@@ -2398,12 +2436,26 @@ function newestProductFirst(left, right) {
   const createdDifference = (Number.isFinite(rightCreated) ? rightCreated : 0) - (Number.isFinite(leftCreated) ? leftCreated : 0);
   return createdDifference || (Number(right.sortOrder) || 0) - (Number(left.sortOrder) || 0) || String(right.sku).localeCompare(String(left.sku));
 }
+function dedupeVariantProducts(products) {
+  const grouped = new Map();
+  products.forEach(product => {
+    const group = String(product.variantGroup || product.sku || "").trim().toLowerCase();
+    if (!group) return;
+    const current = grouped.get(group);
+    // If a future import contains one row per colour, the row whose SKU is
+    // the declared group parent wins. Products without a group stay distinct.
+    if (!current || String(product.sku).trim().toLowerCase() === group) grouped.set(group, product);
+  });
+  return [...grouped.values()];
+}
 function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compact: o = false }) {
   const price = a.price == null ? null : Number(a.price);
   const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
   const availability = a.availability || "Available to order";
   const priceLabel = isContactPrice(a, price) ? CONTACT_PRICE_LABEL : en(price);
-  const image = Lr(a.sku, a.category);
+  const variants = productVariantEntries(a);
+  const image = productPrimaryImage(a, variants);
+  const defaultColour = productDefaultVariant(a, variants)?.color || "Not selected";
   return <motion.article className={cn("public-product-card", o && "public-product-card-compact")} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "0px 0px -35px" }} transition={{ duration: .35 }}>
     <div className="public-product-image">
       <a className="public-product-image-link" href={publicProductHref(a)} aria-label={`View details for ${a.name}`}>
@@ -2419,10 +2471,23 @@ function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compac
       {a.description && <p className="public-product-description">{a.description}</p>}
       <div className="public-product-bottom">
         <div><strong>{priceLabel}</strong><small className="public-delivery-badge">Free delivery</small><small className="public-delivery-badge">Contact for more color</small></div>
-        <a className="public-order" href={rsdWhatsAppLink(a.name, price, priceLabel)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
+        <a className="public-order" href={rsdWhatsAppLink(a.name, price, priceLabel)} target="_blank" rel="noopener noreferrer" onClick={() => c(a, defaultColour)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
       </div>
     </div>
   </motion.article>;
+}
+
+function PublicVariantSelector({ variants, selected, onSelect }) {
+  if (variants.length < 2) return null;
+  return <div className="public-variant-picker">
+    <div className="public-variant-picker-heading"><span>Available colours</span><strong>{selected?.color || "Select a colour"}</strong></div>
+    <div className="public-variant-options" role="list" aria-label="Available colours">
+      {variants.map(variant => <button type="button" role="listitem" className={cn("public-variant-option", selected?.color === variant.color && "is-selected")} onClick={() => onSelect(variant)} aria-label={`View ${variant.color} colour`} aria-pressed={selected?.color === variant.color} key={`${variant.sku || "variant"}-${variant.color}`}>
+        <img src={variant.image} alt="" loading="lazy" decoding="async" />
+        <span>{variant.color}</span>
+      </button>)}
+    </div>
+  </div>;
 }
 
 function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
@@ -2430,15 +2495,25 @@ function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
   const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
   const availability = a.availability || "Available to order";
   const priceLabel = isContactPrice(a, price) ? CONTACT_PRICE_LABEL : en(price);
-  const image = Lr(a.sku, a.category);
+  const variants = React.useMemo(() => productVariantEntries(a), [a]);
+  const [selectedColor, setSelectedColor] = React.useState(() => productDefaultVariant(a, variants)?.color || "");
+  React.useEffect(() => {
+    setSelectedColor(productDefaultVariant(a, variants)?.color || "");
+  }, [a.sku, variants]);
+  const selectedVariant = variants.find(variant => variant.color === selectedColor) || productDefaultVariant(a, variants);
+  const image = selectedVariant?.image || Lr(a.sku, a.category);
   const backImage = a.imageBack || "";
-  const details = [["Brand", publicProductBrand(a)], ["Type", productType], ["For", a.gender || "Unisex"], ["Availability", availability], ["SKU", a.sku]].filter(([, value]) => value);
+  const details = [["Brand", publicProductBrand(a)], ["Colour", selectedVariant?.color], ["Type", productType], ["For", a.gender || "Unisex"], ["Availability", availability], ["SKU", a.sku]].filter(([, value]) => value);
+  const selectVariant = variant => {
+    setSelectedColor(variant.color);
+    preloadImage(variant.image);
+  };
   return <section className="public-product-detail">
     <a className="public-detail-back" href="/shop"><Icon name="chevron" className="rotate-180" /> Back to shop</a>
     <div className="public-detail-layout">
       <div className="public-detail-visual">
         <div className="public-detail-image-frame">
-          <img className="public-detail-image" src={image} alt={`${a.name} front view`} decoding="async" />
+          <img className="public-detail-image" src={image} alt={`${a.name}${selectedVariant?.color ? ` in ${selectedVariant.color}` : ""} front view`} decoding="async" />
           <button type="button" className={cn("public-detail-favorite", n && "is-saved")} onClick={() => i(a)} aria-label={`${n ? "Remove" : "Add"} ${a.name} ${n ? "from" : "to"} favourites`} aria-pressed={n}><HeartIcon selected={n} /></button>
           <span className="public-detail-availability">{availability}</span>
         </div>
@@ -2452,9 +2527,10 @@ function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
         <div className="public-detail-heading-row"><h1>{a.name}</h1><span className="public-detail-code">{a.sku}</span></div>
         <p className="public-detail-type">{productType}{a.gender ? ` · ${a.gender}` : ""}</p>
         {a.description && <p className="public-detail-description">{a.description}</p>}
+        <PublicVariantSelector variants={variants} selected={selectedVariant} onSelect={selectVariant} />
         <div className="public-detail-price-row"><strong>{priceLabel}</strong><span className="public-delivery-badge">Free delivery</span><span className="public-delivery-badge">Contact for more color</span></div>
         <dl className="public-detail-facts">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-        <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price, priceLabel)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)}><Icon name="comments" /> Order on WhatsApp</a>
+        <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price, priceLabel)} target="_blank" rel="noopener noreferrer" onClick={() => c(a, selectedVariant?.color || "Not selected")}><Icon name="comments" /> Order on WhatsApp</a>
       </div>
     </div>
   </section>;
@@ -2573,7 +2649,7 @@ function PublicCatalog({
   const visitorId = React.useMemo(() => getPublicVisitorId(), []);
   const products = React.useMemo(() => {
     const source = productRows.length ? productRows : hA.map(({ stock, reserved, ...product }) => product);
-    return source.map((product, index) => {
+    return dedupeVariantProducts(source.map((product, index) => {
       const baseline = hA.find(item => item.sku === product.sku || item.name === product.name) || {};
       const publicDetails = publicProductByName.get(product.name) || {};
       const publicBaseline = {
@@ -2590,6 +2666,8 @@ function PublicCatalog({
         isHighValue: baseline.isHighValue,
         description: baseline.description,
         colors: baseline.colors,
+        variantImages: baseline.variantImages,
+        variantGroup: baseline.variantGroup,
         gender: baseline.gender,
         productType: baseline.productType,
         isNew: baseline.isNew,
@@ -2616,6 +2694,8 @@ function PublicCatalog({
         isHighValue: product.isHighValue,
         description: product.description,
         colors: product.colors,
+        variantImages: product.variantImages,
+        variantGroup: product.variantGroup,
         gender: product.gender,
         productType: product.productType,
         isNew: product.isNew,
@@ -2647,6 +2727,8 @@ function PublicCatalog({
         isHighValue: safeProduct.isHighValue ?? publicBaseline.isHighValue ?? false,
         description: safeProduct.description || publicDetails.description || publicBaseline.description || "",
         colors: colours,
+        variantImages: Array.isArray(safeProduct.variantImages) && safeProduct.variantImages.length ? safeProduct.variantImages : (publicDetails.variantImages || publicBaseline.variantImages || []),
+        variantGroup: safeProduct.variantGroup || publicBaseline.variantGroup,
         images: Array.isArray(safeProduct.images) && safeProduct.images.length ? safeProduct.images : (publicDetails.images || publicBaseline.images || []),
         colorImages: safeProduct.colorImages || publicDetails.colorImages || publicDetails.colourImages || publicBaseline.colorImages || {},
         featuredColor: safeProduct.featuredColor || publicBaseline.featuredColor,
@@ -2661,7 +2743,7 @@ function PublicCatalog({
         availability: safeProduct.availability || publicDetails.availability || publicBaseline.availability || "Available to order",
         trend: Array.isArray(safeProduct.trend) ? safeProduct.trend : (publicBaseline.trend || []),
       };
-    });
+    }));
   }, [productRows]);
   const salesScore = product => Array.isArray(product.trend) ? product.trend.reduce((sum, value) => sum + Number(value || 0), 0) : 0;
   const comparePrices = (left, right, direction = 1) => {
@@ -2713,7 +2795,9 @@ function PublicCatalog({
   const detailProduct = React.useMemo(() => {
     if (!detailKey) return null;
     const key = String(detailKey).trim().toLowerCase();
-    return products.find(product => String(product.sku || "").toLowerCase() === key || String(product.name || "").trim().toLowerCase() === key) || null;
+    return products.find(product => String(product.sku || "").toLowerCase() === key || String(product.name || "").trim().toLowerCase() === key)
+      || products.find(product => productVariantEntries(product).some(variant => String(variant.sku || "").toLowerCase() === key))
+      || null;
   }, [products, detailKey]);
   const openCollection = () => {
     if (shopRoute) return;

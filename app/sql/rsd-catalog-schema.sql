@@ -15,6 +15,8 @@ create table if not exists public.ht_products (
   is_high_value boolean not null default false,
   description text,
   colors jsonb not null default '[]'::jsonb,
+  variant_group text,
+  variant_images jsonb not null default '[]'::jsonb,
   trend jsonb not null default '[]'::jsonb,
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
@@ -78,6 +80,8 @@ alter table public.ht_products drop column if exists retail_price;
 alter table public.ht_products add column if not exists brand text;
 alter table public.ht_products add column if not exists description text;
 alter table public.ht_products add column if not exists colors jsonb not null default '[]'::jsonb;
+alter table public.ht_products add column if not exists variant_group text;
+alter table public.ht_products add column if not exists variant_images jsonb not null default '[]'::jsonb;
 alter table public.ht_products add column if not exists trend jsonb not null default '[]'::jsonb;
 alter table public.ht_products add column if not exists sort_order integer not null default 0;
 alter table public.ht_products add column if not exists created_at timestamptz not null default now();

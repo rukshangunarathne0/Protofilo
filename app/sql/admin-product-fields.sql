@@ -5,6 +5,8 @@
 alter table public.ht_products add column if not exists brand text;
 alter table public.ht_products add column if not exists description text;
 alter table public.ht_products add column if not exists colors jsonb not null default '[]'::jsonb;
+alter table public.ht_products add column if not exists variant_group text;
+alter table public.ht_products add column if not exists variant_images jsonb not null default '[]'::jsonb;
 alter table public.ht_products add column if not exists gender text not null default 'Unisex';
 alter table public.ht_products add column if not exists product_type text not null default 'Watches';
 alter table public.ht_products add column if not exists is_new boolean not null default false;
