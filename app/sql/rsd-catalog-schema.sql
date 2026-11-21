@@ -495,8 +495,7 @@ values
   ('RSD-WS-167', 'Tissot PRX Chronograph Black Dial Steel', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-167.webp', '[0,0,0,0,0,0,0]'::jsonb, 24, 'Tissot', 'Tissot PRX chronograph with a black dial and integrated steel bracelet.', '["Black","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
   ('RSD-WS-168', 'Tissot PRX Chronograph White Dial Black Steel', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-168.webp', '[0,0,0,0,0,0,0]'::jsonb, 25, 'Tissot', 'Tissot PRX chronograph with a white dial, black case and integrated black bracelet.', '["White","Black"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
   ('RSD-WS-169', 'Tissot PRX Chronograph White Dial Gold', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-169.webp', '[0,0,0,0,0,0,0]'::jsonb, 26, 'Tissot', 'Tissot PRX chronograph with a white dial and full gold-tone integrated bracelet.', '["White","Gold"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
-  ('RSD-WS-170', 'Tissot PRX Chronograph Black Dial Gold', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-170.webp', '[0,0,0,0,0,0,0]'::jsonb, 27, 'Tissot', 'Tissot PRX chronograph with a black dial and full gold-tone integrated bracelet.', '["Black","Gold"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
-  ('RSD-WS-171', 'Tissot PRX Chronograph Black Dial Fluted Bezel', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-171.webp', '[0,0,0,0,0,0,0]'::jsonb, 28, 'Tissot', 'Tissot PRX chronograph with a black dial, steel bracelet and fluted bezel.', '["Black","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false)
+  ('RSD-WS-170', 'Tissot PRX Chronograph Black Dial Gold', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-170.webp', '[0,0,0,0,0,0,0]'::jsonb, 27, 'Tissot', 'Tissot PRX chronograph with a black dial and full gold-tone integrated bracelet.', '["Black","Gold"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false)
 on conflict (sku) do update set
   name = excluded.name,
   category = excluded.category,
@@ -521,8 +520,7 @@ values
   ('RSD-WS-167', 4450, null, now()),
   ('RSD-WS-168', 4450, null, now()),
   ('RSD-WS-169', 4450, null, now()),
-  ('RSD-WS-170', 4450, null, now()),
-  ('RSD-WS-171', 4450, null, now())
+  ('RSD-WS-170', 4450, null, now())
 on conflict (sku) do update set
   supplier_price = excluded.supplier_price,
   markup_percent = excluded.markup_percent,

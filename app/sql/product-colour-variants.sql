@@ -7,17 +7,18 @@
 --   RSD-WS-159: Swatch radial minute-track dial, four dial colours
 --   RSD-WS-160: Swatch bold-number dial, five dial colours
 --   RSD-WS-161: Swatch open-work dial, five dial colours
---   RSD-WS-165: Tissot PRX Chronograph smooth-bezel family, six dial/bracelet variants
+--   RSD-WS-165: Tissot PRX Chronograph silver/steel-belt family
+--   RSD-WS-169: Tissot PRX Chronograph gold-belt family
 --
 -- The two extra RSD-WS-141 photos are alternate shots of colours already
--- represented, not additional colour variants. Tissot RSD-WS-165 through
--- RSD-WS-170 share the same PRX chronograph case, dial layout and smooth bezel;
--- only the dial/bracelet colourway changes. RSD-WS-171 has a fluted bezel and
--- remains a separate product. This is visual matching, not brand grouping.
+-- represented, not additional colour variants. The Tissot collection is split
+-- into the requested cards: silver/steel belt (RSD-WS-165 with 167 and 168
+-- inside), black/two-tone belt (RSD-WS-166 as its own card), and gold belt
+-- (RSD-WS-169 with 170 inside). RSD-WS-171 has been removed as requested.
 --
--- Each family keeps its existing representative SKU and price. The other
--- colours are image variants on that row, so the public collection remains
--- one card per genuinely matching design. No unrelated catalogue rows are
+-- Each family keeps an existing representative SKU and price. The other
+-- colours are image variants on that row, so the public collection shows one
+-- card per requested Tissot belt grouping. No unrelated catalogue rows are
 -- touched.
 
 alter table public.ht_products
@@ -88,38 +89,54 @@ set
   updated_at = now()
 where sku in ('RSD-WS-141', 'RSD-WS-145', 'RSD-WS-146', 'RSD-WS-159', 'RSD-WS-160', 'RSD-WS-161');
 
--- Tissot PRX Chronograph: group only the six visually matching smooth-bezel
--- colourways. Keep the fluted-bezel RSD-WS-171 row independent.
+-- Tissot PRX Chronograph: split the requested belt groupings into
+-- collection cards. Black/two-tone is its own card; gold variants share one
+-- card; silver/steel variants share one card.
 update public.ht_products
 set
-  variant_group = case
-    when sku in ('RSD-WS-165', 'RSD-WS-166', 'RSD-WS-167', 'RSD-WS-168', 'RSD-WS-169', 'RSD-WS-170') then 'RSD-WS-165'
-    else null
+  variant_group = case sku
+    when 'RSD-WS-165' then 'RSD-WS-165'
+    when 'RSD-WS-166' then 'RSD-WS-166'
+    when 'RSD-WS-167' then 'RSD-WS-165'
+    when 'RSD-WS-168' then 'RSD-WS-165'
+    when 'RSD-WS-169' then 'RSD-WS-169'
+    when 'RSD-WS-170' then 'RSD-WS-169'
   end,
   colors = case sku
-    when 'RSD-WS-165' then '["Turquoise / Steel","Black / Two-tone","Black / Steel","White / Black","White / Gold","Black / Gold"]'::jsonb
+    when 'RSD-WS-165' then '["Turquoise / Steel","Black / Steel","White / Black"]'::jsonb
+    when 'RSD-WS-166' then '["Black / Two-tone"]'::jsonb
+    when 'RSD-WS-169' then '["White / Gold","Black / Gold"]'::jsonb
+    when 'RSD-WS-170' then '["Black / Gold"]'::jsonb
     else colors
   end,
   image = case sku
     when 'RSD-WS-165' then '/products/RSD-WS-165.webp'
+    when 'RSD-WS-166' then '/products/RSD-WS-166.webp'
+    when 'RSD-WS-169' then '/products/RSD-WS-169.webp'
     else image
   end,
   variant_images = case sku
     when 'RSD-WS-165' then '[
       {"sku":"RSD-WS-165","color":"Turquoise / Steel","image":"/products/RSD-WS-165.webp"},
-      {"sku":"RSD-WS-166","color":"Black / Two-tone","image":"/products/RSD-WS-166.webp"},
       {"sku":"RSD-WS-167","color":"Black / Steel","image":"/products/RSD-WS-167.webp"},
-      {"sku":"RSD-WS-168","color":"White / Black","image":"/products/RSD-WS-168.webp"},
+      {"sku":"RSD-WS-168","color":"White / Black","image":"/products/RSD-WS-168.webp"}
+    ]'::jsonb
+    when 'RSD-WS-166' then '[]'::jsonb
+    when 'RSD-WS-169' then '[
       {"sku":"RSD-WS-169","color":"White / Gold","image":"/products/RSD-WS-169.webp"},
       {"sku":"RSD-WS-170","color":"Black / Gold","image":"/products/RSD-WS-170.webp"}
     ]'::jsonb
-    else '[]'::jsonb
+    when 'RSD-WS-170' then '[]'::jsonb
+    else variant_images
   end,
   updated_at = now()
-where sku in ('RSD-WS-165', 'RSD-WS-166', 'RSD-WS-167', 'RSD-WS-168', 'RSD-WS-169', 'RSD-WS-170', 'RSD-WS-171');
+where sku in ('RSD-WS-165', 'RSD-WS-166', 'RSD-WS-167', 'RSD-WS-168', 'RSD-WS-169', 'RSD-WS-170');
 
--- Audit the six colour families and the intentionally separate Tissot row.
+delete from public.ht_products
+where sku = 'RSD-WS-171';
+
+-- Audit the six established colour families and the three Tissot cards.
 select sku, variant_group, colors, variant_images
 from public.ht_products
-where sku in ('RSD-WS-141', 'RSD-WS-145', 'RSD-WS-146', 'RSD-WS-159', 'RSD-WS-160', 'RSD-WS-161', 'RSD-WS-165', 'RSD-WS-166', 'RSD-WS-167', 'RSD-WS-168', 'RSD-WS-169', 'RSD-WS-170', 'RSD-WS-171')
+where sku in ('RSD-WS-141', 'RSD-WS-145', 'RSD-WS-146', 'RSD-WS-159', 'RSD-WS-160', 'RSD-WS-161', 'RSD-WS-165', 'RSD-WS-166', 'RSD-WS-167', 'RSD-WS-168', 'RSD-WS-169', 'RSD-WS-170')
 order by sku;
