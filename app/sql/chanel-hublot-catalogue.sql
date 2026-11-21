@@ -11,9 +11,10 @@
 --
 -- Two supplied photos are alternate shots of colours already represented and
 -- are intentionally not duplicated: the extra Chanel gold/white photo and
--- the extra Hublot steel-case grey-dial photo. Prices were not supplied for
--- the new rows, so those rows remain contact-for-price until priced in the
--- admin catalogue. Existing representative prices are preserved.
+-- the extra Hublot steel-case grey-dial photo. All Chanel colourways use the
+-- existing Chanel price of LKR 2,100. No price was supplied for the new
+-- tonneau Hublot family, so it remains contact-for-price until priced in the
+-- admin catalogue. The existing round Hublot price is preserved.
 
 -- Extend the existing Chanel silver-belt product with its verified black-dial
 -- colour and use the existing silver/white row as the family representative.
@@ -63,18 +64,18 @@ insert into public.ht_products (
 )
 values
   ('RSD-WS-172', 'Chanel Square Quartz Watch — Black Dial / Silver Belt', 'Wrist Watches', 2100, 0, 0, '/products/RSD-WS-172.webp', '[0,0,0,0,0,0,0]'::jsonb, 28, 'Chanel', 'Chanel square quartz watch with a black dial, crystal-set bezel and integrated silver-tone bracelet.', '["Black dial / Silver belt"]'::jsonb, 'RSD-WS-147', '[]'::jsonb, 'Women', 'Watches', true, 'Available to order', false),
-  ('RSD-WS-173', 'Chanel Square Quartz Watch — Gold Belt', 'Wrist Watches', 0, 0, 0, '/products/RSD-WS-173.webp', '[0,0,0,0,0,0,0]'::jsonb, 29, 'Chanel', 'Chanel square quartz watch with a crystal-set bezel and integrated gold-tone bracelet.', '["White dial / Gold belt","Black dial / Gold belt"]'::jsonb, 'RSD-WS-173', '[
+  ('RSD-WS-173', 'Chanel Square Quartz Watch — Gold Belt', 'Wrist Watches', 2100, 0, 0, '/products/RSD-WS-173.webp', '[0,0,0,0,0,0,0]'::jsonb, 29, 'Chanel', 'Chanel square quartz watch with a crystal-set bezel and integrated gold-tone bracelet.', '["White dial / Gold belt","Black dial / Gold belt"]'::jsonb, 'RSD-WS-173', '[
     {"sku":"RSD-WS-173","color":"White dial / Gold belt","image":"/products/RSD-WS-173.webp"},
     {"sku":"RSD-WS-174","color":"Black dial / Gold belt","image":"/products/RSD-WS-174.webp"}
   ]'::jsonb, 'Women', 'Watches', true, 'Available to order', false),
-  ('RSD-WS-174', 'Chanel Square Quartz Watch — Black Dial / Gold Belt', 'Wrist Watches', 0, 0, 0, '/products/RSD-WS-174.webp', '[0,0,0,0,0,0,0]'::jsonb, 30, 'Chanel', 'Chanel square quartz watch with a black dial and integrated gold-tone bracelet.', '["Black dial / Gold belt"]'::jsonb, 'RSD-WS-173', '[]'::jsonb, 'Women', 'Watches', true, 'Available to order', false),
-  ('RSD-WS-175', 'Chanel Square Quartz Watch — Rose Gold Belt', 'Wrist Watches', 0, 0, 0, '/products/RSD-WS-175.webp', '[0,0,0,0,0,0,0]'::jsonb, 31, 'Chanel', 'Chanel square quartz watch with a crystal-set bezel and integrated rose-gold-tone bracelet.', '["Black dial / Rose gold belt","Pink dial / Rose gold belt","White dial / Rose gold belt"]'::jsonb, 'RSD-WS-175', '[
+  ('RSD-WS-174', 'Chanel Square Quartz Watch — Black Dial / Gold Belt', 'Wrist Watches', 2100, 0, 0, '/products/RSD-WS-174.webp', '[0,0,0,0,0,0,0]'::jsonb, 30, 'Chanel', 'Chanel square quartz watch with a black dial and integrated gold-tone bracelet.', '["Black dial / Gold belt"]'::jsonb, 'RSD-WS-173', '[]'::jsonb, 'Women', 'Watches', true, 'Available to order', false),
+  ('RSD-WS-175', 'Chanel Square Quartz Watch — Rose Gold Belt', 'Wrist Watches', 2100, 0, 0, '/products/RSD-WS-175.webp', '[0,0,0,0,0,0,0]'::jsonb, 31, 'Chanel', 'Chanel square quartz watch with a crystal-set bezel and integrated rose-gold-tone bracelet.', '["Black dial / Rose gold belt","Pink dial / Rose gold belt","White dial / Rose gold belt"]'::jsonb, 'RSD-WS-175', '[
     {"sku":"RSD-WS-175","color":"Black dial / Rose gold belt","image":"/products/RSD-WS-175.webp"},
     {"sku":"RSD-WS-176","color":"Pink dial / Rose gold belt","image":"/products/RSD-WS-176.webp"},
     {"sku":"RSD-WS-177","color":"White dial / Rose gold belt","image":"/products/RSD-WS-177.webp"}
   ]'::jsonb, 'Women', 'Watches', true, 'Available to order', false),
-  ('RSD-WS-176', 'Chanel Square Quartz Watch — Pink Dial / Rose Gold Belt', 'Wrist Watches', 0, 0, 0, '/products/RSD-WS-176.webp', '[0,0,0,0,0,0,0]'::jsonb, 32, 'Chanel', 'Chanel square quartz watch with a soft pink dial and integrated rose-gold-tone bracelet.', '["Pink dial / Rose gold belt"]'::jsonb, 'RSD-WS-175', '[]'::jsonb, 'Women', 'Watches', true, 'Available to order', false),
-  ('RSD-WS-177', 'Chanel Square Quartz Watch — White Dial / Rose Gold Belt', 'Wrist Watches', 0, 0, 0, '/products/RSD-WS-177.webp', '[0,0,0,0,0,0,0]'::jsonb, 33, 'Chanel', 'Chanel square quartz watch with a white dial and integrated rose-gold-tone bracelet.', '["White dial / Rose gold belt"]'::jsonb, 'RSD-WS-175', '[]'::jsonb, 'Women', 'Watches', true, 'Available to order', false),
+  ('RSD-WS-176', 'Chanel Square Quartz Watch — Pink Dial / Rose Gold Belt', 'Wrist Watches', 2100, 0, 0, '/products/RSD-WS-176.webp', '[0,0,0,0,0,0,0]'::jsonb, 32, 'Chanel', 'Chanel square quartz watch with a soft pink dial and integrated rose-gold-tone bracelet.', '["Pink dial / Rose gold belt"]'::jsonb, 'RSD-WS-175', '[]'::jsonb, 'Women', 'Watches', true, 'Available to order', false),
+  ('RSD-WS-177', 'Chanel Square Quartz Watch — White Dial / Rose Gold Belt', 'Wrist Watches', 2100, 0, 0, '/products/RSD-WS-177.webp', '[0,0,0,0,0,0,0]'::jsonb, 33, 'Chanel', 'Chanel square quartz watch with a white dial and integrated rose-gold-tone bracelet.', '["White dial / Rose gold belt"]'::jsonb, 'RSD-WS-175', '[]'::jsonb, 'Women', 'Watches', true, 'Available to order', false),
   ('RSD-WS-178', 'Hublot Tonneau Chronograph Watch', 'Wrist Watches', 0, 0, 0, '/products/RSD-WS-178.webp', '[0,0,0,0,0,0,0]'::jsonb, 34, 'Hublot', 'Hublot tonneau chronograph with a four-screw case and rubber strap.', '["Black case / Black dial / Black strap","Black case / White skeleton dial / Black strap","Black case / Brown dial / Brown strap","Black case / Grey dial / Grey strap","Black case / Black dial / Blue strap","Steel case / Black dial / Blue strap","Steel case / Brown dial / Brown strap","Steel case / Grey dial / Grey strap"]'::jsonb, 'RSD-WS-178', '[
     {"sku":"RSD-WS-178","color":"Black case / Black dial / Black strap","image":"/products/RSD-WS-178.webp"},
     {"sku":"RSD-WS-179","color":"Black case / White skeleton dial / Black strap","image":"/products/RSD-WS-179.webp"},
@@ -111,6 +112,12 @@ on conflict (sku) do update set
   availability = excluded.availability,
   is_high_value = excluded.is_high_value,
   updated_at = now();
+
+-- Keep every Chanel colourway at the same customer-facing price.
+update public.ht_products
+set price = 2100,
+    updated_at = now()
+where brand = 'Chanel';
 
 -- Audit the five requested collection cards and every attached colour variant.
 select sku, name, price, variant_group, colors, variant_images, image
