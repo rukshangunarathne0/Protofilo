@@ -33,7 +33,7 @@ The artwork avoids unverified claims such as “official retailer”, “authent
 - `assets/video-covers/reel-01-the-detail-reveal.png`
 - `assets/video-covers/reel-02-choose-your-mood.png`
 
-The complete shot lists, on-screen copy, edit pacing, and audio guidance are in `video-concepts.md`. The two deliverables are concepts/storyboards rather than exported MP4 files, so the final edit can use licensed music and any preferred voiceover.
+The complete shot lists, on-screen copy, edit pacing, and audio guidance are in `video-concepts.md`. The two silent MP4 edits are included in `assets/videos/`; add platform-cleared music or an approved English/Sinhala voiceover when publishing.
 
 ## Suggested rollout
 

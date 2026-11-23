@@ -1,6 +1,6 @@
 # Short-video concepts
 
-Both concepts are designed for Instagram Reels, Facebook Reels, TikTok, and WhatsApp Status. Use real product images from the catalogue; do not add unverified specifications or artificial stock claims.
+Both concepts are designed for Instagram Reels, Facebook Reels, TikTok, and WhatsApp Status. Silent MP4 edits are included in `assets/videos/`; add platform-cleared music or an approved English/Sinhala voiceover before publishing. Use real product images from the catalogue; do not add unverified specifications or artificial stock claims.
 
 ## Concept 01 — The Detail Reveal
 

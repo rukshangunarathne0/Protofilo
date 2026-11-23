@@ -41,5 +41,17 @@
   "video_covers": [
     "assets/video-covers/reel-01-the-detail-reveal.png",
     "assets/video-covers/reel-02-choose-your-mood.png"
+  ],
+  "videos": [
+    {
+      "file": "assets/videos/reel-01-the-detail-reveal.mp4",
+      "duration_seconds": 9,
+      "audio": "silent"
+    },
+    {
+      "file": "assets/videos/reel-02-choose-your-mood.mp4",
+      "duration_seconds": 13,
+      "audio": "silent"
+    }
   ]
 }
