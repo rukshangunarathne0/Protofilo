@@ -3323,7 +3323,6 @@ function AdminRedirect() {
 function AppRouterShell() {
   const { user: a, authReady } = Vl();
   const adminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
-  const calculatorRoute = typeof window !== "undefined" && /^\/cal\/?$/.test(window.location.pathname);
   const adminLoginRoute = typeof window !== "undefined" && /^\/admin\/login\/?$/.test(window.location.pathname);
   const [n, i] = React.useState("overview");
   const [c, o] = React.useState(() => {
@@ -3352,10 +3351,7 @@ function AppRouterShell() {
     window.scrollTo({ top: 0, behavior: p ? "auto" : "smooth" });
   }, [n, p]);
 
-  if (!adminRoute) {
-    if (calculatorRoute) return <AdminRedirect />;
-    return <PublicCatalog theme={c} setTheme={o} />;
-  }
+  if (!adminRoute) return <PublicCatalog theme={c} setTheme={o} />;
   if (!authReady) return <AdminLoadingScreen />;
   if (!a) return <LoginScreen />;
   if (adminLoginRoute) return <AdminRedirect />;

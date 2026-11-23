@@ -2,8 +2,7 @@
   "rewrites": [
     { "source": "/admin", "destination": "/" },
     { "source": "/admin/:path*", "destination": "/" },
-    { "source": "/shop/:path*", "destination": "/" },
-    { "source": "/cal", "destination": "/" }
+    { "source": "/shop/:path*", "destination": "/" }
   ],
   "headers": [
     {
