@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { readSession, requestIsSameOrigin } from "./server/admin-auth.js";
 import { calculateCustomerPrice } from "./server/pricing.js";
 
 function localPriceCalculatorApi() {
@@ -9,6 +10,12 @@ function localPriceCalculatorApi() {
       res.statusCode = 405;
       res.setHeader("Allow", "POST");
       res.end(JSON.stringify({ error: "Method not allowed." }));
+      return;
+    }
+    if (!requestIsSameOrigin(req) || !readSession(req)) {
+      res.statusCode = 401;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.end(JSON.stringify({ error: "Administrator authentication required." }));
       return;
     }
     const chunks = [];

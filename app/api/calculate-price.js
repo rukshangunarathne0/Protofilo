@@ -1,4 +1,4 @@
-import { enforceRateLimit, methodNotAllowed, requestIsSameOrigin, sendJson } from "../server/admin-auth.js";
+import { enforceRateLimit, methodNotAllowed, readSession, requestIsSameOrigin, sendJson } from "../server/admin-auth.js";
 import { calculateCustomerPrice } from "../server/pricing.js";
 
 function parseBody(body) {
@@ -17,6 +17,10 @@ export default async function handler(req, res) {
   }
   if (!requestIsSameOrigin(req)) {
     sendJson(res, 403, { error: "Request rejected." });
+    return;
+  }
+  if (!readSession(req)) {
+    sendJson(res, 401, { error: "Administrator authentication required." });
     return;
   }
   if (!(await enforceRateLimit(req, res, { name: "price-calculator", limit: 60, windowMs: 10 * 60 * 1000 }))) return;

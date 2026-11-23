@@ -2558,89 +2558,6 @@ function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
   </section>;
 }
 
-function PriceCalculatorPage({
-  theme: a,
-  setTheme: n
-}) {
-  const [watchPrice, setWatchPrice] = React.useState("");
-  const [customerPrice, setCustomerPrice] = React.useState(null);
-  const [error, setError] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
-
-  const calculate = async event => {
-    event.preventDefault();
-    if (loading) return;
-    setError("");
-    setCustomerPrice(null);
-    const numericPrice = Number(watchPrice);
-    if (!watchPrice.trim() || !Number.isFinite(numericPrice) || numericPrice < 0) {
-      setError("Enter a valid watch price in LKR.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const response = await fetch("/api/calculate-price", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ watchPrice: numericPrice }),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.ok || !Number.isFinite(Number(result.finalPrice))) {
-        throw new Error(result.error || "The price could not be calculated.");
-      }
-      setCustomerPrice(Number(result.finalPrice));
-    } catch (err) {
-      setError(err?.message || "The price could not be calculated. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return <div className="public-site store-app price-calculator-site">
-    <header className="store-header public-header">
-      <div className="store-header-inner public-header-inner">
-        <a className="public-brand" href="/" aria-label="R.S.D. Premium Watches home">
-          <span className="store-brand-mark"><BrandClockLogo size={36} /></span>
-          <span className="store-brand-name">R.S.D.<small>PREMIUM WATCHES</small></span>
-        </a>
-        <nav className="public-nav" aria-label="Pricing calculator navigation">
-          <a href="/shop">Collection</a>
-          <a className="active" href="/cal">Calculator</a>
-          <a href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">WhatsApp</a>
-        </nav>
-        <div className="public-header-actions">
-          <button type="button" className="store-icon-button public-theme-button" onClick={() => n(a === "dark" ? "light" : "dark")} aria-label={`Use ${a === "dark" ? "light" : "dark"} theme`}><Icon name={a === "dark" ? "sun" : "moon"} /></button>
-          <a className="public-whatsapp-head" href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"><Icon name="comments" /><span>WhatsApp</span></a>
-        </div>
-      </div>
-    </header>
-    <main className="price-calculator-main">
-      <section className="price-calculator-shell" aria-labelledby="price-calculator-title">
-        <div className="price-calculator-intro">
-          <span className="store-eyebrow">R.S.D. PRICING DESK</span>
-          <h1 id="price-calculator-title">Set your customer price.</h1>
-          <p>Enter the watch cost and get the customer-facing price for your next R.S.D. listing.</p>
-        </div>
-        <section className="price-calculator-card">
-          <form onSubmit={calculate}>
-            <label className="price-calculator-label" htmlFor="watch-price">Watch cost in LKR</label>
-            <div className="price-calculator-input-row">
-              <span className="price-calculator-currency">LKR</span>
-              <input id="watch-price" name="watchPrice" type="number" min="0" step="0.01" inputMode="decimal" value={watchPrice} onChange={event => { setWatchPrice(event.target.value); setError(""); setCustomerPrice(null); }} placeholder="e.g. 4450" autoComplete="off" required />
-              <button type="submit" className="store-primary price-calculator-submit" disabled={loading}>{loading ? "Calculating…" : "Calculate"}<Icon name="arrow" /></button>
-            </div>
-          </form>
-          {error && <p className="price-calculator-error" role="alert">{error}</p>}
-          {customerPrice !== null && <div className="price-calculator-result" aria-live="polite"><span className="store-eyebrow">CUSTOMER PRICE</span><strong>{en(customerPrice)}</strong><p>Use this customer-facing price when you add the next watch to the collection.</p></div>}
-        </section>
-        <p className="price-calculator-note">R.S.D. keeps the pricing calculation on the server. This page returns only the customer-facing result.</p>
-      </section>
-    </main>
-    <footer className="public-footer"><div><span className="public-footer-brand">R.S.D. Premium Watches</span><span>Modern timepieces · Colombo, Sri Lanka</span></div><div><span>Orders via WhatsApp Business</span><a href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">0711368623</a></div></footer>
-  </div>;
-}
-
 function PublicCatalog({
   theme: a,
   setTheme: n
@@ -2863,7 +2780,6 @@ function PublicCatalog({
         <nav className="public-nav" aria-label="Public navigation">
           <a className={showCollection ? "active" : ""} href="/shop">{showCollection ? "Shop" : "Collection"}</a>
           {!showCollection && <a href="#about">About R.S.D.</a>}
-          <a href="/cal">Calculator</a>
           <a href={RSD_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">WhatsApp</a>
         </nav>
         <div className="public-header-actions">
@@ -3436,7 +3352,10 @@ function AppRouterShell() {
     window.scrollTo({ top: 0, behavior: p ? "auto" : "smooth" });
   }, [n, p]);
 
-  if (!adminRoute) return calculatorRoute ? <PriceCalculatorPage theme={c} setTheme={o} /> : <PublicCatalog theme={c} setTheme={o} />;
+  if (!adminRoute) {
+    if (calculatorRoute) return <AdminRedirect />;
+    return <PublicCatalog theme={c} setTheme={o} />;
+  }
   if (!authReady) return <AdminLoadingScreen />;
   if (!a) return <LoginScreen />;
   if (adminLoginRoute) return <AdminRedirect />;
