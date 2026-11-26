@@ -40,8 +40,6 @@ const ADMIN_USER = {
 };
 const RSD_WHATSAPP_NUMBER = "0711368623";
 const RSD_WHATSAPP_URL = "https://wa.me/94711368623";
-const VIOKAI_SINGLE_PRICE = 3560;
-const VIOKAI_COUPLE_PRICE = 6620;
 const CONTACT_PRICE_LABEL = "Contact for price";
 // These are deliberately presentation-only admin overview figures. They do not
 // alter the Supabase ledger, catalogue rows, public shop, or any calculations.
@@ -74,7 +72,6 @@ const isContactPrice = (product, price) => {
 const publicPriceByName = new Map(publicPriceData.map(product => [product.name, Number(product.final_price) || 0]));
 const publicProductByName = new Map(publicPriceData.map(product => [product.name, product]));
 const rsdWhatsAppLink = (productName = "", price = 0, priceLabel = "") => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, price: ${priceLabel || `LKR ${bt(Number(price) || 0)}`}.`)}`;
-const rsdViokaiCoupleLink = () => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order one VIOKAI men's watch and one VIOKAI women's watch as a couple set, pair price LKR ${bt(VIOKAI_COUPLE_PRICE)}.`)}`;
 
 // Warm the image cache the moment a finger/mouse goes down on a product, so the
 // photo is already decoded by the time the detail sheet slides in.
@@ -2454,9 +2451,6 @@ function publicProductBrand(product) {
   const brand = typeof product?.brand === "string" ? product.brand.trim() : "";
   return brand || "Unbranded";
 }
-function isViokaiCoupleProduct(product) {
-  return /^VIOKAI$/i.test(String(product?.brand || "").trim()) && /^(Men|Women)$/i.test(String(product?.gender || "").trim());
-}
 function newestProductFirst(left, right) {
   const leftCreated = Date.parse(left.createdAt || "");
   const rightCreated = Date.parse(right.createdAt || "");
@@ -2690,8 +2684,6 @@ function PublicCatalog({
       };
     }));
   }, [productRows]);
-  const viokaiCoupleProducts = products.filter(isViokaiCoupleProduct);
-  const showViokaiCoupleOffer = viokaiCoupleProducts.length >= 2;
   const salesScore = product => Array.isArray(product.trend) ? product.trend.reduce((sum, value) => sum + Number(value || 0), 0) : 0;
   const comparePrices = (left, right, direction = 1) => {
     const leftContact = isContactPrice(left, left.price);
@@ -2830,7 +2822,6 @@ function PublicCatalog({
           {renderCards(newProducts, true)}
         </section>
         <section className="public-collection-cta"><span className="store-eyebrow">SHOP YOUR WAY</span><h2>Find the right timepiece.</h2><p>Browse by best sales, new arrivals, men, women, unisex, kids, bracelet or price.</p><button type="button" className="store-primary" onClick={openCollection}>View full collection <Icon name="arrow" /></button></section>
-        {showViokaiCoupleOffer && <section className="public-couple-offer" aria-labelledby="viokai-couple-title"><div className="public-couple-copy"><span className="store-eyebrow">VIOKAI COUPLE EDIT</span><h2 id="viokai-couple-title">One for you. One for them.</h2><p>Choose a VIOKAI men's watch and a women's watch in the colour you like. Each watch is LKR {bt(VIOKAI_SINGLE_PRICE)}; the pair is LKR {bt(VIOKAI_COUPLE_PRICE)}.</p><div className="public-couple-meta"><span>Four colours</span><span>Presentation box</span><span>Bracelet tool included</span></div></div><a className="store-primary" href={rsdViokaiCoupleLink()} target="_blank" rel="noopener noreferrer"><Icon name="comments" /> Order the couple set</a></section>}
 
         <section className="public-order-panel">
           <div><span className="store-eyebrow">READY WHEN YOU ARE</span><h2>Order by conversation.</h2><p>R.S.D. orders are handled personally through WhatsApp Business. Tell us what you want in simple words and our team will help.</p></div>

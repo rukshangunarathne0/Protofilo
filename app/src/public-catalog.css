@@ -313,15 +313,6 @@
 .public-detail-missing { min-height: 60vh; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
 .public-detail-missing h1 { margin-top: 15px; color: var(--ink); font: 600 clamp(35px, 5vw, 58px)/1 var(--font-display); }
 .public-detail-missing p { margin: 15px 0 24px; color: var(--ink-2); font-size: 14px; }
-.public-couple-offer { display: flex; align-items: center; justify-content: space-between; gap: 36px; margin: clamp(34px, 5vw, 64px) auto 0; padding: clamp(28px, 5vw, 56px); border: 1px solid color-mix(in srgb, var(--gold) 40%, var(--line)); background: radial-gradient(circle at 88% 20%, color-mix(in srgb, var(--gold) 14%, transparent), transparent 35%), linear-gradient(110deg, color-mix(in srgb, var(--gold) 10%, var(--panel)), var(--panel)); }
-.public-couple-copy { max-width: 62ch; }
-.public-couple-copy h2 { margin-top: 14px; color: var(--ink); font: 600 clamp(30px, 4.5vw, 52px)/.98 var(--font-display); letter-spacing: -.035em; }
-.public-couple-copy p { max-width: 57ch; margin-top: 15px; color: var(--ink-2); font-size: 13px; line-height: 1.75; }
-.public-couple-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 20px; color: var(--gold-soft); font: 500 9px/1.4 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
-.public-couple-meta span { display: inline-flex; align-items: center; gap: 7px; }
-.public-couple-meta span::before { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); content: ""; }
-.public-couple-offer > a { display: inline-flex; flex-shrink: 0; align-items: center; gap: 9px; white-space: nowrap; }
-.public-couple-offer > a svg { width: 15px; height: 15px; }
 .public-order-panel { display: flex; align-items: center; justify-content: space-between; gap: 36px; padding: clamp(34px, 6vw, 68px); border: 1px solid color-mix(in srgb, var(--gold) 30%, var(--line)); background: linear-gradient(105deg, color-mix(in srgb, var(--gold) 9%, var(--panel)), var(--panel)); }
 .public-order-panel p { margin-top: 17px; }
 .public-order-panel > a { display: inline-flex; flex-shrink: 0; align-items: center; gap: 9px; white-space: nowrap; }
@@ -356,7 +347,7 @@
   .public-hero-content h1 { font-size: clamp(42px, 13vw, 62px); }
   .public-hero-actions { align-items: stretch; flex-direction: column; width: 100%; }
   .public-hero-actions .store-primary, .public-hero-link { justify-content: center; width: 100%; }
-  .public-intro, .public-collection, .public-curated-section, .public-collection-cta, .public-couple-offer, .public-order-panel, .public-footer { width: calc(100% - 36px); }
+  .public-intro, .public-collection, .public-curated-section, .public-collection-cta, .public-order-panel, .public-footer { width: calc(100% - 36px); }
   .public-intro { grid-template-columns: 1fr; gap: 20px; padding-block: 61px 44px; }
   .public-controls { align-items: stretch; flex-direction: column; }
   .public-product-detail { width: calc(100% - 36px); padding-top: 34px; }
@@ -381,8 +372,6 @@
   .public-product-bottom strong { font-size: 16px; }
   .public-order { justify-content: center; width: 100%; }
   .public-product-image > span { right: 6px; bottom: 6px; font-size: 7px; }
-  .public-couple-offer { align-items: stretch; flex-direction: column; gap: 25px; padding: 28px 22px; }
-  .public-couple-offer > a { justify-content: center; white-space: normal; text-align: center; }
   .public-order-panel { align-items: stretch; flex-direction: column; gap: 25px; padding: 28px 22px; }
   .public-order-panel > a { justify-content: center; white-space: normal; text-align: center; }
   .public-footer { flex-direction: column; padding-bottom: 36px; }
