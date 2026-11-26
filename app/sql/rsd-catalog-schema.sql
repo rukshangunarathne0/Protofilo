@@ -10,9 +10,13 @@ create table if not exists public.ht_products (
   stock integer not null default 0 check (stock >= 0),
   reserved integer not null default 0 check (reserved >= 0),
   image text,
+  image_back text,
   brand text,
+  is_high_value boolean not null default false,
   description text,
   colors jsonb not null default '[]'::jsonb,
+  variant_group text,
+  variant_images jsonb not null default '[]'::jsonb,
   trend jsonb not null default '[]'::jsonb,
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
@@ -76,6 +80,8 @@ alter table public.ht_products drop column if exists retail_price;
 alter table public.ht_products add column if not exists brand text;
 alter table public.ht_products add column if not exists description text;
 alter table public.ht_products add column if not exists colors jsonb not null default '[]'::jsonb;
+alter table public.ht_products add column if not exists variant_group text;
+alter table public.ht_products add column if not exists variant_images jsonb not null default '[]'::jsonb;
 alter table public.ht_products add column if not exists trend jsonb not null default '[]'::jsonb;
 alter table public.ht_products add column if not exists sort_order integer not null default 0;
 alter table public.ht_products add column if not exists created_at timestamptz not null default now();
@@ -84,6 +90,8 @@ alter table public.ht_products add column if not exists gender text not null def
 alter table public.ht_products add column if not exists product_type text not null default 'Watches';
 alter table public.ht_products add column if not exists is_new boolean not null default false;
 alter table public.ht_products add column if not exists availability text not null default 'Available to order';
+alter table public.ht_products add column if not exists image_back text;
+alter table public.ht_products add column if not exists is_high_value boolean not null default false;
 alter table public.ht_orders drop constraint if exists ht_orders_status_check;
 alter table public.ht_orders add constraint ht_orders_status_check check (status in ('Submitted', 'Confirmed', 'Packing', 'Ready', 'Completed'));
 
@@ -472,4 +480,48 @@ on conflict (sku) do update set
   product_type = excluded.product_type,
   is_new = excluded.is_new,
   availability = excluded.availability,
+  updated_at = now();
+
+-- Tissot PRX chronograph collection photographed for the public catalogue.
+-- The private supplier price is stored separately below; the company retail
+-- price is exposed to public catalogue clients.
+insert into public.ht_products (
+  sku, name, category, price, stock, reserved, image, trend, sort_order,
+  brand, description, colors, gender, product_type, is_new, availability, is_high_value
+)
+values
+  ('RSD-WS-165', 'Tissot PRX Chronograph Turquoise Dial', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-165.webp', '[0,0,0,0,0,0,0]'::jsonb, 22, 'Tissot', 'Tissot PRX chronograph with a turquoise dial and integrated steel bracelet.', '["Turquoise","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
+  ('RSD-WS-166', 'Tissot PRX Chronograph Two-Tone Black Dial', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-166.webp', '[0,0,0,0,0,0,0]'::jsonb, 23, 'Tissot', 'Tissot PRX chronograph with a black dial and two-tone gold-and-steel bracelet.', '["Black","Gold","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
+  ('RSD-WS-167', 'Tissot PRX Chronograph Black Dial Steel', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-167.webp', '[0,0,0,0,0,0,0]'::jsonb, 24, 'Tissot', 'Tissot PRX chronograph with a black dial and integrated steel bracelet.', '["Black","Silver"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
+  ('RSD-WS-168', 'Tissot PRX Chronograph White Dial Black Steel', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-168.webp', '[0,0,0,0,0,0,0]'::jsonb, 25, 'Tissot', 'Tissot PRX chronograph with a white dial, black case and integrated black bracelet.', '["White","Black"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
+  ('RSD-WS-169', 'Tissot PRX Chronograph White Dial Gold', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-169.webp', '[0,0,0,0,0,0,0]'::jsonb, 26, 'Tissot', 'Tissot PRX chronograph with a white dial and full gold-tone integrated bracelet.', '["White","Gold"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false),
+  ('RSD-WS-170', 'Tissot PRX Chronograph Black Dial Gold', 'Wrist Watches', 8250, 0, 0, '/products/RSD-WS-170.webp', '[0,0,0,0,0,0,0]'::jsonb, 27, 'Tissot', 'Tissot PRX chronograph with a black dial and full gold-tone integrated bracelet.', '["Black","Gold"]'::jsonb, 'Men', 'Watches', true, 'Limited availability', false)
+on conflict (sku) do update set
+  name = excluded.name,
+  category = excluded.category,
+  price = excluded.price,
+  image = excluded.image,
+  trend = excluded.trend,
+  sort_order = excluded.sort_order,
+  brand = excluded.brand,
+  description = excluded.description,
+  colors = excluded.colors,
+  gender = excluded.gender,
+  product_type = excluded.product_type,
+  is_new = excluded.is_new,
+  availability = excluded.availability,
+  is_high_value = excluded.is_high_value,
+  updated_at = now();
+
+insert into public.ht_product_costs (sku, supplier_price, markup_percent, updated_at)
+values
+  ('RSD-WS-165', 4450, null, now()),
+  ('RSD-WS-166', 4450, null, now()),
+  ('RSD-WS-167', 4450, null, now()),
+  ('RSD-WS-168', 4450, null, now()),
+  ('RSD-WS-169', 4450, null, now()),
+  ('RSD-WS-170', 4450, null, now())
+on conflict (sku) do update set
+  supplier_price = excluded.supplier_price,
+  markup_percent = excluded.markup_percent,
   updated_at = now();

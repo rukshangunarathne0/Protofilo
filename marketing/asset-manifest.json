@@ -1,0 +1,57 @@
+{
+  "campaign": "The R.S.D. Edit",
+  "platforms": ["Instagram", "Facebook", "TikTok"],
+  "language": ["English", "Sinhala"],
+  "contact": {
+    "whatsapp_display": "0711368623",
+    "whatsapp_url": "https://wa.me/94711368623"
+  },
+  "products": [
+    {
+      "sku": "RSD-WS-143",
+      "name": "Hublot Round Skeleton Chronograph Watch",
+      "availability": "Limited availability",
+      "image": "app/public/products/RSD-WS-143.webp"
+    },
+    {
+      "sku": "RSD-WS-165",
+      "name": "Tissot PRX Chronograph Turquoise Dial",
+      "availability": "Limited availability",
+      "image": "app/public/products/RSD-WS-165.webp"
+    },
+    {
+      "sku": "RSD-WS-147",
+      "name": "Chanel Square Quartz Watch — Silver Belt",
+      "availability": "Available to order",
+      "image": "app/public/products/RSD-WS-147.webp"
+    }
+  ],
+  "feed_posts": [
+    "assets/posts/01-mechanical-in-full-view.png",
+    "assets/posts/02-colour-that-keeps-time.png",
+    "assets/posts/03-quietly-iconic.png"
+  ],
+  "carousel": [
+    "assets/carousel/01-cover-the-rsd-edit.png",
+    "assets/carousel/02-the-statement-hublot.png",
+    "assets/carousel/03-the-colour-tissot.png",
+    "assets/carousel/04-the-silhouette-chanel.png",
+    "assets/carousel/05-cta-find-yours.png"
+  ],
+  "video_covers": [
+    "assets/video-covers/reel-01-the-detail-reveal.png",
+    "assets/video-covers/reel-02-choose-your-mood.png"
+  ],
+  "videos": [
+    {
+      "file": "assets/videos/reel-01-the-detail-reveal.mp4",
+      "duration_seconds": 9,
+      "audio": "silent"
+    },
+    {
+      "file": "assets/videos/reel-02-choose-your-mood.mp4",
+      "duration_seconds": 13,
+      "audio": "silent"
+    }
+  ]
+}

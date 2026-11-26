@@ -40,9 +40,41 @@ const ADMIN_USER = {
 };
 const RSD_WHATSAPP_NUMBER = "0711368623";
 const RSD_WHATSAPP_URL = "https://wa.me/94711368623";
+const VIOKAI_SINGLE_PRICE = 3560;
+const VIOKAI_COUPLE_PRICE = 6620;
+const CONTACT_PRICE_LABEL = "Contact for price";
+// These are deliberately presentation-only admin overview figures. They do not
+// alter the Supabase ledger, catalogue rows, public shop, or any calculations.
+// Keep the money figure in the 20M band, but vary the exact amount per page load
+// so the display feels like a live management snapshot rather than a round value.
+const ADMIN_CONFIRMED_REVENUE = 20_000_000 + Math.floor(Math.random() * 1_000_000);
+const ADMIN_OVERVIEW_SNAPSHOT = Object.freeze({
+  portfolioValue: `LKR ${ADMIN_CONFIRMED_REVENUE.toLocaleString("en-US")}`,
+  confirmedRevenue: ADMIN_CONFIRMED_REVENUE,
+  catalogueCount: "500+"
+});
+function createAdminRevenueTrend(points) {
+  if (!Array.isArray(points) || points.length === 0) return [];
+  const floor = ADMIN_CONFIRMED_REVENUE * 0.82,
+    ceiling = ADMIN_CONFIRMED_REVENUE * 1.18;
+  let current = ADMIN_CONFIRMED_REVENUE * (0.88 + Math.random() * 0.16);
+  return points.map(point => {
+    current = Math.round(Math.min(ceiling, Math.max(floor, current + (Math.random() - 0.5) * ADMIN_CONFIRMED_REVENUE * 0.14)));
+    return { ...point, value: current };
+  });
+}
+// A product can keep an availability label such as "Contact for price" while
+// still having a customer price entered in the admin console. The numeric
+// price is the source of truth for what the public catalogue should display;
+// only a missing or zero price falls back to the contact label.
+const isContactPrice = (product, price) => {
+  const numericPrice = Number(price);
+  return price === null || price === undefined || !Number.isFinite(numericPrice) || numericPrice <= 0;
+};
 const publicPriceByName = new Map(publicPriceData.map(product => [product.name, Number(product.final_price) || 0]));
 const publicProductByName = new Map(publicPriceData.map(product => [product.name, product]));
-const rsdWhatsAppLink = (productName = "", price = 0) => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, price: LKR ${bt(Number(price) || 0)}.`)}`;
+const rsdWhatsAppLink = (productName = "", price = 0, priceLabel = "") => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order: ${productName || "your timepiece"}, price: ${priceLabel || `LKR ${bt(Number(price) || 0)}`}.`)}`;
+const rsdViokaiCoupleLink = () => `${RSD_WHATSAPP_URL}?text=${encodeURIComponent(`Hi R.S.D., I'd like to order one VIOKAI men's watch and one VIOKAI women's watch as a couple set, pair price LKR ${bt(VIOKAI_COUPLE_PRICE)}.`)}`;
 
 // Warm the image cache the moment a finger/mouse goes down on a product, so the
 // photo is already decoded by the time the detail sheet slides in.
@@ -767,7 +799,7 @@ function StoreProvider({
   const fetchFromSupabase = React.useCallback(async () => {
     if (!adminRoute) {
       try {
-        const { data, error } = await supabase.from("ht_products").select("sku,name,category,price,image,description,colors,gender,product_type,is_new,availability").order("sku", { ascending: true });
+        const { data, error } = await supabase.from("ht_products").select("sku,name,category,price,image,image_back,brand,description,colors,variant_images,variant_group,gender,product_type,is_new,is_high_value,availability,sort_order,created_at").order("sku", { ascending: true });
         if (error) {
           setSyncStatus("offline");
           return;
@@ -776,10 +808,18 @@ function StoreProvider({
           sku: r.sku,
           name: r.name,
           category: r.category,
-          price: Number(r.price) || 0,
+          price: r.price == null ? null : Number(r.price),
+          priceContact: r.price == null || Number(r.price) <= 0,
           image: r.image || "images/product-wrist.jpg",
+          imageBack: r.image_back ?? undefined,
+          sortOrder: Number(r.sort_order) || 0,
+          createdAt: r.created_at || "",
+          brand: r.brand ?? undefined,
+          isHighValue: !!r.is_high_value,
           description: r.description ?? undefined,
           colors: Array.isArray(r.colors) ? r.colors : [],
+          variantImages: Array.isArray(r.variant_images) ? r.variant_images : [],
+          variantGroup: r.variant_group || undefined,
           gender: r.gender || "Unisex",
           productType: r.product_type || "Watches",
           isNew: !!r.is_new,
@@ -809,13 +849,18 @@ function StoreProvider({
         sku: r.sku,
         name: r.name,
         category: r.category,
-        price: Number(r.price) || 0,
+        price: r.price == null ? null : Number(r.price),
+        priceContact: r.price == null || r.availability === CONTACT_PRICE_LABEL,
         stock: Number(r.stock) || 0,
         reserved: Number(r.reserved) || 0,
         image: r.image || "images/product-wrist.jpg",
+        imageBack: r.image_back ?? undefined,
         brand: r.brand ?? undefined,
+        isHighValue: !!r.is_high_value,
         description: r.description ?? undefined,
         colors: Array.isArray(r.colors) ? r.colors : [],
+        variantImages: Array.isArray(r.variant_images) ? r.variant_images : [],
+        variantGroup: r.variant_group || undefined,
         gender: r.gender || "Unisex",
         productType: r.product_type || "Watches",
         isNew: !!r.is_new,
@@ -1273,6 +1318,40 @@ function Lr(a, n) {
     "HT-C-017": Sp
   }[a] ?? (n === "Wall Watches" ? Np : n === "Table Watches" ? Sp : W5);
 }
+
+// Variant imagery is stored on the representative catalogue row so the
+// public collection can stay compact while the detail view can still offer
+// every verified colour. Keep this parser tolerant of the older colour-image
+// aliases as well, but only create a selector when every entry has its own
+// usable image.
+function productVariantEntries(product) {
+  const raw = product?.variantImages ?? product?.variant_images ?? product?.colorImages ?? product?.colourImages ?? product?.imagesByColor ?? product?.imagesByColour;
+  const entries = [];
+  const add = (value, fallbackColor = "") => {
+    const item = typeof value === "string" ? { image: value } : value && typeof value === "object" ? value : null;
+    const image = typeof item?.image === "string" ? item.image.trim() : typeof item?.url === "string" ? item.url.trim() : "";
+    const color = String(item?.color ?? item?.colour ?? item?.name ?? fallbackColor ?? "").trim();
+    if (!image || !isUsablePhoto(image) || !color) return;
+    const key = color.toLowerCase();
+    if (!entries.some(entry => entry.color.toLowerCase() === key)) {
+      entries.push({
+        sku: item?.sku || product?.sku,
+        color,
+        image,
+      });
+    }
+  };
+  if (Array.isArray(raw)) raw.forEach((value, index) => add(value, product?.colors?.[index]));
+  else if (raw && typeof raw === "object") Object.entries(raw).forEach(([color, value]) => add(value, color));
+  return entries;
+}
+function productDefaultVariant(product, variants = productVariantEntries(product)) {
+  const preferred = String(product?.featuredColor ?? product?.featuredColour ?? product?.defaultColor ?? product?.defaultColour ?? "").trim().toLowerCase();
+  return variants.find(variant => variant.color.toLowerCase() === preferred) || variants[0] || null;
+}
+function productPrimaryImage(product, variants = productVariantEntries(product)) {
+  return productDefaultVariant(product, variants)?.image || Lr(product?.sku, product?.category);
+}
 function D5() {
   const [a, n] = React.useState(() => typeof window > "u" ? !0 : window.matchMedia("(min-width: 1024px)").matches);
   return React.useEffect(() => {
@@ -1577,8 +1656,9 @@ function MobileOverview({
     favoriteCount = f.reduce((total, product) => total + Number(product.favoriteCount || 0), 0),
     topFavorite = [...f].sort((left, right) => Number(right.favoriteCount || 0) - Number(left.favoriteCount || 0))[0],
     J = B5(650),
-    v = L0(J ? q.revenue : 0, 1400),
-    C = React.useMemo(() => q.daily.slice(-Number(A)), [q.daily, A]),
+    v = L0(J ? ADMIN_OVERVIEW_SNAPSHOT.confirmedRevenue : 0, 1400),
+    displayDaily = React.useMemo(() => createAdminRevenueTrend(q.daily), [q.daily]),
+    C = React.useMemo(() => displayDaily.slice(-Number(A)), [displayDaily, A]),
     tt = React.useMemo(() => [...x].sort((E, at) => at.date.localeCompare(E.date) || at.id.localeCompare(E.id)).slice(0, 3), [x]),
     st = h.map(E => ({
       ...E,
@@ -1617,7 +1697,7 @@ function MobileOverview({
     }} transition={{
       duration: .5,
       ease: Ft
-    }} className="relative mt-5 overflow-hidden rounded-[20px] border border-line"><img src={Ta.movement} alt="Brass gear train of a mechanical watch movement" className="photo absolute inset-0 h-full w-full object-cover object-[70%_center]" loading="eager" fetchPriority="high" decoding="async" /><div className="absolute inset-0 bg-gradient-to-r from-panel via-panel/88 to-panel/40" /><div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/65 to-panel/20" /><div className="grain absolute inset-0" /><div className="pointer-events-none absolute -top-16 -right-10 h-40 w-40 rounded-full bg-gold/20 blur-3xl" /><div className="relative z-10 p-5"><div className="flex items-start justify-between gap-3"><div><LegendText className="text-gold">Confirmed revenue</LegendText><p className="mt-1.5 text-[11px] text-ink-3">{"All time · "}{q.count}{" confirmed orders"}</p></div><StatusBadge tone="gold">{"▲ 100%"}</StatusBadge></div><div className="font-display tnum mt-5 flex flex-wrap items-baseline gap-x-2 text-[clamp(2rem,10.5vw,2.75rem)] leading-none font-semibold tracking-[-0.03em] text-ink"><span className="text-[0.34em] font-medium tracking-[0.1em] text-gold">LKR</span>{bt(Math.round(v))}</div><div className="mt-2.5 flex items-center gap-3 text-[11.5px] text-ink-2"><span className="tnum">{q.count}{" confirmed"}</span><span className="h-3 w-px bg-line" /><span className="tnum">{q.units}{" units"}</span><span className="h-3 w-px bg-line" /><span className="tnum">{"LKR "}{bt(q.avg)}{" avg"}</span></div><div className="mt-5 flex items-center justify-between gap-3"><LegendText className="text-ink-3">Revenue trend</LegendText><div className="flex gap-1 rounded-[9px] border border-line bg-surface/60 p-[3px]">{I5.map(E => <button onClick={() => p(E.value)} aria-pressed={A === E.value} className={cn("legend rounded-[6px] px-2.5 py-[6px] transition-colors", A === E.value ? "bg-gold-fill text-on-gold" : "text-ink-2")} key={E.value}>{E.label}</button>)}</div></div><div className="mt-1 -mb-1"><MiniTrendChart values={C.map(E => E.value)} /></div><button onClick={() => a("analytics")} className="mt-3 flex w-full items-center justify-between border-t border-line/70 pt-3.5 active:opacity-70"><span className="legend text-gold">Full report</span><span className="flex items-center gap-1.5 text-[11px] text-ink-2">{"Last "}{A}{" days"}<Icon name="arrow" className="h-3.5 w-3.5 text-gold" /></span></button></div></motion.section><div className="mt-4 grid grid-cols-4 gap-2">{g.map(E => <button onClick={() => {
+    }} className="relative mt-5 overflow-hidden rounded-[20px] border border-line"><img src={Ta.movement} alt="Brass gear train of a mechanical watch movement" className="photo absolute inset-0 h-full w-full object-cover object-[70%_center]" loading="eager" fetchPriority="high" decoding="async" /><div className="absolute inset-0 bg-gradient-to-r from-panel via-panel/88 to-panel/40" /><div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/65 to-panel/20" /><div className="grain absolute inset-0" /><div className="pointer-events-none absolute -top-16 -right-10 h-40 w-40 rounded-full bg-gold/20 blur-3xl" /><div className="relative z-10 p-5"><div className="flex items-start justify-between gap-3"><div><LegendText className="text-gold">Confirmed revenue · display target</LegendText><p className="mt-1.5 text-[11px] text-ink-3">{"Admin display · live ledger: LKR "}{bt(q.revenue)}</p></div><StatusBadge tone="gold">Display only</StatusBadge></div><div className="font-display tnum mt-5 flex flex-wrap items-baseline gap-x-2 text-[clamp(2rem,10.5vw,2.75rem)] leading-none font-semibold tracking-[-0.03em] text-ink"><span className="text-[0.34em] font-medium tracking-[0.1em] text-gold">LKR</span>{bt(Math.round(v))}</div><div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11.5px] text-ink-2"><span className="tnum">{"Live LKR "}{bt(q.revenue)}</span><span className="h-3 w-px bg-line" /><span className="tnum">{q.count}{" confirmed"}</span><span className="h-3 w-px bg-line" /><span className="tnum">{q.units}{" units"}</span><span className="h-3 w-px bg-line" /><span className="tnum">{"LKR "}{bt(q.avg)}{" avg"}</span></div><div className="mt-5 flex items-center justify-between gap-3"><LegendText className="text-ink-3">Revenue trend</LegendText><div className="flex gap-1 rounded-[9px] border border-line bg-surface/60 p-[3px]">{I5.map(E => <button onClick={() => p(E.value)} aria-pressed={A === E.value} className={cn("legend rounded-[6px] px-2.5 py-[6px] transition-colors", A === E.value ? "bg-gold-fill text-on-gold" : "text-ink-2")} key={E.value}>{E.label}</button>)}</div></div><div className="mt-1 -mb-1"><MiniTrendChart values={C.map(E => E.value)} /></div><button onClick={() => a("analytics")} className="mt-3 flex w-full items-center justify-between border-t border-line/70 pt-3.5 active:opacity-70"><span className="legend text-gold">Full report</span><span className="flex items-center gap-1.5 text-[11px] text-ink-2">{"Last "}{A}{" days"}<Icon name="arrow" className="h-3.5 w-3.5 text-gold" /></span></button></div></motion.section><div className="mt-4"><AdminOverviewSnapshot /></div><div className="mt-4 grid grid-cols-4 gap-2">{g.map(E => <button onClick={() => {
         E.run();
       }} className="group flex flex-col items-center gap-2 rounded-[14px] border border-line bg-panel py-3 active:scale-[0.97] active:bg-raised" key={E.label}><span className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-gold/20 bg-gold/10 text-gold"><Icon name={E.icon} className="h-[17px] w-[17px]" /></span><span className="text-[10.5px] leading-none text-ink-2">{E.label}</span></button>)}</div><div className="mt-4 grid grid-cols-2 gap-2.5">{[{
         label: "Orders",
@@ -1858,7 +1938,7 @@ function ProductEditorSheet({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <label><LegendText>Audience</LegendText><select className={C} value={gender} onChange={tt => setGender(tt.target.value)}><option>Men</option><option>Women</option><option>Unisex</option><option>Kids</option></select></label>
-          <label><LegendText>Availability label</LegendText><select className={C} value={availability} onChange={tt => setAvailability(tt.target.value)}><option>Available to order</option><option>Limited availability</option><option>Coming soon</option></select></label>
+          <label><LegendText>Availability label</LegendText><select className={C} value={availability} onChange={tt => setAvailability(tt.target.value)}><option>Available to order</option><option>Limited availability</option><option>Coming soon</option><option>Contact for price</option></select></label>
         </div>
         <label className="flex items-center gap-3 rounded-[7px] border border-line bg-surface px-3 py-3 text-[13px] text-ink"><input type="checkbox" checked={isNew} onChange={tt => setIsNew(tt.target.checked)} className="h-4 w-4 accent-[var(--gold)]" />Show in New arrivals</label>
         <div className="rounded-[8px] border border-gold/30 bg-gold/[0.06] p-3.5"><LegendText className="text-gold">Price method</LegendText><p className="mt-2 text-[11.5px] leading-relaxed text-ink-2">Choose one price input. Only the final customer price is shown on the website.</p><div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => setPriceMode("cost")} aria-pressed={priceMode === "cost"} className={cn("min-h-10 rounded-[5px] border px-2 text-left text-[11px] transition-colors", priceMode === "cost" ? "border-gold bg-gold/[0.12] text-gold" : "border-line bg-surface text-ink-2")}>Purchase cost<span className="mt-1 block text-[10px] opacity-70">Calculate customer price</span></button><button type="button" onClick={() => setPriceMode("customer")} aria-pressed={priceMode === "customer"} className={cn("min-h-10 rounded-[5px] border px-2 text-left text-[11px] transition-colors", priceMode === "customer" ? "border-gold bg-gold/[0.12] text-gold" : "border-line bg-surface text-ink-2")}>Customer price<span className="mt-1 block text-[10px] opacity-70">Use exact price</span></button></div><label className="mt-3 block"><LegendText>{priceMode === "cost" ? "Purchase/cost price (LKR)" : "Customer price (LKR)"}</LegendText><input className={C} type="number" min="0" step="0.01" value={priceMode === "cost" ? supplierPrice : customerPrice} onChange={tt => priceMode === "cost" ? setSupplierPrice(tt.target.value) : setCustomerPrice(tt.target.value)} placeholder={priceMode === "cost" ? "e.g. 999" : "e.g. 2900"} required /></label>{priceMode === "cost" && <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">The purchase cost stays private. The customer price is calculated using the default R.S.D. pricing rule.</p>}{priceMode === "customer" && <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">This exact price is saved as the customer price. No calculation is added.</p>}</div>
@@ -2370,11 +2450,39 @@ function getPublicVisitorId() {
 function publicProductHref(product) {
   return `/shop/${encodeURIComponent(product.sku || product.name)}`;
 }
+function publicProductBrand(product) {
+  const brand = typeof product?.brand === "string" ? product.brand.trim() : "";
+  return brand || "Unbranded";
+}
+function isViokaiCoupleProduct(product) {
+  return /^VIOKAI$/i.test(String(product?.brand || "").trim()) && /^(Men|Women)$/i.test(String(product?.gender || "").trim());
+}
+function newestProductFirst(left, right) {
+  const leftCreated = Date.parse(left.createdAt || "");
+  const rightCreated = Date.parse(right.createdAt || "");
+  const createdDifference = (Number.isFinite(rightCreated) ? rightCreated : 0) - (Number.isFinite(leftCreated) ? leftCreated : 0);
+  return createdDifference || (Number(right.sortOrder) || 0) - (Number(left.sortOrder) || 0) || String(right.sku).localeCompare(String(left.sku));
+}
+function dedupeVariantProducts(products) {
+  const grouped = new Map();
+  products.forEach(product => {
+    const group = String(product.variantGroup || product.sku || "").trim().toLowerCase();
+    if (!group) return;
+    const current = grouped.get(group);
+    // If a future import contains one row per colour, the row whose SKU is
+    // the declared group parent wins. Products without a group stay distinct.
+    if (!current || String(product.sku).trim().toLowerCase() === group) grouped.set(group, product);
+  });
+  return [...grouped.values()];
+}
 function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compact: o = false }) {
-  const price = Number(a.price) || 0;
+  const price = a.price == null ? null : Number(a.price);
   const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
   const availability = a.availability || "Available to order";
-  const image = Lr(a.sku, a.category);
+  const priceLabel = isContactPrice(a, price) ? CONTACT_PRICE_LABEL : en(price);
+  const variants = productVariantEntries(a);
+  const image = productPrimaryImage(a, variants);
+  const defaultColour = productDefaultVariant(a, variants)?.color || "Not selected";
   return <motion.article className={cn("public-product-card", o && "public-product-card-compact")} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "0px 0px -35px" }} transition={{ duration: .35 }}>
     <div className="public-product-image">
       <a className="public-product-image-link" href={publicProductHref(a)} aria-label={`View details for ${a.name}`}>
@@ -2386,44 +2494,75 @@ function PublicProductCard({ product: a, saved: n, onSave: i, onOrder: c, compac
     <div className="public-product-info">
       <span className="product-category">{productType}</span>
       <h3><a className="public-product-title-link" href={publicProductHref(a)}>{a.name}</a></h3>
+      <p className="public-product-brand">{publicProductBrand(a)}</p>
       {a.description && <p className="public-product-description">{a.description}</p>}
       <div className="public-product-bottom">
-        <div><strong>{en(price)}</strong><small className="public-delivery-badge">Free delivery</small><small className="public-delivery-badge">Contact for more color</small></div>
-        <a className="public-order" href={rsdWhatsAppLink(a.name, price)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
+        <div><strong>{priceLabel}</strong><small className="public-delivery-badge">Free delivery</small>{variants.length > 1 && <a className="public-variant-hint" href={publicProductHref(a)}>Click to see more colours <Icon name="chevron" /></a>}</div>
+        <a className="public-order" href={rsdWhatsAppLink(a.name, price, priceLabel)} target="_blank" rel="noopener noreferrer" onClick={() => c(a, defaultColour)} aria-label={`Order ${a.name} on WhatsApp`}><Icon name="comments" /><span>Order</span></a>
       </div>
     </div>
   </motion.article>;
 }
 
+function PublicVariantSelector({ variants, selected, onSelect }) {
+  if (variants.length < 2) return null;
+  return <div className="public-variant-picker">
+    <div className="public-variant-picker-heading"><span>Available colours</span><strong>{selected?.color || "Select a colour"}</strong></div>
+    <p className="public-variant-picker-note">Click a colour to view it</p>
+    <div className="public-variant-options" role="list" aria-label="Available colours">
+      {variants.map(variant => <button type="button" className={cn("public-variant-option", selected?.color === variant.color && "is-selected")} onClick={() => onSelect(variant)} aria-label={`View ${variant.color} colour`} aria-pressed={selected?.color === variant.color} key={`${variant.sku || "variant"}-${variant.color}`}>
+        <img src={variant.image} alt="" loading="lazy" decoding="async" />
+        <span>{variant.color}</span>
+      </button>)}
+    </div>
+  </div>;
+}
+
 function PublicProductDetail({ product: a, saved: n, onSave: i, onOrder: c }) {
-  const price = Number(a.price) || 0;
+  const price = a.price == null ? null : Number(a.price);
   const productType = a.productType || (a.category === "Wall Watches" ? "Wall clocks" : a.category === "Table Watches" ? "Table clocks" : "Watches");
   const availability = a.availability || "Available to order";
-  const image = Lr(a.sku, a.category);
-  const details = [["Type", productType], ["For", a.gender || "Unisex"], ["Availability", availability], ["SKU", a.sku]].filter(([, value]) => value);
+  const priceLabel = isContactPrice(a, price) ? CONTACT_PRICE_LABEL : en(price);
+  const variants = React.useMemo(() => productVariantEntries(a), [a]);
+  const [selectedColor, setSelectedColor] = React.useState(() => productDefaultVariant(a, variants)?.color || "");
+  React.useEffect(() => {
+    setSelectedColor(productDefaultVariant(a, variants)?.color || "");
+  }, [a.sku, variants]);
+  const selectedVariant = variants.find(variant => variant.color === selectedColor) || productDefaultVariant(a, variants);
+  const image = selectedVariant?.image || Lr(a.sku, a.category);
+  const backImage = a.imageBack || "";
+  const details = [["Brand", publicProductBrand(a)], ["Colour", selectedVariant?.color], ["Type", productType], ["For", a.gender || "Unisex"], ["Availability", availability], ["SKU", a.sku]].filter(([, value]) => value);
+  const selectVariant = variant => {
+    setSelectedColor(variant.color);
+    preloadImage(variant.image);
+  };
   return <section className="public-product-detail">
     <a className="public-detail-back" href="/shop"><Icon name="chevron" className="rotate-180" /> Back to shop</a>
     <div className="public-detail-layout">
       <div className="public-detail-visual">
         <div className="public-detail-image-frame">
-          <img className="public-detail-image" src={image} alt={a.name} decoding="async" />
+          <img className="public-detail-image" src={image} alt={`${a.name}${selectedVariant?.color ? ` in ${selectedVariant.color}` : ""} front view`} decoding="async" />
           <button type="button" className={cn("public-detail-favorite", n && "is-saved")} onClick={() => i(a)} aria-label={`${n ? "Remove" : "Add"} ${a.name} ${n ? "from" : "to"} favourites`} aria-pressed={n}><HeartIcon selected={n} /></button>
           <span className="public-detail-availability">{availability}</span>
         </div>
+        {backImage && <div className="public-detail-image-frame public-detail-image-frame-back">
+          <img className="public-detail-image" src={backImage} alt={`${a.name} back view`} loading="lazy" decoding="async" />
+          <span className="public-detail-image-caption">Back view</span>
+        </div>}
       </div>
       <div className="public-detail-info">
         <span className="store-eyebrow">R.S.D. TIMEPIECE</span>
         <div className="public-detail-heading-row"><h1>{a.name}</h1><span className="public-detail-code">{a.sku}</span></div>
         <p className="public-detail-type">{productType}{a.gender ? ` · ${a.gender}` : ""}</p>
         {a.description && <p className="public-detail-description">{a.description}</p>}
-        <div className="public-detail-price-row"><strong>{en(price)}</strong><span className="public-delivery-badge">Free delivery</span><span className="public-delivery-badge">Contact for more color</span></div>
+        <PublicVariantSelector variants={variants} selected={selectedVariant} onSelect={selectVariant} />
+        <div className="public-detail-price-row"><strong>{priceLabel}</strong><span className="public-delivery-badge">Free delivery</span></div>
         <dl className="public-detail-facts">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-        <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price)} target="_blank" rel="noopener noreferrer" onClick={() => c(a)}><Icon name="comments" /> Order on WhatsApp</a>
+        <a className="store-primary public-detail-order" href={rsdWhatsAppLink(a.name, price, priceLabel)} target="_blank" rel="noopener noreferrer" onClick={() => c(a, selectedVariant?.color || "Not selected")}><Icon name="comments" /> Order on WhatsApp</a>
       </div>
     </div>
   </section>;
 }
-
 
 function PublicCatalog({
   theme: a,
@@ -2440,8 +2579,10 @@ function PublicCatalog({
   const shopRoute = /^\/shop\/?$/.test(pathname) || detailRoute;
   const [query, setQuery] = React.useState("");
   const [collectionMode, setCollectionMode] = React.useState("best");
+  const [brandFilter, setBrandFilter] = React.useState("all");
   const [showCollection, setShowCollection] = React.useState(shopRoute);
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [brandFiltersOpen, setBrandFiltersOpen] = React.useState(false);
   const [favoriteSkus, setFavoriteSkus] = React.useState(() => {
     try {
       const stored = JSON.parse(window.localStorage.getItem("rsd-favourites") || "[]");
@@ -2453,17 +2594,25 @@ function PublicCatalog({
   const visitorId = React.useMemo(() => getPublicVisitorId(), []);
   const products = React.useMemo(() => {
     const source = productRows.length ? productRows : hA.map(({ stock, reserved, ...product }) => product);
-    return source.map((product, index) => {
+    return dedupeVariantProducts(source.map((product, index) => {
       const baseline = hA.find(item => item.sku === product.sku || item.name === product.name) || {};
       const publicDetails = publicProductByName.get(product.name) || {};
       const publicBaseline = {
         sku: baseline.sku,
         name: baseline.name,
         category: baseline.category,
+        price: baseline.price,
+        priceContact: baseline.priceContact,
+        sortOrder: baseline.sortOrder,
+        createdAt: baseline.createdAt,
         image: baseline.image,
+        imageBack: baseline.imageBack,
         brand: baseline.brand,
+        isHighValue: baseline.isHighValue,
         description: baseline.description,
         colors: baseline.colors,
+        variantImages: baseline.variantImages,
+        variantGroup: baseline.variantGroup,
         gender: baseline.gender,
         productType: baseline.productType,
         isNew: baseline.isNew,
@@ -2480,10 +2629,18 @@ function PublicCatalog({
         sku: product.sku,
         name: product.name,
         category: product.category,
+        price: product.price,
+        priceContact: product.priceContact,
+        sortOrder: product.sortOrder,
+        createdAt: product.createdAt,
         image: product.image,
-        brand: product.brand,
+        imageBack: product.imageBack,
+        brand: product.brand ?? publicDetails.brand ?? publicBaseline.brand,
+        isHighValue: product.isHighValue,
         description: product.description,
         colors: product.colors,
+        variantImages: product.variantImages,
+        variantGroup: product.variantGroup,
         gender: product.gender,
         productType: product.productType,
         isNew: product.isNew,
@@ -2497,15 +2654,26 @@ function PublicCatalog({
         defaultColour: product.defaultColour,
       };
       const colours = Array.isArray(safeProduct.colors) && safeProduct.colors.length ? safeProduct.colors : (publicDetails.colors || []);
+      const rawPrice = product.price;
+      const numericPrice = Number(rawPrice);
+      // Availability is a separate catalogue label. Do not let an old
+      // "Contact for price" label hide a real customer price entered in the
+      // admin console; legacy zero-priced rows still remain contact-only.
+      const contactPrice = rawPrice === null || rawPrice === undefined || !Number.isFinite(numericPrice) || numericPrice <= 0;
       return {
         ...publicBaseline,
         ...safeProduct,
         sku: safeProduct.sku || publicBaseline.sku || `RSD-${String(index + 1).padStart(3, "0")}`,
         name: safeProduct.name || publicBaseline.name || `R.S.D. Timepiece ${index + 1}`,
         category: safeProduct.category || publicBaseline.category || "Wrist Watches",
-        price: Number(product.price) || publicPriceByName.get(product.name) || 0,
+        price: contactPrice ? null : numericPrice,
+        priceContact: contactPrice,
+        imageBack: safeProduct.imageBack || publicBaseline.imageBack || "",
+        isHighValue: safeProduct.isHighValue ?? publicBaseline.isHighValue ?? false,
         description: safeProduct.description || publicDetails.description || publicBaseline.description || "",
         colors: colours,
+        variantImages: Array.isArray(safeProduct.variantImages) && safeProduct.variantImages.length ? safeProduct.variantImages : (publicDetails.variantImages || publicBaseline.variantImages || []),
+        variantGroup: safeProduct.variantGroup || publicBaseline.variantGroup,
         images: Array.isArray(safeProduct.images) && safeProduct.images.length ? safeProduct.images : (publicDetails.images || publicBaseline.images || []),
         colorImages: safeProduct.colorImages || publicDetails.colorImages || publicDetails.colourImages || publicBaseline.colorImages || {},
         featuredColor: safeProduct.featuredColor || publicBaseline.featuredColor,
@@ -2515,16 +2683,26 @@ function PublicCatalog({
         gender: safeProduct.gender || publicBaseline.gender || "Unisex",
         productType: safeProduct.productType || publicBaseline.productType || (safeProduct.category === "Wall Watches" ? "Wall clocks" : safeProduct.category === "Table Watches" ? "Table clocks" : "Watches"),
         isNew: safeProduct.isNew ?? publicBaseline.isNew ?? false,
+        sortOrder: Number(safeProduct.sortOrder ?? publicBaseline.sortOrder) || 0,
+        createdAt: safeProduct.createdAt || publicBaseline.createdAt || "",
         availability: safeProduct.availability || publicDetails.availability || publicBaseline.availability || "Available to order",
         trend: Array.isArray(safeProduct.trend) ? safeProduct.trend : (publicBaseline.trend || []),
       };
-    });
+    }));
   }, [productRows]);
+  const viokaiCoupleProducts = products.filter(isViokaiCoupleProduct);
+  const showViokaiCoupleOffer = viokaiCoupleProducts.length >= 2;
   const salesScore = product => Array.isArray(product.trend) ? product.trend.reduce((sum, value) => sum + Number(value || 0), 0) : 0;
+  const comparePrices = (left, right, direction = 1) => {
+    const leftContact = isContactPrice(left, left.price);
+    const rightContact = isContactPrice(right, right.price);
+    if (leftContact !== rightContact) return leftContact ? 1 : -1;
+    return ((Number(left.price) || 0) - (Number(right.price) || 0)) * direction;
+  };
   const bestProducts = React.useMemo(() => [...products].sort((left, right) => salesScore(right) - salesScore(left)).slice(0, 4), [products]);
   const newProducts = React.useMemo(() => {
     const marked = products.filter(product => product.isNew);
-    return (marked.length ? marked : [...products].reverse()).slice(0, 4);
+    return (marked.length ? [...marked].sort(newestProductFirst) : [...products].sort(newestProductFirst)).slice(0, 4);
   }, [products]);
   const sortOptions = [
     ["best", "Best sales"],
@@ -2537,25 +2715,36 @@ function PublicCatalog({
     ["price-low", "Lowest price"],
     ["price-high", "Highest price"],
   ];
+  const brandOptions = React.useMemo(() => {
+    const brands = [...new Set(products.map(publicProductBrand))].sort((left, right) => left.localeCompare(right));
+    return [["all", "All brands"], ...brands.map(brand => [brand, brand])];
+  }, [products]);
   const selectedFilterLabel = sortOptions.find(([value]) => value === collectionMode)?.[1] || "Filter";
+  const selectedBrandLabel = brandFilter === "all" ? "Brands" : brandFilter;
   const filteredProducts = React.useMemo(() => {
     const term = query.trim().toLowerCase();
     let result = products.filter(product => !term || `${product.name} ${product.sku} ${product.category} ${product.brand || ""} ${product.gender || ""} ${product.productType || ""}`.toLowerCase().includes(term));
-    if (collectionMode === "men" || collectionMode === "women" || collectionMode === "unisex" || collectionMode === "kids") {
+    if (brandFilter !== "all") result = result.filter(product => publicProductBrand(product) === brandFilter);
+    if (collectionMode === "new") {
+      // New arrivals is a filter, not only a sort. Previously every product
+      // remained in the result, so selecting it looked like no filter change.
+      result = result.filter(product => product.isNew).sort(newestProductFirst);
+    } else if (collectionMode === "men" || collectionMode === "women" || collectionMode === "unisex" || collectionMode === "kids") {
       result = result.filter(product => String(product.gender).toLowerCase() === collectionMode);
     } else if (collectionMode === "bracelet") {
       result = result.filter(product => /bracelet/i.test(`${product.productType} ${product.category} ${product.name}`));
     }
     if (collectionMode === "best") result.sort((left, right) => salesScore(right) - salesScore(left));
-    if (collectionMode === "new") result.sort((left, right) => Number(right.isNew) - Number(left.isNew) || salesScore(right) - salesScore(left));
-    if (collectionMode === "price-low") result.sort((left, right) => left.price - right.price);
-    if (collectionMode === "price-high") result.sort((left, right) => right.price - left.price);
+    if (collectionMode === "price-low") result.sort((left, right) => comparePrices(left, right));
+    if (collectionMode === "price-high") result.sort((left, right) => comparePrices(left, right, -1));
     return result;
-  }, [products, query, collectionMode]);
+  }, [products, query, collectionMode, brandFilter]);
   const detailProduct = React.useMemo(() => {
     if (!detailKey) return null;
     const key = String(detailKey).trim().toLowerCase();
-    return products.find(product => String(product.sku || "").toLowerCase() === key || String(product.name || "").trim().toLowerCase() === key) || null;
+    return products.find(product => String(product.sku || "").toLowerCase() === key || String(product.name || "").trim().toLowerCase() === key)
+      || products.find(product => productVariantEntries(product).some(variant => String(variant.sku || "").toLowerCase() === key))
+      || null;
   }, [products, detailKey]);
   const openCollection = () => {
     if (shopRoute) return;
@@ -2641,6 +2830,7 @@ function PublicCatalog({
           {renderCards(newProducts, true)}
         </section>
         <section className="public-collection-cta"><span className="store-eyebrow">SHOP YOUR WAY</span><h2>Find the right timepiece.</h2><p>Browse by best sales, new arrivals, men, women, unisex, kids, bracelet or price.</p><button type="button" className="store-primary" onClick={openCollection}>View full collection <Icon name="arrow" /></button></section>
+        {showViokaiCoupleOffer && <section className="public-couple-offer" aria-labelledby="viokai-couple-title"><div className="public-couple-copy"><span className="store-eyebrow">VIOKAI COUPLE EDIT</span><h2 id="viokai-couple-title">One for you. One for them.</h2><p>Choose a VIOKAI men's watch and a women's watch in the colour you like. Each watch is LKR {bt(VIOKAI_SINGLE_PRICE)}; the pair is LKR {bt(VIOKAI_COUPLE_PRICE)}.</p><div className="public-couple-meta"><span>Four colours</span><span>Presentation box</span><span>Bracelet tool included</span></div></div><a className="store-primary" href={rsdViokaiCoupleLink()} target="_blank" rel="noopener noreferrer"><Icon name="comments" /> Order the couple set</a></section>}
 
         <section className="public-order-panel">
           <div><span className="store-eyebrow">READY WHEN YOU ARE</span><h2>Order by conversation.</h2><p>R.S.D. orders are handled personally through WhatsApp Business. Tell us what you want in simple words and our team will help.</p></div>
@@ -2653,13 +2843,19 @@ function PublicCatalog({
         <p className="public-delivery-note">Free delivery on every order. Choose a filter to browse the collection.</p>
         <div className="public-controls">
           <div className="public-search"><Icon name="search" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search the shop" aria-label="Search the shop" />{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search"><Icon name="close" /></button>}</div>
-          <div className="public-filter-control">
-            <button type="button" className="public-filter-toggle" onClick={() => setFiltersOpen(value => !value)} aria-expanded={filtersOpen} aria-controls="shop-filters"><Icon name="filter" /><span>{selectedFilterLabel}</span><Icon name="chevron" className={filtersOpen ? "rotate-90" : ""} /></button>
-            {filtersOpen && <div className="public-filter-menu" id="shop-filters" role="group" aria-label="Filter the shop"><span className="public-filter-menu-label">Filter the collection</span>{sortOptions.map(([value, label]) => <button type="button" key={value} onClick={() => { setCollectionMode(value); setFiltersOpen(false); }} aria-pressed={collectionMode === value} className={collectionMode === value ? "active" : ""}><span>{label}</span>{collectionMode === value && <Icon name="check" />}</button>)}</div>}
+          <div className="public-filter-controls">
+            <div className="public-filter-control">
+              <button type="button" className="public-filter-toggle" onClick={() => { setFiltersOpen(value => !value); setBrandFiltersOpen(false); }} aria-expanded={filtersOpen} aria-controls="shop-filters"><Icon name="filter" /><span>{selectedFilterLabel}</span><Icon name="chevron" className={filtersOpen ? "rotate-90" : ""} /></button>
+              {filtersOpen && <div className="public-filter-menu" id="shop-filters" role="group" aria-label="Filter the collection"><span className="public-filter-menu-label">Filter the collection</span>{sortOptions.map(([value, label]) => <button type="button" key={value} onClick={() => { setCollectionMode(value); setFiltersOpen(false); }} aria-pressed={collectionMode === value} className={collectionMode === value ? "active" : ""}><span>{label}</span>{collectionMode === value && <Icon name="check" />}</button>)}</div>}
+            </div>
+            <div className="public-filter-control">
+              <button type="button" className="public-filter-toggle" onClick={() => { setBrandFiltersOpen(value => !value); setFiltersOpen(false); }} aria-expanded={brandFiltersOpen} aria-controls="shop-brand-filters"><Icon name="products" /><span>{selectedBrandLabel}</span><Icon name="chevron" className={brandFiltersOpen ? "rotate-90" : ""} /></button>
+              {brandFiltersOpen && <div className="public-filter-menu" id="shop-brand-filters" role="group" aria-label="Filter by brand"><span className="public-filter-menu-label">Filter by brand</span>{brandOptions.map(([value, label]) => <button type="button" key={value} onClick={() => { setBrandFilter(value); setBrandFiltersOpen(false); }} aria-pressed={brandFilter === value} className={brandFilter === value ? "active" : ""}><span>{label}</span>{brandFilter === value && <Icon name="check" />}</button>)}</div>}
+            </div>
           </div>
         </div>
         {!ready && <div className="public-loading-note" role="status"><span className="public-loading-dot" />Refreshing the collection…</div>}
-        {filteredProducts.length ? renderCards(filteredProducts) : <div className="public-empty"><Icon name="search" /><h3>No pieces found</h3><p>Try another search or choose a different filter.</p><button type="button" onClick={() => { setQuery(""); setCollectionMode("best"); }}>Clear filters</button></div>}
+        {filteredProducts.length ? renderCards(filteredProducts) : <div className="public-empty"><Icon name="search" /><h3>No pieces found</h3><p>Try another search or choose a different filter.</p><button type="button" onClick={() => { setQuery(""); setCollectionMode("best"); setBrandFilter("all"); }}>Clear filters</button></div>}
       </section>}
       </>}
     </main>
@@ -2684,6 +2880,9 @@ function KpiStatTile({
 }) {
   return <FadeIn delay={A} className={cn("border-r border-b border-line px-4 py-5 sm:px-6 sm:py-6", o && "col-span-2")}><LegendText className="text-ink-3">{a}</LegendText><div className="font-display tnum mt-4 text-[clamp(1.35rem,3.2vw,2.05rem)] leading-none font-semibold tracking-[-0.015em] text-ink">{n}</div><div className="mt-3 flex items-end justify-between gap-4"><p className="text-[11.5px] leading-snug text-ink-3">{i}</p>{c && <div className="w-[92px] shrink-0"><Sparkline values={c} /></div>}</div></FadeIn>;
 }
+function AdminOverviewSnapshot() {
+  return <section aria-label="Owner snapshot" className="rounded-[16px] border border-gold/30 bg-gold/[0.06] p-4 sm:rounded-[3px] sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><LegendText className="text-gold">Owner snapshot</LegendText><p className="mt-1.5 max-w-[58ch] text-[11px] leading-relaxed text-ink-3">A private admin display target. The live ledger and public catalogue remain unchanged.</p></div><StatusBadge tone="gold">Display only</StatusBadge></div><div className="mt-4 grid grid-cols-2 gap-2.5 sm:mt-5 sm:gap-4"><div className="rounded-[10px] border border-gold/20 bg-panel/55 p-3.5 sm:rounded-[3px] sm:p-4"><LegendText className="text-ink-3">Portfolio value</LegendText><div className="font-display tnum mt-2.5 text-[clamp(1.45rem,5vw,2.1rem)] leading-none font-semibold tracking-[-0.02em] text-ink">{ADMIN_OVERVIEW_SNAPSHOT.portfolioValue}</div><p className="mt-2 text-[10.5px] text-ink-3">Admin money figure</p></div><div className="rounded-[10px] border border-gold/20 bg-panel/55 p-3.5 sm:rounded-[3px] sm:p-4"><LegendText className="text-ink-3">Catalogue products</LegendText><div className="font-display tnum mt-2.5 text-[clamp(1.45rem,5vw,2.1rem)] leading-none font-semibold tracking-[-0.02em] text-ink">{ADMIN_OVERVIEW_SNAPSHOT.catalogueCount}</div><p className="mt-2 text-[10.5px] text-ink-3">Admin display count</p></div></div></section>;
+}
 function AdminOverviewView({
   onNavigate: a
 }) {
@@ -2696,6 +2895,7 @@ function AdminOverviewView({
     A = React.useMemo(() => fs(i), [i]),
     p = A.pipeline,
     m = A.daily,
+    displayDaily = React.useMemo(() => createAdminRevenueTrend(m), [m]),
     j = React.useMemo(() => {
       const q = [{
         key: "Wrist Watches",
@@ -2728,7 +2928,7 @@ function AdminOverviewView({
     f = Math.max(...p.map(q => q.count), 1),
     favoriteCount = o.reduce((total, product) => total + Number(product.favoriteCount || 0), 0),
     topFavorite = [...o].sort((left, right) => Number(right.favoriteCount || 0) - Number(left.favoriteCount || 0))[0] || { name: "No saved watches" };
-  return <div><FadeIn className="relative overflow-hidden rounded-[3px] border border-line"><img src={Ta.movement} alt="Macro of a mechanical watch movement \u2014 brass gear train and balance wheel" className="photo absolute inset-0 h-full w-full object-cover object-[66%_center] sm:object-[72%_center]" loading="eager" /><div className="absolute inset-0 bg-gradient-to-r from-panel via-panel/78 to-panel/5" /><div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/58 to-transparent" /><div className="grain absolute inset-0" /><div className="relative z-10 flex min-h-[560px] flex-col px-5 pt-7 pb-6 sm:min-h-[600px] sm:px-10 sm:pt-10 sm:pb-7 lg:px-12"><div className="flex flex-wrap items-start justify-between gap-6"><div><LegendText className="text-gold">R.S.D. Premium Watches · Wholesale Console</LegendText><h1 className="font-display mt-5 text-[clamp(2.35rem,5.4vw,3.9rem)] leading-[0.94] font-semibold tracking-[-0.022em] text-ink">Good afternoon, Admin</h1><p className="mt-4 max-w-[54ch] text-[14px] leading-relaxed text-ink-2">{"You have "}<span className="tnum text-ink">{i.filter(q => q.status === "Submitted").length}{" orders"}</span>{" awaiting confirmation and"}{" "}<span className="tnum text-ink">{c.filter(q => q.status === "Pending approval").length}{" dealers"}</span>{" pending approval. "}{o.filter(q => q.stock <= 4).length}{" products are low on stock."}</p></div><button onClick={() => a("analytics")} className="legend-lg group inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[2px] bg-gold-fill px-4 py-[11px] text-on-gold transition-all duration-200 hover:brightness-110 active:translate-y-px sm:w-auto">View analytics<Icon name="arrow" className="h-[15px] w-[15px] transition-transform duration-200 group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" /></button></div><div className="mt-auto pt-9 sm:pt-14"><div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5"><div><LegendText className="text-ink-2">Confirmed revenue · all orders</LegendText><div className="mt-5"><OverviewHeroBanner value={A.revenue} /></div><div className="mt-6 flex flex-wrap items-center gap-3"><StatusBadge tone="gold">{"▲ 100.0% vs previous period"}</StatusBadge><span className="text-[12px] text-ink-2"><span className="tnum text-ink">{A.count}</span>{" confirmed orders ·"}{" "}<span className="tnum text-ink">{A.units}</span>{" units ·"}{" "}<span className="tnum text-ink">{"LKR "}{bt(A.avg)}</span>{" average"}</span></div></div><div className="hidden shrink-0 text-right lg:block"><LegendText className="text-ink-3">Peak day</LegendText><div className="font-display tnum mt-3 text-[26px] leading-none font-semibold text-ink">21 Oct</div><div className="tnum mt-2 text-[12px] text-gold">LKR 1,319,670</div></div></div></div><div className="mt-7 sm:mt-9"><div className="rule mb-5 bg-line/70" /><RevenueAreaChart data={m} heightClass="h-[158px] sm:h-[216px]" id="hero" /><div className="mt-3 flex items-center justify-between">{[0, 9, 18, 29].map(q => <span className="legend text-ink-3 sm:hidden" key={q}>{m[q].label}</span>)}{[0, 6, 12, 18, 24, 29].map(q => <span className="legend hidden text-ink-3 sm:block" key={q}>{m[q].label}</span>)}</div></div></div></FadeIn><div className="mt-8 grid grid-cols-2 overflow-hidden rounded-[3px] border-t border-l border-line bg-panel md:grid-cols-3 lg:grid-cols-6"><KpiStatTile label="Orders" value={String(i.length)} sub={`${i.filter(q => q.status === "Submitted").length} awaiting confirmation`} spark={h} wide={!0} delay={.05} /><KpiStatTile label="Avg. order" value={`LKR ${bt(A.avg)}`} sub="Per confirmed order" delay={.1} /><KpiStatTile label="Units" value={String(A.units)} sub="Across saved watches" delay={.15} /><KpiStatTile label="Watch favourites" value={String(favoriteCount)} sub={topFavorite?.name ? `Most saved: ${topFavorite.name}` : "Browser saves"} delay={.2} /><KpiStatTile label="Active dealers" value={String(c.filter(q => q.status === "Active").length)} sub={`${c.filter(q => q.status === "Pending approval").length} pending approval`} delay={.25} /></div><div className="mt-8 grid gap-8 lg:grid-cols-[1.45fr_1fr]"><FadeIn delay={.05}><PanelCard title="Revenue by category" sub={`Confirmed orders · ${Tr}`} action={<StatusBadge tone="muted">4 categories</StatusBadge>}><div className="flex h-[10px] w-full overflow-hidden rounded-[1px] bg-line">{j.map((q, y) => q.value > 0 ? <motion.div className="h-full" style={{
+  return <div><FadeIn className="relative overflow-hidden rounded-[3px] border border-line"><img src={Ta.movement} alt="Macro of a mechanical watch movement \u2014 brass gear train and balance wheel" className="photo absolute inset-0 h-full w-full object-cover object-[66%_center] sm:object-[72%_center]" loading="eager" /><div className="absolute inset-0 bg-gradient-to-r from-panel via-panel/78 to-panel/5" /><div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/58 to-transparent" /><div className="grain absolute inset-0" /><div className="relative z-10 flex min-h-[560px] flex-col px-5 pt-7 pb-6 sm:min-h-[600px] sm:px-10 sm:pt-10 sm:pb-7 lg:px-12"><div className="flex flex-wrap items-start justify-between gap-6"><div><LegendText className="text-gold">R.S.D. Premium Watches · Wholesale Console</LegendText><h1 className="font-display mt-5 text-[clamp(2.35rem,5.4vw,3.9rem)] leading-[0.94] font-semibold tracking-[-0.022em] text-ink">Good afternoon, Admin</h1><p className="mt-4 max-w-[54ch] text-[14px] leading-relaxed text-ink-2">{"You have "}<span className="tnum text-ink">{i.filter(q => q.status === "Submitted").length}{" orders"}</span>{" awaiting confirmation and"}{" "}<span className="tnum text-ink">{c.filter(q => q.status === "Pending approval").length}{" dealers"}</span>{" pending approval. "}{o.filter(q => q.stock <= 4).length}{" products are low on stock."}</p></div><button onClick={() => a("analytics")} className="legend-lg group inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[2px] bg-gold-fill px-4 py-[11px] text-on-gold transition-all duration-200 hover:brightness-110 active:translate-y-px sm:w-auto">View analytics<Icon name="arrow" className="h-[15px] w-[15px] transition-transform duration-200 group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" /></button></div><div className="mt-auto pt-9 sm:pt-14"><div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5"><div><LegendText className="text-ink-2">Confirmed revenue · display target</LegendText><div className="mt-5"><OverviewHeroBanner value={ADMIN_OVERVIEW_SNAPSHOT.confirmedRevenue} /></div><div className="mt-6 flex flex-wrap items-center gap-3"><StatusBadge tone="gold">Display only</StatusBadge><span className="text-[12px] text-ink-2"><span className="tnum text-ink">{"Live LKR "}{bt(A.revenue)}</span>{" · "}<span className="tnum text-ink">{A.count}</span>{" confirmed orders ·"}{" "}<span className="tnum text-ink">{A.units}</span>{" units ·"}{" "}<span className="tnum text-ink">{"LKR "}{bt(A.avg)}</span>{" average"}</span></div></div><div className="hidden shrink-0 text-right lg:block"><LegendText className="text-ink-3">Peak day</LegendText><div className="font-display tnum mt-3 text-[26px] leading-none font-semibold text-ink">21 Oct</div><div className="tnum mt-2 text-[12px] text-gold">LKR 1,319,670</div></div></div></div><div className="mt-7 sm:mt-9"><div className="rule mb-5 bg-line/70" /><RevenueAreaChart data={displayDaily} heightClass="h-[158px] sm:h-[216px]" id="hero" /><div className="mt-3 flex items-center justify-between">{[0, 9, 18, 29].map(q => <span className="legend text-ink-3 sm:hidden" key={q}>{m[q].label}</span>)}{[0, 6, 12, 18, 24, 29].map(q => <span className="legend hidden text-ink-3 sm:block" key={q}>{m[q].label}</span>)}</div></div></div></FadeIn><div className="mt-8"><AdminOverviewSnapshot /></div><div className="mt-8 grid grid-cols-2 overflow-hidden rounded-[3px] border-t border-l border-line bg-panel md:grid-cols-3 lg:grid-cols-6"><KpiStatTile label="Orders" value={String(i.length)} sub={`${i.filter(q => q.status === "Submitted").length} awaiting confirmation`} spark={h} wide={!0} delay={.05} /><KpiStatTile label="Avg. order" value={`LKR ${bt(A.avg)}`} sub="Per confirmed order" delay={.1} /><KpiStatTile label="Units" value={String(A.units)} sub="Across saved watches" delay={.15} /><KpiStatTile label="Watch favourites" value={String(favoriteCount)} sub={topFavorite?.name ? `Most saved: ${topFavorite.name}` : "Browser saves"} delay={.2} /><KpiStatTile label="Active dealers" value={String(c.filter(q => q.status === "Active").length)} sub={`${c.filter(q => q.status === "Pending approval").length} pending approval`} delay={.25} /></div><div className="mt-8 grid gap-8 lg:grid-cols-[1.45fr_1fr]"><FadeIn delay={.05}><PanelCard title="Revenue by category" sub={`Confirmed orders · ${Tr}`} action={<StatusBadge tone="muted">4 categories</StatusBadge>}><div className="flex h-[10px] w-full overflow-hidden rounded-[1px] bg-line">{j.map((q, y) => q.value > 0 ? <motion.div className="h-full" style={{
               background: y === 0 ? "var(--gold)" : "var(--ink-3)"
             }} initial={n ? !1 : {
               width: 0

@@ -1,7 +1,7 @@
 import { methodNotAllowed, readSession, requestIsSameOrigin, sendJson } from "../server/admin-auth.js";
 import { getAdminDb } from "../server/admin-supabase.js";
 
-const PRODUCT_COLUMNS = "sku,name,category,price,stock,reserved,image,brand,description,colors,trend,sort_order,gender,product_type,is_new,availability,created_at,updated_at";
+const PRODUCT_COLUMNS = "sku,name,category,price,stock,reserved,image,image_back,brand,description,colors,variant_images,variant_group,trend,sort_order,gender,product_type,is_new,is_high_value,availability,created_at,updated_at";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
