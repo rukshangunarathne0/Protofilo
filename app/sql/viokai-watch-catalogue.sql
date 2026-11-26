@@ -25,5 +25,5 @@ values (
   'Men',
   'Watches',
   true,
-  'Available to order'
+  'Coming soon'
 );
